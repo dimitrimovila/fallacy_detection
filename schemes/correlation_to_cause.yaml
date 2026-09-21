@@ -1,0 +1,73 @@
+scheme_id: correlation_to_cause
+name: Argument from correlation to cause
+
+schema: |
+  There is a positive or negative correlation between A and B.
+  Therefore, A causes B.
+
+identification_question: >-
+  Does this text start with two correlated events and conclude that one causes
+  the other?
+
+variables:
+  A: the putative cause
+  B: the second correlated event (the putative effect)
+  C: a possible third factor (confounder)
+
+default_answer_space: ["yes", "no"]
+
+critical_questions:
+  - id: CQ1
+    text: Is there actually a positive or negative correlation between A and B?
+  - id: CQ2
+    text: Is one of the two events actually the cause of the other?
+  - id: CQ2.1
+    text: >-
+      Is the rationale behind false causation based solely on the fact that one of
+      the two correlated events occurs before the other?
+  - id: CQ2.2
+    text: >-
+      Is the rationale behind false causation based solely on the fact that one of
+      the two related events is regularly associated with the other?
+  - id: CQ3
+    text: >-
+      Is the claimed relationship between A and B based on a significant number of
+      observations?
+  - id: CQ4
+    text: >-
+      Could there be a third factor C (or a set of several factors) that is the
+      clear cause of B or of both A and B?
+  - id: CQ5
+    text: >-
+      Can it be shown that the increase or change in B is not solely due to the way B
+      is defined?
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "yes": {node: CQ2}
+      "no":  {terminal: false_premise}
+    CQ2:
+      "yes": {node: CQ3}
+      "no":  {node: CQ2.1}
+    CQ2.1:
+      "yes": {terminal: post_hoc}
+      "no":  {node: CQ2.2}
+    CQ2.2:
+      "yes": {terminal: questionable_cause}
+      "no":  {node: CQ3, reconvergence: true}
+    CQ3:
+      "yes": {node: CQ4}
+      "no":  {terminal: hasty_generalization}
+    CQ4:
+      "yes": {terminal: causal_reductionism}
+      "no":  {node: CQ5}
+    CQ5:
+      # Testo della domanda ripreso verbatim dalla tesi. Nel diagramma della tesi
+      # (p. stampata 66) gli archi sono invertiti rispetto al senso della domanda e
+      # rispetto al Commento dell'autore. Qui sono corretti: "yes" significa che si
+      # puo' dimostrare che il mutamento NON dipende dalla definizione, quindi
+      # l'argomento regge.
+      "yes": {terminal: good_argumentation}
+      "no":  {terminal: definist_fallacy}

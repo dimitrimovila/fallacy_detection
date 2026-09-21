@@ -1,0 +1,66 @@
+scheme_id: popular_opinion
+name: Argument from popular opinion
+
+schema: |
+  If a large majority of some reference group accept A as true, then there is a
+  presumption in favour of A.
+  A large majority of the reference group accept A as true.
+  Therefore there is a presumption in favour of A.
+
+identification_question: >-
+  Does this text use the fact that the conclusion is supported by a relatively
+  large number of people as its main argument in favour of that conclusion?
+
+variables:
+  A: the proposition held to be true by the group
+
+default_answer_space: ["yes", "no"]
+
+critical_questions:
+  - id: CQ1
+    text: >-
+      Are there any indications that the group of people who maintain that A is
+      true (or false) was clearly chosen because they were already biased?
+  - id: CQ2
+    text: >-
+      Are there any indications that the group of people who maintain that A is
+      true (or false) is clearly too small to be considered statistically
+      significant?
+  - id: CQ3
+    text: >-
+      Is the fact that A is considered to be true (or false) by many people a good
+      reason to believe that A is in fact true (or false)?
+  - id: CQ3.1
+    text: >-
+      Is the presumption in favour of A based solely on the fact that it is
+      accepted by a large majority of the reference group?
+  - id: CQ3.2
+    text: >-
+      Does the majority of the reference group rely on the concept of tradition to
+      assert A?
+  - id: CQ3.3
+    text: >-
+      Does the majority of the reference group rely on the concept of nature to
+      assert A?
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "yes": {terminal: cherry_picking}
+      "no":  {node: CQ2}
+    CQ2:
+      "yes": {terminal: hasty_generalization}
+      "no":  {node: CQ3}
+    CQ3:
+      "yes": {terminal: good_argumentation}
+      "no":  {node: CQ3.1}
+    CQ3.1:
+      "yes": {terminal: ad_populum}
+      "no":  {node: CQ3.2}
+    CQ3.2:
+      "yes": {terminal: appeal_to_tradition}
+      "no":  {node: CQ3.3}
+    CQ3.3:
+      "yes": {terminal: appeal_to_nature}
+      "no":  {terminal: ad_populum, reconvergence: true}

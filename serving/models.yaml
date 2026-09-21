@@ -1,0 +1,111 @@
+# I modelli e come si servono. Versione 2.
+#
+# Sei modelli in tre fasce (`tier`).
+#   tier 1: il pilota e l'esecuzione principale. Tre famiglie diverse, per la combinazione.
+#   tier 2: dopo il pilota. gpt oss 120b fa coppia con il 20b della fascia 1 per l'effetto
+#           taglia; K2 Horizon 32B porta una quarta famiglia.
+#   tier 3: commerciale, senza logprob, spento di default. Mai modello principale.
+#
+# `model_id`  il nome con cui vLLM serve il modello: e' il repository passato a `vllm serve`.
+# `revision`  il commit Hugging Face del repository, lo stesso passato a `vllm serve
+#             --revision`. >>> DA COMPLETARE <<< Finche' contiene PLACEHOLDER,
+#             `ask()` si rifiuta di partire: senza commit fissato il modello puo' cambiare
+#             sotto i piedi fra il pilota e l'esecuzione completa, e i numeri non si
+#             riproducono. Per il modello commerciale e' lo snapshot datato dell'API.
+# `reasoning` come si governa il ragionamento. `chat_template_kwargs` finisce in
+#             `extra_body` della chiamata; `reasoning_effort` e' un parametro della chiamata.
+#             Per Qwen e Gemma si spegne; per gpt oss non si spegne del tutto e si tiene al
+#             minimo, quindi le sue risposte non nascono nelle stesse condizioni degli altri
+#             modelli. Per K2 Horizon non si spegne, e il livello va ancora scelto.
+# `enabled`   un modello spento non entra in nessun piano.
+# `supports_logprobs`  il server restituisce i logprob dei token.
+# `is_reasoning`       il modello puo' ragionare prima di rispondere.
+# `max_concurrency`    quante chiamate simultanee al massimo.
+#
+# revision, tier e reasoning entrano nel manifest di ogni esecuzione e nella chiave della
+# cache: cambiarne uno produce chiamate nuove, non risposte vecchie riusate.
+
+version: "2.0"
+
+models:
+
+  # ------------------------------------------------------------------- tier 1
+  qwen3_6_27b:
+    tier: 1
+    model_id: "Qwen/Qwen3.6-27B"
+    revision: "PLACEHOLDER"
+    display_name: "Qwen3.6 27B"
+    enabled: true
+    supports_logprobs: true
+    is_reasoning: true
+    reasoning: {chat_template_kwargs: {enable_thinking: false}}
+    max_concurrency: 8
+    notes: "Pilota. Ragionamento spento dal template di chat."
+
+  gemma4_31b:
+    tier: 1
+    model_id: "google/gemma-4-31B-it"
+    revision: "PLACEHOLDER"
+    display_name: "Gemma 4 31B"
+    enabled: true
+    supports_logprobs: true
+    is_reasoning: true
+    reasoning: {chat_template_kwargs: {enable_thinking: false}}
+    max_concurrency: 8
+    notes: "Pilota. Ragionamento spento dal template di chat."
+
+  gpt_oss_20b:
+    tier: 1
+    model_id: "openai/gpt-oss-20b"
+    revision: "PLACEHOLDER"
+    display_name: "gpt oss 20b"
+    enabled: true
+    supports_logprobs: true
+    is_reasoning: true
+    reasoning: {reasoning_effort: low}
+    max_concurrency: 8
+    notes: "Il ragionamento non si spegne: effort al minimo. I logprob vanno letti sul token della risposta dentro il JSON, non sul primo token generato."
+
+  # ------------------------------------------------------------------- tier 2
+  gpt_oss_120b:
+    tier: 2
+    model_id: "openai/gpt-oss-120b"
+    revision: "PLACEHOLDER"
+    display_name: "gpt oss 120b"
+    enabled: true
+    supports_logprobs: true
+    is_reasoning: true
+    reasoning: {reasoning_effort: low}
+    max_concurrency: 4
+    notes: "Coppia con gpt_oss_20b: stessa famiglia, cambia solo la taglia. Stessa avvertenza sul ragionamento."
+
+  k2_horizon_32b:
+    tier: 2
+    model_id: "IFM/K2-Horizon-32B"
+    revision: "PLACEHOLDER"
+    display_name: "K2 Horizon 32B"
+    enabled: true
+    supports_logprobs: true
+    is_reasoning: true
+    reasoning: {}
+    max_concurrency: 4
+    notes: >-
+      Denso, 32B. Il ragionamento non si spegne: si regola con `reasoning_effort` in
+      `chat_template_kwargs`, e il model card documenta solo `high`. Finche' `reasoning`
+      resta vuoto il modello ragiona al livello di default del template. Il repository
+      contiene un checkpoint di stadio 1, con la versione finale annunciata: la revisione
+      va fissata sul checkpoint che si usa davvero. vLLM chiede in piu' `--trust-remote-code`,
+      `--reasoning-parser k2_horizon`, `--tool-call-parser k2_horizon`.
+
+  # ------------------------------------------------------------------- tier 3
+  gpt_5_5:
+    tier: 3
+    model_id: "gpt-5.5"
+    revision: "PLACEHOLDER"
+    display_name: "GPT-5.5"
+    enabled: false
+    supports_logprobs: false
+    is_reasoning: true
+    reasoning: {}
+    max_concurrency: 4
+    notes: "Commerciale, via API e non via vLLM. Niente logprob: p_logprob resterebbe vuota. Spento di default; se si accende, la politica sul ragionamento va decisa prima."

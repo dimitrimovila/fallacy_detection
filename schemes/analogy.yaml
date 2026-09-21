@@ -1,0 +1,56 @@
+scheme_id: analogy
+name: Argument from analogy
+
+schema: |
+  Generally, case C1 is similar to case C2.
+  A is true (false) in case C1.
+  Therefore A is true (false) in case C2.
+
+identification_question: >-
+  Does the text use a case considered similar to another in a certain respect to
+  draw a conclusion about the main topic?
+
+variables:
+  C1: the source case (the analogue)
+  C2: the target case (the one the conclusion is about)
+  A: the proposition transferred from C1 to C2
+  C3: a further case, similar to C1, in which A has the opposite truth value
+
+default_answer_space: ["yes", "no"]
+
+critical_questions:
+  - id: CQ1
+    text: >-
+      Are there differences between C1 and C2 that would tend to undermine the
+      force of the similarity cited?
+  - id: CQ1.1
+    text: >-
+      Does the analogy rely on an extreme scenario to make the situation seem
+      better or worse?
+  - id: CQ2
+    text: Is the similarity cited relevant to A?
+  - id: CQ3
+    text: Is A true (false) in C1?
+  - id: CQ4
+    text: >-
+      Is there some other case C3 that is also similar to C1, but in which A is
+      false (true)?
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "yes": {node: CQ1.1}
+      "no":  {node: CQ2}
+    CQ1.1:
+      "yes": {terminal: appeal_to_extremes}
+      "no":  {terminal: weak_analogy}
+    CQ2:
+      "yes": {node: CQ3}
+      "no":  {node: CQ1.1, reconvergence: true}
+    CQ3:
+      "yes": {node: CQ4}
+      "no":  {terminal: false_premise}
+    CQ4:
+      "yes": {terminal: cherry_picking}
+      "no":  {terminal: good_argumentation}

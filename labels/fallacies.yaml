@@ -1,0 +1,185 @@
+# Vocabolario delle etichette di fallacia. Versione 1.5.
+# 1.5 rispetto a 1.4: lo spazio collapsed_eleni si chiama collapsed_compat, come il modo
+# dello scorer che lo usa. Nessun contenuto cambiato.
+# 1.4 rispetto a 1.3: aggiunta la coarse any_fallacy, per le righe in cui l'annotatore
+# dice che c'e' una fallacia senza dire quale.
+# 1.2 rispetto a 1.1: quattro alias nuovi, trovati dall'audit sui results.csv di Eleni.
+# 1.3 rispetto a 1.2: il nome di famiglia da solo non e' una
+# etichetta a grana grossa ma un kind a se' (family, vedi la sezione families), e le
+# uscite non interpretabili dei modelli non sono idk ma invalid_outputs.
+# Nessun terminale, nessuno spazio e nessun arco cambiato in nessuna delle due.
+# Sostituisce schemes/_vocabulary.yaml (versione 1.0), di cui conserva
+# le chiavi terminals, coarse_labels, out_of_scope, aliases, idk_markers e le decisioni
+# (false_cause come etichetta a grana grossa con credito parziale; scheme_mismatch mai
+# risolto in silenzio). Aggiunge: family e schemes per terminale, appeal_to_emotion fra
+# le out_of_scope, gli alias osservati nei results.csv di Eleni e nel workbook, gli spazi
+# di etichette e i marcatori di valore mancante.
+# Regola: un alias nuovo si aggiunge qui, mai nel codice.
+# Il confronto degli alias avviene dopo normalizzazione leggera: minuscole, spazi compressi.
+
+version: "1.5"
+
+# Famiglie. Un id di famiglia e' una classe negli spazi collassati e non lo e' nello
+# spazio fine. normalize_label lo riconosce con kind "family": non accetta nessun
+# terminale, quindi nello spazio fine non puo' mai risultare corretto, mentre in uno
+# spazio collassato collassa su se stesso ed e' confrontabile con le altre classi.
+# Non e' una etichetta a grana grossa: non si raffina e non da' credito parziale.
+families:
+  ad_hominem:
+    label: "Ad Hominem"
+    note: "Usata dagli spazi collassati. Include Ad Fidentia e Poisoning the Well, come nel collassamento di Eleni."
+
+terminals:
+  good_argumentation:
+    {label: "Good Argumentation", type: good, schemes: [analogy, cause_to_effect, correlation_to_cause, example, expert_opinion, popular_opinion, slippery_slope]}
+  ad_fidentia:
+    {label: "Ad Fidentia", type: fallacy, family: ad_hominem, schemes: [ad_hominem]}
+  ad_hominem_abusive:
+    {label: "Ad Hominem (Abusive)", type: fallacy, family: ad_hominem, schemes: [ad_hominem]}
+  ad_hominem_circumstantial:
+    {label: "Ad Hominem (Circumstantial)", type: fallacy, family: ad_hominem, schemes: [ad_hominem]}
+  ad_hominem_guilt_by_association:
+    {label: "Ad Hominem (Guilt by Association)", type: fallacy, family: ad_hominem, schemes: [ad_hominem]}
+  ad_hominem_tu_quoque:
+    {label: "Ad Hominem (Tu Quoque)", type: fallacy, family: ad_hominem, schemes: [ad_hominem]}
+  ad_populum:
+    {label: "Ad Populum", type: fallacy, schemes: [popular_opinion]}
+  appeal_to_authority:
+    {label: "Appeal to Authority", type: fallacy, schemes: [ad_hominem, expert_opinion]}
+  appeal_to_extremes:
+    {label: "Appeal to Extremes", type: fallacy, schemes: [analogy, example]}
+  appeal_to_nature:
+    {label: "Appeal to Nature", type: fallacy, schemes: [popular_opinion]}
+  appeal_to_tradition:
+    {label: "Appeal to Tradition", type: fallacy, schemes: [popular_opinion]}
+  causal_reductionism:
+    {label: "Causal Reductionism", type: fallacy, schemes: [cause_to_effect, correlation_to_cause]}
+  cherry_picking:
+    {label: "Cherry Picking", type: fallacy, schemes: [analogy, cause_to_effect, example, popular_opinion]}
+  definist_fallacy:
+    {label: "Definist Fallacy", type: fallacy, schemes: [correlation_to_cause, slippery_slope]}
+  false_attribution:
+    {label: "False Attribution", type: fallacy, schemes: [example, expert_opinion]}
+  false_premise:
+    {label: "False Premise", type: fallacy, schemes: [analogy, cause_to_effect, correlation_to_cause]}
+  hasty_generalization:
+    {label: "Hasty Generalization", type: fallacy, schemes: [cause_to_effect, correlation_to_cause, example, popular_opinion]}
+  irrelevant_authority:
+    {label: "Irrelevant Authority", type: fallacy, schemes: [expert_opinion]}
+  non_sequitur:
+    {label: "Non Sequitur", type: fallacy, schemes: [expert_opinion]}
+  poisoning_the_well:
+    {label: "Poisoning the Well", type: fallacy, family: ad_hominem, schemes: [ad_hominem]}
+  post_hoc:
+    {label: "Post Hoc", type: fallacy, schemes: [cause_to_effect, correlation_to_cause]}
+  questionable_cause:
+    {label: "Questionable Cause", type: fallacy, schemes: [correlation_to_cause]}
+  slippery_slope:
+    {label: "Slippery Slope", type: fallacy, schemes: [slippery_slope]}
+  strawman:
+    {label: "Strawman", type: fallacy, schemes: [expert_opinion]}
+  weak_analogy:
+    {label: "Weak Analogy", type: fallacy, schemes: [analogy, example]}
+
+# Etichette a grana grossa presenti nei dati: nominano una famiglia, non un terminale.
+# Non si raffinano; in valutazione danno credito parziale
+# (qualunque terminale in refines_to che lo schema produce) e la quota di gold grosso va
+# riportata a parte. Il modo compat non applica questa regola.
+coarse_labels:
+  false_cause:
+    label: "False Cause"
+    refines_to: [post_hoc, questionable_cause, causal_reductionism]
+
+  # Eleni registra "c'e' una fallacia" senza dire quale (colonna fallacy Eleni, valore YES).
+  # Stessa regola di false_cause: non si raffina, da' credito parziale, e la quota va
+  # riportata a parte. resolve_for_scheme la interseca con i terminali dello schema, quindi
+  # in pratica e' soddisfatta da ogni terminale fallace dello schema sotto cui sta la riga.
+  any_fallacy:
+    label: "Any Fallacy"
+    refines_to: [
+      ad_fidentia, ad_hominem_abusive, ad_hominem_circumstantial,
+      ad_hominem_guilt_by_association, ad_hominem_tu_quoque, ad_populum,
+      appeal_to_authority, appeal_to_extremes, appeal_to_nature, appeal_to_tradition,
+      causal_reductionism, cherry_picking, definist_fallacy, false_attribution,
+      false_premise, hasty_generalization, irrelevant_authority, non_sequitur,
+      poisoning_the_well, post_hoc, questionable_cause, slippery_slope, strawman,
+      weak_analogy]
+
+# Presenti nei dati, non prodotte da nessun diagramma. Fuori dagli spazi di etichette.
+out_of_scope:
+  appeal_to_emotion: {label: "Appeal to Emotion", note: "Vecchio terminale di ad hominem CQ1 positive, sostituito da Appeal to Authority. Puo' comparire in predizioni fatte con la versione precedente."}
+
+# Spazi di etichette: id dei terminali -> id nello spazio. Chi non e' elencato resta se stesso.
+spaces:
+  fine: {}
+  collapsed_symmetric:
+    ad_fidentia: ad_hominem
+    ad_hominem_abusive: ad_hominem
+    ad_hominem_circumstantial: ad_hominem
+    ad_hominem_guilt_by_association: ad_hominem
+    ad_hominem_tu_quoque: ad_hominem
+    poisoning_the_well: ad_hominem
+  collapsed_compat:
+    ad_fidentia: ad_hominem
+    ad_hominem_abusive: ad_hominem
+    ad_hominem_circumstantial: ad_hominem
+    ad_hominem_guilt_by_association: ad_hominem
+    poisoning_the_well: ad_hominem
+
+# Etichetta grezza (minuscole, spazi compressi) -> id. Vale per terminali, coarse e out_of_scope.
+# Oltre a questa tabella il loader applica una sola regola deterministica: spazi in trattino
+# basso e parentesi tolte, cosi' "Ad Hominem (Tu Quoque)" trova ad_hominem_tu_quoque.
+aliases:
+  "abusive": ad_hominem_abusive
+  "abusive ad hominem": ad_hominem_abusive
+  "ad fidentia ad hominem": ad_fidentia
+  "ad fidentiam": ad_fidentia
+  "appeal to populum": ad_populum
+  "appelal to extremes": appeal_to_extremes
+  "casual reductionism": causal_reductionism
+  "circumstantial": ad_hominem_circumstantial
+  "circumstantial ad hominem": ad_hominem_circumstantial
+  "false authority": irrelevant_authority
+  "false causality": false_cause
+  "false cause": false_cause
+  "good argomentation": good_argumentation
+  "good argument": good_argumentation
+  "guilt by association": ad_hominem_guilt_by_association
+  "guilty by association": ad_hominem_guilt_by_association
+  "hasty generalisation": hasty_generalization
+  "no": good_argumentation
+  "no fallacy": good_argumentation
+  "none": good_argumentation
+  "not fallacious": good_argumentation
+  "post hoc ergo propter hoc": post_hoc
+  "questionable cause": questionable_cause
+  "straw man": strawman
+  "tu quoque": ad_hominem_tu_quoque
+  "tu quoque ad hominem": ad_hominem_tu_quoque
+  # Colonna `fallacy Eleni` dei fogli analogy ed expert opinion: NO dice che non c'e'
+  # fallacia, YES dice che c'e' ma non quale.
+  "yes": any_fallacy
+
+# Marcatori di incertezza dell'annotatore sull'etichetta finale. Non sono verdetti.
+idk_markers: ["?", "??", "idk", "unknown", "non so", "dubbio", "indeterminato"]
+
+# Uscite non interpretabili dei modelli, per stringa esatta (nessuna corrispondenza
+# approssimata). normalize_label le manda su kind "invalid". Un'uscita invalid e' una
+# predizione sbagliata in ogni spazio di etichette, non un'astensione: non si raffina,
+# non collassa su nessuna classe, non va mai esclusa dal denominatore, e l'audit la
+# conta a parte come uscita non valida del modello che l'ha prodotta.
+invalid_outputs:
+  "Ad Hominem Red Herring": "due etichette in una"
+  "Appeal to Emotion/Ad Populum": "due etichette in una"
+  "Appeal to Emotion/False Premise": "due etichette in una"
+  "Red Herring/Straw Man": "due etichette in una"
+  "None, but close to Appeal to Authority or Ad Populum, however the argument is more accurately described as an inductive generalization based on multiple testimonies": "prosa al posto di una etichetta"
+  "Uncertain: Unexpected answer for 'cq2' (expected: yes/no): '[MISSING ANSWER]'": "messaggio di errore della pipeline al posto di una etichetta"
+  "Uncertain: Unexpected answer for 'cq3' (expected: yes/no): '[MISSING ANSWER]'": "messaggio di errore della pipeline al posto di una etichetta"
+
+# Valori che significano cella vuota. L'audit li conta a parte.
+missing_markers: ["", "nan", "NaN", "n/a", "N/A"]
+
+# Nei fogli `Annotazione Dumitru` dice che lo schema non c'e': schema `none` e nessun verdetto.
+# Non e' una buona argomentazione, e' l'assenza del caso.
+scheme_absent_markers: ["n.a. (schema assente)"]

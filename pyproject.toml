@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "argfallacy"
+version = "0.1.0"
+description = "Combining uncertain answers to Walton's critical questions: explainable fallacy detection with several LLMs"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Dumitru Movila" }]
+
+dependencies = [
+    "pyyaml>=6.0",
+    "pandas>=2.0",
+    "openai>=1.30",
+    "openpyxl>=3.1",          # il workbook delle annotazioni e' .xlsx
+    "jsonschema>=4.0",       # validazione dell'output strutturato dei modelli
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+argfallacy = "argfallacy.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/argfallacy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

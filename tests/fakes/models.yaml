@@ -1,0 +1,55 @@
+# Modelli finti per i test. Nessuno di questi raggiunge la rete: il backend e' tests/fakes/llm.py.
+# Stanno qui e non in serving/models.yaml, cosi' il file vero contiene solo modelli veri e i
+# test non si rompono quando si compilano le revisioni.
+
+version: "test"
+
+models:
+
+  fake:
+    tier: 1
+    model_id: "fake-model"
+    revision: "fake-revision-0001"
+    display_name: "Backend finto"
+    enabled: true
+    supports_logprobs: true
+    is_reasoning: false
+    reasoning: {chat_template_kwargs: {enable_thinking: false}}
+    max_concurrency: 4
+    notes: "Il modello di tutti i test del client."
+
+  fake_unpinned:
+    tier: 1
+    model_id: "fake-model"
+    revision: "PLACEHOLDER"
+    display_name: "Backend finto senza revisione"
+    enabled: true
+    supports_logprobs: true
+    is_reasoning: false
+    reasoning: {}
+    max_concurrency: 4
+    notes: "Revisione ancora segnaposto: ask() deve rifiutarsi."
+
+  fake_effort:
+    tier: 2
+    model_id: "fake-model"
+    revision: "fake-revision-0001"
+    display_name: "Backend finto con reasoning effort"
+    enabled: true
+    supports_logprobs: true
+    is_reasoning: true
+    reasoning: {reasoning_effort: low}
+    max_concurrency: 4
+    notes: "Come gpt oss: il ragionamento non si spegne, si abbassa."
+
+  fake_disabled:
+    tier: 3
+    model_id: "fake-model"
+    revision: "fake-revision-0001"
+    display_name: "Backend finto spento"
+    enabled: false
+    supports_logprobs: false
+    is_reasoning: false
+    reasoning: {}
+    max_concurrency: 1
+    notes: "Spento: nessun piano lo deve accettare."

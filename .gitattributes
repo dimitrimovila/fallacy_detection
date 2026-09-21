@@ -1,0 +1,9 @@
+# Fini di riga fissi. Il cluster e' Linux e l'hash di schemes/ registrato nel manifest di
+# ogni esecuzione non deve dipendere dal sistema operativo su cui il repository e' stato clonato.
+*.csv   text eol=lf
+*.jsonl text eol=lf
+*.md    text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.json  text eol=lf
+*.py    text eol=lf

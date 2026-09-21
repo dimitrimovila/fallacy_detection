@@ -1,0 +1,73 @@
+scheme_id: slippery_slope
+name: Slippery slope argument
+
+schema: |
+  A0 is up for consideration as a proposal that seems initially like something that
+  should be brought about.
+  Bringing about A0 would likely have A1 as a consequence, which would in turn lead
+  to A2, and so on, through a sequence to An.
+  An is a horrible (disastrous) outcome.
+  Therefore, A0 should not be brought about.
+
+identification_question: >-
+  The text contains an argument claiming that if you allow or carry out a
+  particular action (even if it's small or seemingly harmless), it will inevitably
+  lead (through a chain of intermediate consequences) to an extreme or catastrophic
+  final outcome?
+
+variables:
+  A0: the initial proposal
+  "A1, A2": the intermediate consequences in the chain from A0 to An
+  An: the final, disastrous outcome
+
+default_answer_space: ["yes", "no"]
+
+critical_questions:
+  - id: CQ1
+    text: >-
+      Do any of the causal links in the chain lack sufficient evidence to support
+      the claim that they will (might, must) occur?
+  - id: CQ2
+    text: Is the outcome An as bad as suggested?
+  - id: CQ3
+    text: >-
+      Is it possible to provide a precise definition that removes the ambiguity to
+      such an extent as to halt the decline?
+  - id: CQ4
+    text: >-
+      Are there other steps required to fill in the sequence of events and make it
+      plausible?
+  - id: CQ4.1
+    text: Would these steps lead to a different conclusion?
+  - id: CQ5
+    text: >-
+      Are there weak links in the sequence, where specific critical questions should
+      be asked on whether one event will really lead to another?
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "yes": {terminal: slippery_slope}
+      "no":  {node: CQ2}
+    CQ2:
+      "yes": {node: CQ3}
+      "no":  {terminal: slippery_slope, reconvergence: true}
+    CQ3:
+      "yes": {terminal: definist_fallacy}
+      "no":  {node: CQ4}
+    CQ4:
+      "yes": {node: CQ4.1}
+      "no":  {node: CQ5}
+    CQ4.1:
+      "yes": {terminal: slippery_slope, reconvergence: true}
+      "no":  {node: CQ5, reconvergence: true}
+    CQ5:
+      # Testo della domanda ripreso verbatim dalla tesi. Nel diagramma della tesi gli
+      # archi sono invertiti rispetto al senso della domanda e rispetto al Commento
+      # dell'autore, che dice: "Una risposta negativa, ovvero l'assenza di anelli deboli,
+      # conduce alla conclusione di un'argomentazione valida [...] Se invece esistono
+      # anelli deboli, l'argomentazione rimane viziata". Qui sono corretti: "yes"
+      # significa che esistono anelli deboli, quindi la fallacia.
+      "yes": {terminal: slippery_slope, reconvergence: true}
+      "no":  {terminal: good_argumentation}

@@ -1,0 +1,61 @@
+scheme_id: example
+name: Argument from example
+
+schema: |
+  In this particular case, the individual a has property F and also property G.
+  a is typical of things that have F and may or may not also have G.
+  Therefore, generally, if x has property F then x also has property G.
+
+identification_question: >-
+  Does the text use an example that is considered appropriate to draw a
+  conclusion on the main topic?
+
+variables:
+  a: the individual case cited as example
+  F: the property shared with the domain of the generalization
+  G: the property transferred to the conclusion
+  x: any individual the generalization ranges over
+
+default_answer_space: ["yes", "no"]
+
+critical_questions:
+  - id: CQ1
+    text: Is the statement illustrated by the example clearly false or unrealistic?
+  - id: CQ2
+    text: Is the example typical of the kinds of cases that the generalization ranges over?
+  - id: CQ2.1
+    text: >-
+      Was the example cited selected in a clearly biased and malicious manner in
+      order to undermine the validity of the generalization?
+  - id: CQ2.2
+    text: >-
+      Is the example given so specific that it is statistically unrepresentative
+      and therefore cannot be used to support the generalisation?
+  - id: CQ2.3
+    text: Is the example given so extreme that it invalidates the generalisation?
+  - id: CQ3
+    text: >-
+      Does the example cited have characteristics that make it too different from
+      the generalisation drawn in the conclusion?
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "yes": {terminal: false_attribution}
+      "no":  {node: CQ2}
+    CQ2:
+      "yes": {node: CQ3}
+      "no":  {node: CQ2.1}
+    CQ2.1:
+      "yes": {terminal: cherry_picking}
+      "no":  {node: CQ2.2}
+    CQ2.2:
+      "yes": {terminal: hasty_generalization}
+      "no":  {node: CQ2.3}
+    CQ2.3:
+      "yes": {terminal: appeal_to_extremes}
+      "no":  {node: CQ3, reconvergence: true}
+    CQ3:
+      "yes": {terminal: weak_analogy}
+      "no":  {terminal: good_argumentation}

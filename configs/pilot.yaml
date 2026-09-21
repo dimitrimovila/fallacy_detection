@@ -1,0 +1,23 @@
+# Il pilota: 50 item, due modelli, cinque campioni.
+# `argfallacy run plan configs/pilot.yaml` conta le chiamate senza farne nessuna.
+
+name: pilot
+
+items:
+  n: 50
+  seed: 20260911
+  # stratificato per schema gold, in proporzione, con almeno 4 item per schema
+  min_per_scheme: 4
+  # `none` non ha CQ da porre: fuori dal pilota
+  exclude_none_scheme: true
+
+stages: [stage1, stage2]
+scheme_condition: gold
+models: [qwen3_6_27b, gemma4_31b]
+samples: 5
+prompt_version: v1
+
+generation:
+  temperature_sample0: 0.0
+  temperature_rest: 0.7
+  max_tokens: 512

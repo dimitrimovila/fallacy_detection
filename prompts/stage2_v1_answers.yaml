@@ -1,0 +1,45 @@
+# Cosa significa ogni risposta ammessa, nel prompt di stadio due. Versione v1.
+#
+# Fa parte del prompt quanto stage2_v1.md e ne condivide la versione: dopo la prima
+# esecuzione su un modello vero, ogni modifica qui crea una versione nuova.
+# Le chiavi yes e no vanno virgolettate: in YAML 1.1 sono booleani.
+#
+# Nessun riferimento alle etichette di fallacia: una definizione dice cosa chiede la
+# domanda, mai dove porta la risposta nel diagramma. Le note degli YAML degli schemi
+# non entrano nel prompt per la stessa ragione.
+
+prompt_version: stage2_v1
+
+# Significato di yes e no per ogni CQ che non ha una voce in `per_cq`.
+default:
+  "yes": the text supports answering yes to the question
+  "no": the text supports answering no to the question
+
+# La terza opzione della tesi di Enrico, resa operativa. {options} diventa le alternative
+# vere della domanda, nell'ordine in cui il prompt le elenca.
+cannot_be_determined: >-
+  use this answer only if the text contains no information at all on the point
+  being asked about. If the text contains partial information, answer {options}
+  and lower your confidence.
+
+# La quarta opzione, aggiunta dal codice esattamente come cannot_be_determined: mai
+# nell'answer_space di uno schema. Distingue l'assenza dell'oggetto della domanda
+# dall'incertezza su come stia, che resta cannot_be_determined.
+na: >-
+  use this answer only if the question has no object in this text: the thing
+  it asks about does not exist in the argument. If it exists but you cannot
+  tell how it stands, answer cannot_be_determined instead and lower your
+  confidence.
+
+# Le CQ con risposte diverse da yes e no. Le opzioni si elencano nell'ordine scritto qui,
+# che e' l'ordine in cui la domanda le nomina. L'insieme deve coincidere con
+# l'answer_space del diagramma, altrimenti il rendering fallisce.
+per_cq:
+  ad_hominem:
+    CQ1:
+      negative: >-
+        the opinion expressed about the other person is negative and intended to
+        undermine their credibility
+      positive: >-
+        the opinion expressed about the other person is positive and intended to
+        enhance their credibility

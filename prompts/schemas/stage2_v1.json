@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "stage2_v1",
+  "description": "Stage two: one critical question, one answer. The enum of `answer` is rewritten per critical question from the answer_space of the scheme YAML, plus cannot_be_determined; the value here is the default yes/no case.",
+  "type": "object",
+  "properties": {
+    "answer": {
+      "type": "string",
+      "enum": [
+        "yes",
+        "no",
+        "cannot_be_determined",
+        "na"
+      ]
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "justification": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "answer",
+    "confidence",
+    "justification"
+  ],
+  "additionalProperties": false
+}

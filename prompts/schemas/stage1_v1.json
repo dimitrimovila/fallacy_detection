@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "stage1_v1",
+  "description": "Stage one: which Walton scheme the text instantiates, or none.",
+  "type": "object",
+  "properties": {
+    "scheme": {
+      "type": "string",
+      "enum": [
+        "ad_hominem",
+        "analogy",
+        "cause_to_effect",
+        "correlation_to_cause",
+        "example",
+        "expert_opinion",
+        "none",
+        "popular_opinion",
+        "slippery_slope"
+      ]
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "justification": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "scheme",
+    "confidence",
+    "justification"
+  ],
+  "additionalProperties": false
+}

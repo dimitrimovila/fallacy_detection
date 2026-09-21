@@ -1,0 +1,38 @@
+# Esecuzioni: JSONL grezzi e manifest, mai versionati.
+# Il codice li rigenera, e sono grandi. Cio' che finisce in tesi passa da argfallacy.eval.
+runs/
+
+# Dati grezzi: stanno fuori dal repository e appartengono al gruppo di ricerca.
+# Sotto data/ entrano in git solo items.csv e annotations.csv.
+*.xlsx
+*.rar
+
+# Segreti: chiavi API e token si leggono da variabili d'ambiente.
+.env
+.env.*
+
+# File temporanei di verifica: tutti qui, mai sparsi nel repository.
+scratch/
+
+# Cache e artefatti di build
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+.coverage
+htmlcov/
+
+# Ambienti virtuali
+.venv/
+venv/
+env/
+
+# Sistema ed editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,77 @@
+scheme_id: expert_opinion
+name: Argument from expert opinion
+
+schema: |
+  S is an authoritative source (whether individual or collective) in the domain D.
+  S asserts that A is known to be true.
+  A is in D.
+  (A implies the conclusion C)
+  Therefore A (and/or C) may (plausibly) be taken as true.
+
+identification_question: >-
+  Does this text use the opinion of a (supposedly) authoritative source as
+  evidence to support a claim?
+
+variables:
+  S: the source
+  D: the domain
+  A: the assertion made by the source
+  C: the conclusion drawn by the arguer
+
+default_answer_space: ["yes", "no"]
+
+critical_questions:
+  - id: CQ1
+    text: >-
+      Is S in a position to know whether A is true or false, or is S a genuine
+      expert recognised by the community of experts in D?
+    note: >-
+      Disjunctive: yes if either condition holds. Kept as a single node — splitting
+      competence from peer recognition would turn one tolerant check into two
+      independent ways of failing.
+  - id: CQ2
+    text: >-
+      The fact that S has asserted (or claimed) A is used as the sole supporting
+      consideration for the truth of the conclusion, without providing any other
+      type of argument?
+  - id: CQ3
+    text: Did S really assert (or claim) A as true?
+  - id: CQ3.1
+    text: Is S taking part in the discussion?
+  - id: CQ4
+    text: >-
+      Is there a conclusion C that differs from A but uses A to justify itself?
+    note: >-
+      The guard is now its own node. `no` covers the case C = A, where the arguer
+      only reports the assertion: the check is not applicable and the path exits
+      to good_argumentation without passing through CQ4.1. The `na` answer space
+      of the previous version is therefore no longer needed.
+  - id: CQ4.1
+    text: Is conclusion C actually implied by A?
+    note: >-
+      C is never reconstructed from context. When C is left implicit (enthymeme)
+      the diagram gives no rule, so the case is out of scope rather than answered
+      — judging an inferential step nobody wrote would manufacture Non Sequitur
+      verdicts out of reconstruction error.
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "yes": {node: CQ2}
+      "no":  {terminal: irrelevant_authority}
+    CQ2:
+      "yes": {terminal: appeal_to_authority}
+      "no":  {node: CQ3}
+    CQ3:
+      "yes": {node: CQ4}
+      "no":  {node: CQ3.1}
+    CQ3.1:
+      "yes": {terminal: strawman}
+      "no":  {terminal: false_attribution}
+    CQ4:
+      "yes": {node: CQ4.1}
+      "no":  {terminal: good_argumentation}
+    CQ4.1:
+      "yes": {terminal: good_argumentation, reconvergence: true}
+      "no":  {terminal: non_sequitur}

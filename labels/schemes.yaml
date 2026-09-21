@@ -1,0 +1,55 @@
+# Dizionario delle etichette di schema. Versione 1.1.
+# Otto schemi della tesi di Enrico Bergamasco piu' none (nessuno schema presente).
+# Gli alias vengono dai results.csv di Eleni (predicted_scheme, gold_scheme), dai fogli del workbook
+# e dai titoli dei diagrammi. Confronto dopo normalizzazione leggera (minuscole, spazi).
+
+version: "1.1"
+
+schemes:
+
+  example:
+    name: "Argument from Example"
+    aliases: ["Argument from Example", "Example", "Arg. from Example"]
+
+  analogy:
+    name: "Argument from Analogy"
+    aliases: ["Argument from Analogy", "Analogy"]
+
+  cause_to_effect:
+    name: "Argument from Cause to Effect"
+    aliases: ["Argument from Cause to Effect", "Cause to Effect", "cause_to_effect"]
+
+  correlation_to_cause:
+    name: "Argument from Correlation to Cause"
+    aliases: ["Argument from Correlation to Cause", "Correlation to Cause", "correlation_to_cause",
+              "Correlation to effect"]
+    note: "Correlation to effect e' un lapsus di Enrico nel workbook (9 righe di cause_to_effect): non esiste uno schema con quel nome."
+
+  ad_hominem:
+    name: "Ad Hominem"
+    aliases: ["Ad Hominem", "Argument ad hominem", "ad_hominem"]
+    note: "Unico schema senza terminale Good Argumentation."
+
+  expert_opinion:
+    name: "Argument from Expert Opinion"
+    aliases: ["Argument from Expert Opinion", "Expert Opinion", "expert_opinion"]
+
+  popular_opinion:
+    name: "Argument from Popular Opinion"
+    aliases: ["Argument from Popular Opinion", "Popular Opinion", "popular_opinion"]
+    note: "Il foglio del workbook si chiama new_ad_populum ma lo schema e' popular opinion. Ad populum e' una fallacia, non uno schema: non aggiungerlo qui."
+
+  slippery_slope:
+    name: "Slippery Slope"
+    aliases: ["Slippery Slope", "Slippery Slope Argument", "slippery_slope"]
+
+  none:
+    name: "No scheme"
+    aliases: ["none", "no", "no scheme", "nessuno", "nessuno schema"]
+    note: "Schema giudicato assente da un annotatore del workbook. Nessun item del test set ha questo gold."
+
+special_values:
+  # SNI compare nelle colonne di schema del workbook accanto a YES e NO, e vale idk,
+  # non `none`.
+  idk: ["?", "??", "idk", "IDK", "dubbio", "SNI"]
+  missing: ["", "nan", "NaN", "n/a", "N/A"]

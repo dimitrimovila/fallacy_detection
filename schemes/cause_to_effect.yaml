@@ -1,0 +1,63 @@
+scheme_id: cause_to_effect
+name: Argument from cause to effect
+
+schema: |
+  Generally, if A occurs, then B will (might) occur.
+  In this case, A occurs (might occur).
+  Therefore in this case, B will (might) occur.
+
+identification_question: >-
+  Does this text use a known causal relationship as a basis for predicting or
+  explaining a future or past event?
+
+variables:
+  A: the putative cause
+  B: the putative effect
+
+default_answer_space: ["yes", "no"]
+
+critical_questions:
+  - id: CQ1
+    text: >-
+      Is the implication that A leads to B (regardless of what judgement one
+      might make about it) logically sound?
+  - id: CQ2
+    text: >-
+      Is the evidence cited (if there is any) strong enough to warrant the causal
+      generalization?
+  - id: CQ2.1
+    text: >-
+      Was the evidence cited selected in a clearly biased and malicious manner in
+      order to undermine the validity of the generalization?
+  - id: CQ2.2
+    text: >-
+      Is the evidence cited insufficient in quantitative terms to support the
+      generalisation?
+  - id: CQ3
+    text: Is the relationship between cause and effect based solely on temporal sequence?
+  - id: CQ4
+    text: >-
+      Are there other causal factors that clearly represent the real reason behind
+      the occurrence of the effect?
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "yes": {node: CQ2}
+      "no":  {terminal: false_premise}
+    CQ2:
+      "yes": {node: CQ3}
+      "no":  {node: CQ2.1}
+    CQ2.1:
+      "yes": {terminal: cherry_picking}
+      "no":  {node: CQ2.2}
+    CQ2.2:
+      "yes": {terminal: hasty_generalization}
+      "no":  {node: CQ3, reconvergence: true}
+    CQ3:
+      "yes": {terminal: post_hoc}
+      "no":  {node: CQ4}
+    CQ4:
+      "yes": {terminal: causal_reductionism}
+      "no":  {terminal: good_argumentation}
