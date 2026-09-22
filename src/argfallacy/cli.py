@@ -21,10 +21,10 @@ def _cmd_annotations_update(args: argparse.Namespace) -> int:
     try:
         counts = update(workbook)
     except SchemeError as error:
-        raise SystemExit(f"{error}\nannotations.csv non e' stato toccato.") from None
+        raise SystemExit(f"{error}\nannotations.csv was not touched.") from None
     for sheet, (before, after) in counts.items():
-        print(f"{sheet}: {before} righe prima, {after} adesso")
-    print(f"scritto {ANNOTATIONS_FILE}")
+        print(f"{sheet}: {before} rows before, {after} now")
+    print(f"wrote {ANNOTATIONS_FILE}")
     return 0
 
 
@@ -36,19 +36,19 @@ def _cmd_run_plan(args: argparse.Namespace) -> int:
     calls = plan(config, items)
     with ResponseCache() as cache:
         report = summarise_plan(calls, cache)
-    print(f"configurazione : {config.name}")
-    print(f"item           : {len(items)}")
-    print(f"chiamate       : {report['calls']}")
-    print(f"gia' in cache  : {report['cached']}")
-    print(f"da fare        : {report['missing']}")
+    print(f"configuration  : {config.name}")
+    print(f"items          : {len(items)}")
+    print(f"calls          : {report['calls']}")
+    print(f"already cached : {report['cached']}")
+    print(f"to do          : {report['missing']}")
     print()
-    print(f"{'modello':<18}{'totali':>8}{'cache':>8}{'da fare':>9}{'conc.':>7}{'minuti':>9}")
+    print(f"{'model':<18}{'total':>8}{'cache':>8}{'to do':>9}{'conc.':>7}{'minutes':>9}")
     print("-" * 59)
     for name, entry in sorted(report["per_model"].items()):
         print(f"{name:<18}{entry['total']:>8}{entry['cached']:>8}{entry['missing']:>9}"
               f"{entry['max_concurrency']:>7}{entry['estimated_minutes']:>9}")
     print()
-    print("Nessuna chiamata fatta: `plan` non chiama niente.")
+    print("No call made: `plan` calls nothing.")
     return 0
 
 
@@ -59,10 +59,10 @@ def _cmd_run_execute(args: argparse.Namespace) -> int:
     items = select_items(config, load_items(args.items))
     manifest = execute(config, items, run_id=args.run_id)
     print(f"run_id          : {manifest['run_id']}")
-    print(f"chiamate         : previste {manifest['calls_planned']}, "
-          f"eseguite {manifest['calls_executed']}, "
-          f"da cache {manifest['calls_from_cache']}, "
-          f"fallite {manifest['calls_failed']}")
+    print(f"calls           : planned {manifest['calls_planned']}, "
+          f"executed {manifest['calls_executed']}, "
+          f"from cache {manifest['calls_from_cache']}, "
+          f"failed {manifest['calls_failed']}")
     return 1 if manifest["calls_failed"] else 0
 
 

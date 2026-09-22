@@ -1,5 +1,5 @@
-# Fini di riga fissi. Il cluster e' Linux e l'hash di schemes/ registrato nel manifest di
-# ogni esecuzione non deve dipendere dal sistema operativo su cui il repository e' stato clonato.
+# Fixed line endings. The cluster runs Linux, and the hash of schemes/ recorded in the manifest of
+# every run must not depend on the operating system the repository was cloned on.
 *.csv   text eol=lf
 *.jsonl text eol=lf
 *.md    text eol=lf

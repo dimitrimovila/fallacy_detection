@@ -56,7 +56,7 @@ ANSWER_KEY = "answer"
 
 FAKE = "fake"
 FAKE_SPEC = {
-    "model_id": "fake-model", "display_name": "Backend finto", "revision": "fake",
+    "model_id": "fake-model", "display_name": "Fake backend", "revision": "fake",
     "tier": 0, "reasoning": {},
 }
 THINK_END = "</think>"
@@ -69,9 +69,9 @@ def build_backend(model_name: str, fake_reasoning: bool):
         sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))
         from fakes.llm import FakeBackend
 
-        print("Backend finto: nessuna chiamata di rete.")
+        print("Fake backend: no network calls.")
         if fake_reasoning:
-            print("Con testo di ragionamento e una bozza di risposta prima del JSON.")
+            print("With reasoning text and a draft answer before the JSON.")
         print()
         return FakeBackend(reasoning=fake_reasoning)
     base_url, _ = endpoint()
@@ -101,16 +101,16 @@ def reasoning_tokens(response) -> tuple[int, str]:
     message = ((response.raw or {}).get("choices") or [{}])[0].get("message") or {}
     thinking = message.get("reasoning_content") or message.get("reasoning")
     if thinking:
-        return len(str(thinking).split()), "parole di reasoning_content, non token"
+        return len(str(thinking).split()), "words of reasoning_content, not tokens"
 
     tokens = (response.logprobs or {}).get("content") or []
     for index, entry in enumerate(tokens):
         if THINK_END in str(entry.get("token", "")):
-            return index + 1, f"token fino a {THINK_END}"
+            return index + 1, f"tokens up to {THINK_END}"
     if THINK_END in (response.content or ""):
         head = (response.content or "").split(THINK_END)[0]
-        return len(head.split()), f"parole prima di {THINK_END}, non token"
-    return 0, "niente ragionamento nella risposta"
+        return len(head.split()), f"words before {THINK_END}, not tokens"
+    return 0, "no reasoning in the response"
 
 
 def naive_position(logprobs, options) -> int | None:
@@ -141,11 +141,11 @@ def main(argv: list[str] | None = None) -> int:
     # entries that answer without thinking first
     max_tokens = args.max_tokens or spec.get("max_tokens") or DEFAULT_MAX_TOKENS
 
-    print(f"Modello   : {spec.get('display_name', args.model)}  ({spec['model_id']})")
-    print(f"Revisione : {spec.get('revision')}   fascia: {spec.get('tier')}")
+    print(f"Model     : {spec.get('display_name', args.model)}  ({spec['model_id']})")
+    print(f"Revision  : {spec.get('revision')}   tier: {spec.get('tier')}")
     print(f"Reasoning : {json.dumps(spec.get('reasoning') or {})}")
-    print(f"Domanda   : {PROBE_SCHEME} {PROBE_CQ}")
-    print(f"Opzioni   : {', '.join(rendered.answer_options)}")
+    print(f"Question  : {PROBE_SCHEME} {PROBE_CQ}")
+    print(f"Options   : {', '.join(rendered.answer_options)}")
     print("-" * 72)
 
     request = Request(
@@ -167,60 +167,60 @@ def main(argv: list[str] | None = None) -> int:
         backend = build_backend(args.model, args.fake_reasoning)
         response = ask(request, backend=backend)
     except SchemeError as refusal:
-        print(f"RIFIUTATO: {refusal}")
+        print(f"REFUSED: {refusal}")
         return 2
 
     if response.error:
-        print(f"ERRORE: {response.error}")
+        print(f"ERROR: {response.error}")
         return 1
 
-    print(f"Risposta  : {response.content}")
-    print(f"Latenza   : {response.latency_s:.2f} s")
-    print(f"Fine      : {response.finish_reason}")
+    print(f"Response  : {response.content}")
+    print(f"Latency   : {response.latency_s:.2f} s")
+    print(f"Finish    : {response.finish_reason}")
     if response.usage:
-        print(f"Token     : {json.dumps(response.usage)}")
+        print(f"Tokens    : {json.dumps(response.usage)}")
     if thinking_on(spec):
         count, source = reasoning_tokens(response)
-        print(f"Ragionam. : {count} token ({source})")
+        print(f"Thinking  : {count} tokens ({source})")
         if count == 0:
-            print("ATTENZIONE: questa voce chiede il ragionamento e non ce n'e' stato. "
-                  "Controlla che il server passi `enable_thinking` al template e che sia "
-                  "avviato con il parser di ragionamento indicato nelle note del modello.")
+            print("WARNING: this entry asks for reasoning and there was none. "
+                  "Check that the server passes `enable_thinking` to the template and that it "
+                  "was launched with the reasoning parser given in the model's notes.")
         if response.finish_reason == "length":
-            print(f"ATTENZIONE: risposta troncata a {max_tokens} token "
-                  f"(finish_reason = length): il ragionamento ha consumato lo spazio del "
-                  f"JSON. Alza `max_tokens` della voce in serving/models.yaml.")
+            print(f"WARNING: response cut off at {max_tokens} tokens "
+                  f"(finish_reason = length): the reasoning used up the room for the "
+                  f"JSON. Raise the entry's `max_tokens` in serving/models.yaml.")
     print()
 
     if not response.logprobs:
-        print("LOGPROB NON DISPONIBILI.")
-        print("Metti `supports_logprobs: false` per questo modello in serving/models.yaml.")
-        print("`p_logprob` restera' vuota e il manifest lo dichiarera'.")
+        print("LOGPROBS NOT AVAILABLE.")
+        print("Set `supports_logprobs: false` for this model in serving/models.yaml.")
+        print("`p_logprob` will stay empty and the manifest will say so.")
         return 0
 
     content = response.logprobs.get("content") or []
     position = answer_position(response.logprobs, rendered.answer_options, ANSWER_KEY)
     if position is None:
-        print("Blocco logprobs presente ma nessun token di risposta dentro il JSON finale.")
+        print("Logprobs block present but no answer token inside the final JSON.")
         return 1
 
     token = str(content[position].get("token"))
     parsed = parse_content(response.content) or {}
     answer = str(parsed.get(ANSWER_KEY, ""))
     agrees = bool(answer) and answer.startswith(token.strip().strip('"').strip())
-    print(f"Token della risposta: {token!r} alla posizione {position} di {len(content)} "
-          f"(dentro il JSON finale, dopo \"{ANSWER_KEY}\")")
-    print(f"Coerente con la risposta del JSON ({answer!r}): {'si' if agrees else 'NO'}")
+    print(f"Answer token: {token!r} at position {position} of {len(content)} "
+          f"(inside the final JSON, after \"{ANSWER_KEY}\")")
+    print(f"Consistent with the answer in the JSON ({answer!r}): {'yes' if agrees else 'NO'}")
 
     naive = naive_position(response.logprobs, rendered.answer_options)
     if naive is not None and naive != position:
-        print(f"ATTENZIONE: il primo token che sembra una risposta e' alla posizione {naive} "
-              f"({str(content[naive].get('token'))!r}), prima del JSON. Leggere quello "
-              f"avrebbe dato le probabilita' del ragionamento, non della risposta.")
+        print(f"WARNING: the first token that looks like an answer is at position {naive} "
+              f"({str(content[naive].get('token'))!r}), before the JSON. Reading that one "
+              f"would have given the probabilities of the reasoning, not of the answer.")
     print()
 
     entries = content[position].get("top_logprobs") or []
-    print(f"Alternative alla posizione {position} (primo token di `{ANSWER_KEY}`):")
+    print(f"Alternatives at position {position} (first token of `{ANSWER_KEY}`):")
     print(f"  {'token':<24}{'logprob':>12}{'p':>10}")
     print("  " + "-" * 44)
     for entry in sorted(entries, key=lambda e: -e.get("logprob", -math.inf))[:20]:
@@ -228,12 +228,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  {str(entry.get('token'))!r:<24}{logprob:>12.4f}{math.exp(logprob):>10.4f}")
 
     masses, partial = logprob_masses(response.logprobs, rendered.answer_options, ANSWER_KEY)
-    print("\nRinormalizzato sulle risposte ammesse:")
+    print("\nRenormalised over the admitted answers:")
     for option in rendered.answer_options:
         print(f"  {option:<24}{masses.get(option, 0.0):>10.4f}")
     if partial:
-        print("\nATTENZIONE: una risposta ammessa non compare fra i top_logprobs.")
-        print("Le righe cosi' vengono marcate `logprob_partial` dal parser.")
+        print("\nWARNING: an admitted answer does not appear among the top_logprobs.")
+        print("The parser marks such rows `logprob_partial`.")
     return 0 if agrees else 1
 
 

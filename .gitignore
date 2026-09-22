@@ -1,20 +1,20 @@
-# Esecuzioni: JSONL grezzi e manifest, mai versionati.
-# Il codice li rigenera, e sono grandi. Cio' che finisce in tesi passa da argfallacy.eval.
+# Runs: raw JSONL and manifests, never versioned.
+# The code regenerates them, and they are large. Anything in the thesis comes from argfallacy.eval.
 runs/
 
-# Dati grezzi: stanno fuori dal repository e appartengono al gruppo di ricerca.
-# Sotto data/ entrano in git solo items.csv e annotations.csv.
+# Raw data: kept outside the repository, and it belongs to the research group.
+# Under data/ only items.csv and annotations.csv go into git.
 *.xlsx
 *.rar
 
-# Segreti: chiavi API e token si leggono da variabili d'ambiente.
+# Secrets: API keys and tokens are read from environment variables.
 .env
 .env.*
 
-# File temporanei di verifica: tutti qui, mai sparsi nel repository.
+# Temporary verification files: all here, never scattered around the repository.
 scratch/
 
-# Cache e artefatti di build
+# Caches and build artefacts
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -26,12 +26,12 @@ dist/
 .coverage
 htmlcov/
 
-# Ambienti virtuali
+# Virtual environments
 .venv/
 venv/
 env/
 
-# Sistema ed editor
+# System and editor
 .DS_Store
 Thumbs.db
 .idea/

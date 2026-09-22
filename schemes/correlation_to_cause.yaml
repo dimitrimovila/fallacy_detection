@@ -64,10 +64,10 @@ graph:
       "yes": {terminal: causal_reductionism}
       "no":  {node: CQ5}
     CQ5:
-      # Testo della domanda ripreso verbatim dalla tesi. Nel diagramma della tesi
-      # (p. stampata 66) gli archi sono invertiti rispetto al senso della domanda e
-      # rispetto al Commento dell'autore. Qui sono corretti: "yes" significa che si
-      # puo' dimostrare che il mutamento NON dipende dalla definizione, quindi
-      # l'argomento regge.
+      # Question text taken verbatim from the thesis. In the thesis diagram
+      # (printed p. 66) the arcs are inverted with respect to the sense of the question and
+      # to the author's Comment. Here they are corrected: "yes" means that it
+      # can be shown that the change does NOT depend on the definition, so
+      # the argument holds.
       "yes": {terminal: good_argumentation}
       "no":  {terminal: definist_fallacy}

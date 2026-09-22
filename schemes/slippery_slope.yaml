@@ -63,11 +63,13 @@ graph:
       "yes": {terminal: slippery_slope, reconvergence: true}
       "no":  {node: CQ5, reconvergence: true}
     CQ5:
-      # Testo della domanda ripreso verbatim dalla tesi. Nel diagramma della tesi gli
-      # archi sono invertiti rispetto al senso della domanda e rispetto al Commento
-      # dell'autore, che dice: "Una risposta negativa, ovvero l'assenza di anelli deboli,
+      # Question text taken verbatim from the thesis. In the thesis diagram the
+      # arcs are inverted with respect to the sense of the question and to the author's
+      # Comment, which says: "Una risposta negativa, ovvero l'assenza di anelli deboli,
       # conduce alla conclusione di un'argomentazione valida [...] Se invece esistono
-      # anelli deboli, l'argomentazione rimane viziata". Qui sono corretti: "yes"
-      # significa che esistono anelli deboli, quindi la fallacia.
+      # anelli deboli, l'argomentazione rimane viziata" [A negative answer, that is, the
+      # absence of weak links, leads to the conclusion of a valid argument ... If instead
+      # there are weak links, the argument remains flawed]. Here they are corrected: "yes"
+      # means that there are weak links, hence the fallacy.
       "yes": {terminal: slippery_slope, reconvergence: true}
       "no":  {terminal: good_argumentation}

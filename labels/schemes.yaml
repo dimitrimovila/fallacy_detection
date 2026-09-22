@@ -1,7 +1,7 @@
-# Dizionario delle etichette di schema. Versione 1.1.
-# Otto schemi della tesi di Enrico Bergamasco piu' none (nessuno schema presente).
-# Gli alias vengono dai results.csv di Eleni (predicted_scheme, gold_scheme), dai fogli del workbook
-# e dai titoli dei diagrammi. Confronto dopo normalizzazione leggera (minuscole, spazi).
+# Dictionary of the scheme labels. Version 1.1.
+# Eight schemes from Enrico Bergamasco's thesis plus none (no scheme present).
+# The aliases come from Eleni's results.csv (predicted_scheme, gold_scheme), the workbook sheets
+# and the titles of the diagrams. Compared after light normalization (lower case, whitespace).
 
 version: "1.1"
 
@@ -49,7 +49,7 @@ schemes:
     note: "Schema giudicato assente da un annotatore del workbook. Nessun item del test set ha questo gold."
 
 special_values:
-  # SNI compare nelle colonne di schema del workbook accanto a YES e NO, e vale idk,
-  # non `none`.
+  # SNI appears in the scheme columns of the workbook next to YES and NO, and means idk,
+  # not `none`.
   idk: ["?", "??", "idk", "IDK", "dubbio", "SNI"]
   missing: ["", "nan", "NaN", "n/a", "N/A"]

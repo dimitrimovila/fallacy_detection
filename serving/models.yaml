@@ -1,38 +1,39 @@
-# I modelli e come si servono. Versione 3.
+# The models and how they are served. Version 3.
 #
-# Sei modelli in tre fasce (`tier`), in otto voci: Qwen3.8 e Gemma 4 ne hanno due
-# ciascuno, con il ragionamento spento e acceso.
-#   tier 1: il pilota e l'esecuzione principale. Tre famiglie diverse, per la combinazione.
-#   tier 2: dopo il pilota. gpt oss 120b fa coppia con il 20b della fascia 1 per l'effetto
-#           taglia; K2 Horizon 32B porta una quarta famiglia.
-#   tier 3: commerciale, senza logprob, spento di default. Mai modello principale.
+# Six models in three tiers (`tier`), in eight entries: Qwen3.8 and Gemma 4 have two
+# each, with reasoning off and on.
+#   tier 1: the pilot and the main run. Three different families, for the combination.
+#   tier 2: after the pilot. gpt oss 120b pairs with the 20b of tier 1 for the size
+#           effect; K2 Horizon 32B brings a fourth family.
+#   tier 3: commercial, no logprobs, disabled by default. Never a main model.
 #
-# `model_id`  il nome con cui vLLM serve il modello: e' il repository passato a `vllm serve`.
-# `revision`  il commit Hugging Face del repository, lo stesso passato a `vllm serve
-#             --revision`. >>> DA COMPLETARE <<< Finche' contiene PLACEHOLDER,
-#             `ask()` si rifiuta di partire: senza commit fissato il modello puo' cambiare
-#             sotto i piedi fra il pilota e l'esecuzione completa, e i numeri non si
-#             riproducono. Per il modello commerciale e' lo snapshot datato dell'API.
-# `reasoning` come si governa il ragionamento. `chat_template_kwargs` finisce in
-#             `extra_body` della chiamata; `reasoning_effort` e' un parametro della chiamata.
-#             Qwen3.8 e Gemma 4 lo spengono e lo accendono sugli stessi pesi, quindi hanno
-#             due voci con lo stesso `model_id` e la stessa `revision`: la voce base con
-#             `enable_thinking: false`, la voce `_think` con `enable_thinking: true` e il
-#             livello di default del template. Le due voci si servono con due avvii
-#             distinti del server, che differiscono per il parser di ragionamento: le note
-#             di ogni voce dicono con quali flag. Per gpt oss non si spegne del tutto e si
-#             tiene al minimo, quindi le sue risposte non nascono nelle stesse condizioni
-#             degli altri modelli. Per K2 Horizon non si spegne, e il livello va ancora scelto.
-# `max_tokens` facoltativo: vale al posto di quello della configurazione. Serve alle voci
-#             `_think`, che scrivono il ragionamento prima del JSON e con i 512 della
-#             configurazione verrebbero troncate.
-# `enabled`   un modello spento non entra in nessun piano.
-# `supports_logprobs`  il server restituisce i logprob dei token.
-# `is_reasoning`       il modello puo' ragionare prima di rispondere.
-# `max_concurrency`    quante chiamate simultanee al massimo.
+# `model_id`  the name vLLM serves the model under: the repository passed to `vllm serve`.
+# `revision`  the Hugging Face commit of the repository, the same one passed to `vllm serve
+#             --revision`. >>> TO BE COMPLETED <<< While it holds PLACEHOLDER,
+#             `ask()` refuses to start: without a pinned commit the model can change
+#             underneath us between the pilot and the full run, and the numbers do not
+#             reproduce. For the commercial model it is the dated snapshot of the API.
+# `reasoning` how the reasoning is controlled. `chat_template_kwargs` ends up in the
+#             `extra_body` of the call; `reasoning_effort` is a parameter of the call.
+#             Qwen3.8 and Gemma 4 switch it off and on over the same weights, so they have
+#             two entries with the same `model_id` and the same `revision`: the base entry
+#             with `enable_thinking: false`, the `_think` entry with `enable_thinking: true`
+#             and the template's default level. The two entries are served by two separate
+#             launches of the server, which differ in the reasoning parser: the notes of
+#             each entry say with which flags. For gpt oss it does not switch off entirely
+#             and is kept at the minimum, so its answers are not produced under the same
+#             conditions as those of the other models. For K2 Horizon it does not switch
+#             off, and the level is still to be chosen.
+# `max_tokens` optional: applies instead of the one in the configuration. The `_think`
+#             entries need it: they write their reasoning before the JSON, and with the 512
+#             of the configuration they would be cut off.
+# `enabled`   a disabled model enters no plan.
+# `supports_logprobs`  the server returns the token logprobs.
+# `is_reasoning`       the model can reason before answering.
+# `max_concurrency`    the maximum number of simultaneous calls.
 #
-# revision, tier, reasoning e max_tokens entrano nel manifest di ogni esecuzione e nella
-# chiave della cache: cambiarne uno produce chiamate nuove, non risposte vecchie riusate.
+# revision, tier, reasoning and max_tokens go into the manifest of every run and into the
+# cache key: changing one of them produces new calls, not old answers reused.
 
 version: "3.0"
 
@@ -50,16 +51,16 @@ models:
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
     max_concurrency: 8
     notes: >-
-      Pilota, condizione principale. Ragionamento spento dal template di chat. Il server
-      si avvia senza `--reasoning-parser`: con il parser acceso e nessun ragionamento vLLM
-      smette di applicare il vincolo dello schema JSON senza errori ne' avvisi, e le
-      risposte fuori formato diventerebbero `invalid` senza una causa visibile.
+      Pilot, main condition. Reasoning switched off by the chat template. The server
+      starts without `--reasoning-parser`: with the parser on and no reasoning, vLLM
+      stops enforcing the JSON schema constraint with no error or warning, and the
+      answers out of format would become `invalid` with no visible cause.
 
   qwen3_8_27b_think:
     tier: 1
     model_id: "Qwen/Qwen3.8-27B"
     revision: "PLACEHOLDER"
-    display_name: "Qwen3.8 27B (ragionamento acceso)"
+    display_name: "Qwen3.8 27B (reasoning on)"
     enabled: true
     supports_logprobs: true
     is_reasoning: true
@@ -67,9 +68,9 @@ models:
     max_concurrency: 8
     max_tokens: 8192
     notes: >-
-      Stessi pesi e stessa revisione di `qwen3_8_27b`: cambia solo il ragionamento, acceso
-      al livello di default del template. Server a parte, avviato con
-      `--reasoning-parser qwen3` e `--max-model-len 16384`.
+      Same weights and same revision as `qwen3_8_27b`: only the reasoning changes, switched
+      on at the template's default level. Separate server, launched with
+      `--reasoning-parser qwen3` and `--max-model-len 16384`.
 
   gemma4_31b:
     tier: 1
@@ -82,16 +83,16 @@ models:
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
     max_concurrency: 8
     notes: >-
-      Pilota, condizione principale. Ragionamento spento dal template di chat. Il server
-      si avvia senza `--reasoning-parser`: con il parser acceso e nessun ragionamento vLLM
-      smette di applicare il vincolo dello schema JSON senza errori ne' avvisi, e le
-      risposte fuori formato diventerebbero `invalid` senza una causa visibile.
+      Pilot, main condition. Reasoning switched off by the chat template. The server
+      starts without `--reasoning-parser`: with the parser on and no reasoning, vLLM
+      stops enforcing the JSON schema constraint with no error or warning, and the
+      answers out of format would become `invalid` with no visible cause.
 
   gemma4_31b_think:
     tier: 1
     model_id: "google/gemma-4-31B-it"
     revision: "PLACEHOLDER"
-    display_name: "Gemma 4 31B (ragionamento acceso)"
+    display_name: "Gemma 4 31B (reasoning on)"
     enabled: true
     supports_logprobs: true
     is_reasoning: true
@@ -99,9 +100,9 @@ models:
     max_concurrency: 8
     max_tokens: 8192
     notes: >-
-      Stessi pesi e stessa revisione di `gemma4_31b`: cambia solo il ragionamento, acceso
-      al livello di default del template. Server a parte, avviato con
-      `--reasoning-parser gemma4` e `--max-model-len 16384`.
+      Same weights and same revision as `gemma4_31b`: only the reasoning changes, switched
+      on at the template's default level. Separate server, launched with
+      `--reasoning-parser gemma4` and `--max-model-len 16384`.
 
   gpt_oss_20b:
     tier: 1
@@ -113,7 +114,7 @@ models:
     is_reasoning: true
     reasoning: {reasoning_effort: low}
     max_concurrency: 8
-    notes: "Il ragionamento non si spegne: effort al minimo. I logprob vanno letti sul token della risposta dentro il JSON, non sul primo token generato."
+    notes: "The reasoning does not switch off: effort at the minimum. The logprobs must be read on the answer token inside the JSON, not on the first generated token."
 
   # ------------------------------------------------------------------- tier 2
   gpt_oss_120b:
@@ -126,7 +127,7 @@ models:
     is_reasoning: true
     reasoning: {reasoning_effort: low}
     max_concurrency: 4
-    notes: "Coppia con gpt_oss_20b: stessa famiglia, cambia solo la taglia. Stessa avvertenza sul ragionamento."
+    notes: "Pairs with gpt_oss_20b: same family, only the size changes. Same caveat on the reasoning."
 
   k2_horizon_32b:
     tier: 2
@@ -139,11 +140,11 @@ models:
     reasoning: {}
     max_concurrency: 4
     notes: >-
-      Denso, 32B. Il ragionamento non si spegne: si regola con `reasoning_effort` in
-      `chat_template_kwargs`, e il model card documenta solo `high`. Finche' `reasoning`
-      resta vuoto il modello ragiona al livello di default del template. Il repository
-      contiene un checkpoint di stadio 1, con la versione finale annunciata: la revisione
-      va fissata sul checkpoint che si usa davvero. vLLM chiede in piu' `--trust-remote-code`,
+      Dense, 32B. The reasoning does not switch off: it is set with `reasoning_effort` in
+      `chat_template_kwargs`, and the model card documents only `high`. While `reasoning`
+      stays empty the model reasons at the template's default level. The repository
+      holds a stage 1 checkpoint, with the final version announced: the revision
+      must be pinned to the checkpoint actually used. vLLM also needs `--trust-remote-code`,
       `--reasoning-parser k2_horizon`, `--tool-call-parser k2_horizon`.
 
   # ------------------------------------------------------------------- tier 3
@@ -157,4 +158,4 @@ models:
     is_reasoning: true
     reasoning: {}
     max_concurrency: 4
-    notes: "Commerciale, via API e non via vLLM. Niente logprob: p_logprob resterebbe vuota. Spento di default; se si accende, la politica sul ragionamento va decisa prima."
+    notes: "Commercial, through the API and not through vLLM. No logprobs: p_logprob would stay empty. Disabled by default; if it is enabled, the reasoning policy must be decided first."

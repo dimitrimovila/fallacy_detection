@@ -44,11 +44,11 @@ def test_the_credit_is_asymmetric(vocab, schemes):
     scheme = schemes["ad_hominem"]
 
     coarse_gold = resolve_for_scheme("Ad Hominem", scheme, schemes, vocab)
-    assert label_matches("ad_hominem_tu_quoque", coarse_gold), "gold grosso: credito parziale"
+    assert label_matches("ad_hominem_tu_quoque", coarse_gold), "coarse gold: partial credit"
 
     exact_gold = resolve_for_scheme("Tu quoque", scheme, schemes, vocab)
     assert exact_gold.status == "exact"
-    assert not label_matches("ad_hominem", exact_gold), "predizione vaga: nessun credito"
+    assert not label_matches("ad_hominem", exact_gold), "vague prediction: no credit"
 
 
 def test_vocabulary_matches_the_diagrams(vocab, schemes):

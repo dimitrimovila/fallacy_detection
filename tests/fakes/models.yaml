@@ -1,6 +1,6 @@
-# Modelli finti per i test. Nessuno di questi raggiunge la rete: il backend e' tests/fakes/llm.py.
-# Stanno qui e non in serving/models.yaml, cosi' il file vero contiene solo modelli veri e i
-# test non si rompono quando si compilano le revisioni.
+# Fake models for the tests. None of them reaches the network: the backend is tests/fakes/llm.py.
+# They live here and not in serving/models.yaml, so that the real file holds only real models and
+# the tests do not break when the revisions are filled in.
 
 version: "test"
 
@@ -10,59 +10,59 @@ models:
     tier: 1
     model_id: "fake-model"
     revision: "fake-revision-0001"
-    display_name: "Backend finto"
+    display_name: "Fake backend"
     enabled: true
     supports_logprobs: true
     is_reasoning: false
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
     max_concurrency: 4
-    notes: "Il modello di tutti i test del client."
+    notes: "The model of every client test."
 
   fake_long:
     tier: 1
     model_id: "fake-model"
     revision: "fake-revision-0001"
-    display_name: "Backend finto con max_tokens proprio"
+    display_name: "Fake backend with its own max_tokens"
     enabled: true
     supports_logprobs: true
     is_reasoning: false
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
     max_concurrency: 4
     max_tokens: 8192
-    notes: "Identico a `fake` a parte `max_tokens`: come le voci `_think` dei modelli veri."
+    notes: "Identical to `fake` except for `max_tokens`: like the `_think` entries of the real models."
 
   fake_unpinned:
     tier: 1
     model_id: "fake-model"
     revision: "PLACEHOLDER"
-    display_name: "Backend finto senza revisione"
+    display_name: "Fake backend without a revision"
     enabled: true
     supports_logprobs: true
     is_reasoning: false
     reasoning: {}
     max_concurrency: 4
-    notes: "Revisione ancora segnaposto: ask() deve rifiutarsi."
+    notes: "Revision still a placeholder: ask() must refuse."
 
   fake_effort:
     tier: 2
     model_id: "fake-model"
     revision: "fake-revision-0001"
-    display_name: "Backend finto con reasoning effort"
+    display_name: "Fake backend with reasoning effort"
     enabled: true
     supports_logprobs: true
     is_reasoning: true
     reasoning: {reasoning_effort: low}
     max_concurrency: 4
-    notes: "Come gpt oss: il ragionamento non si spegne, si abbassa."
+    notes: "Like gpt oss: the reasoning does not switch off, it is turned down."
 
   fake_disabled:
     tier: 3
     model_id: "fake-model"
     revision: "fake-revision-0001"
-    display_name: "Backend finto spento"
+    display_name: "Fake backend, disabled"
     enabled: false
     supports_logprobs: false
     is_reasoning: false
     reasoning: {}
     max_concurrency: 1
-    notes: "Spento: nessun piano lo deve accettare."
+    notes: "Disabled: no plan may accept it."
