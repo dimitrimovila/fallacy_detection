@@ -14,6 +14,7 @@ from .run import (
     load_items,
     load_models,
     make_run_id,
+    max_tokens_for,
     model_spec,
     plan,
     read_raw,
@@ -27,6 +28,6 @@ __all__ = [
     "ResponseCache", "cache_key", "CACHE_FILE", "RUNS_DIR",
     "RunConfig", "PlannedCall", "plan", "summarise_plan", "execute",
     "build_manifest", "schemes_hash", "make_run_id", "read_raw",
-    "load_models", "model_spec", "load_items", "select_items",
+    "load_models", "model_spec", "max_tokens_for", "load_items", "select_items",
     "GOLD", "PREDICTED", "RAW_NAME", "MANIFEST_NAME",
 ]

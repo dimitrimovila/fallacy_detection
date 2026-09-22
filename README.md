@@ -103,9 +103,11 @@ python serving/smoke_test.py --model <name in serving/models.yaml>
 ```
 
 The model revisions in `serving/models.yaml` must be pinned before any real run:
-calls refuse to start while a revision is a placeholder.
+calls refuse to start while a revision is a placeholder. Qwen and Gemma are served with
+their reasoning parser and `--max-model-len 16384`, because each has a second entry with
+reasoning on (`_think`); see `serving/README.md`.
 
-Pilot (50 items, two models, five samples):
+Pilot (50 items, two models, each with reasoning off and on, five samples):
 
 ```bash
 argfallacy run plan configs/pilot.yaml         # counts the calls, makes none

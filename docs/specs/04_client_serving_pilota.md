@@ -1,17 +1,20 @@
 # Specifica 04. Intervistatore, serving, parser minimo e pilota
 
-Versione 1, 11 settembre 2026. Componenti: `src/argfallacy/client/`, `src/argfallacy/parse/` (versione minima), `serving/`.
+Versione 2, 22 settembre 2026. Componenti: `src/argfallacy/client/`, `src/argfallacy/parse/` (versione minima), `serving/`.
 Dipende da: 01, 03 e dai dati (`docs/dati.md`). Produce: `runs/<run_id>/`.
 
 ## 1. Serving sul cluster (`serving/`)
 
-* `serving/models.yaml`: una voce per modello con `model_id` (il nome con cui vLLM lo serve), `display_name`, `supports_logprobs`, `is_reasoning`, `max_concurrency`, `notes`. Prime voci: Qwen3.6 27B, Gemma 4 31B; poi gpt oss 120b, K2 Horizon 32B. I nomi esatti dei repository Hugging Face si fissano in `serving/models.yaml`.
+* `serving/models.yaml`: una voce per modello con `tier`, `model_id` (il nome con cui vLLM lo serve), `revision` (il commit Hugging Face), `display_name`, `enabled`, `supports_logprobs`, `is_reasoning`, `reasoning`, `max_concurrency`, `notes`, e facoltativo `max_tokens`. Fascia 1: Qwen3.8 27B, Gemma 4 31B, gpt oss 20b; fascia 2: gpt oss 120b, K2 Horizon 32B; fascia 3: GPT 5.5, spento. I nomi esatti dei repository Hugging Face si fissano in `serving/models.yaml`.
+* Condizioni di ragionamento. Qwen3.8 e Gemma 4 accendono e spengono il ragionamento sugli stessi pesi, quindi ciascuno ha due voci con gli stessi `model_id` e `revision` e `reasoning` diverso: `qwen3_8_27b` e `gemma4_31b` con `enable_thinking: false`, `qwen3_8_27b_think` e `gemma4_31b_think` con `enable_thinking: true` e il livello di default del template. La condizione principale è il ragionamento spento. Il `reasoning` entra nella chiave della cache, quindi le due voci non condividono risposte.
+* `max_tokens` di una voce vale al posto di quello della configurazione. Serve alle voci con ragionamento acceso, che scrivono il ragionamento prima del JSON: per loro 8192. Essendo un parametro di generazione entra nella chiave della cache e nel manifest.
 * `serving/README.md`: runbook in dieci righe. Avvio di vLLM con l'API compatibile OpenAI e l'output strutturato abilitato, con un esempio:
   ```
   vllm serve <model_id> --dtype auto --max-model-len 8192 --port 8000
   ```
-  più le istruzioni per raggiungere l'endpoint dal proprio computer se il cluster richiede un tunnel SSH, e il modo per lanciarlo come job se il cluster usa uno scheduler. La parte specifica del cluster resta da completare.
-* `serving/smoke_test.py`: manda una chat completion con `logprobs=true`, `top_logprobs=20` e `response_format` con lo schema JSON dello stadio due su un item di prova, e stampa la risposta, i top_logprobs alla posizione del primo token di `answer`, e la latenza. Se i logprob non arrivano lo dice in chiaro. Questo è il primo comando da eseguire su ogni modello nuovo.
+  Per Qwen e Gemma il server si avvia sempre con il parser di ragionamento di vLLM e con `--max-model-len` abbastanza grande per `max_tokens` più il prompt (16384): così le due condizioni usano lo stesso server e differiscono solo per `enable_thinking`. Senza parser di ragionamento l'output strutturato vincola il JSON fin dal primo token e il modello non può ragionare.
+  Poi le istruzioni per raggiungere l'endpoint dal proprio computer se il cluster richiede un tunnel SSH, e il modo per lanciarlo come job se il cluster usa uno scheduler. La parte specifica del cluster resta da completare.
+* `serving/smoke_test.py`: manda una chat completion con `logprobs=true`, `top_logprobs=20` e `response_format` con lo schema JSON dello stadio due su un item di prova, e stampa la risposta, i top_logprobs alla posizione del primo token di `answer`, e la latenza. Se i logprob non arrivano lo dice in chiaro. Su una voce con ragionamento acceso dice anche se il ragionamento c'è stato (token di ragionamento maggiori di zero) e se la risposta è stata troncata (`finish_reason` uguale a `length`). Questo è il primo comando da eseguire su ogni modello e su ogni voce nuova.
 
 Variabili d'ambiente: `LLM_BASE_URL` (per esempio `http://localhost:8000/v1`), `LLM_API_KEY` (qualunque stringa per vLLM; la chiave vera per un provider commerciale). Nessuna nel codice.
 
@@ -42,7 +45,7 @@ Una riga per chiamata: `run_id`, `item_id`, `stage`, `scheme_condition`, `scheme
 
 ## 4. Il pilota
 
-`configs/pilot.yaml`: 50 item scelti da `items.csv` con schema gold diverso da `none`, stratificati per schema in proporzione con almeno 4 per schema, seme fisso; stadio uno e stadio due in condizione `gold`; due modelli; cinque campioni.
+`configs/pilot.yaml`: 50 item scelti da `items.csv` con schema gold diverso da `none`, stratificati per schema in proporzione con almeno 4 per schema, seme fisso; stadio uno e stadio due in condizione `gold`; due modelli, Qwen3.8 27B e Gemma 4 31B, ciascuno nelle due condizioni di ragionamento, quindi quattro voci (`qwen3_8_27b`, `qwen3_8_27b_think`, `gemma4_31b`, `gemma4_31b_think`); cinque campioni. Chiamate: 6960, per voce 250 di stadio uno e 1490 di stadio due.
 
 `items.csv` non contiene i doppioni né gli item tolti (`docs/dati.md`, sezione 5), quindi il pilota pesca fra tutti gli item con uno schema gold, cioè il test set degli esperimenti. L'estrazione con seme corre dentro ogni strato (stesso schema).
 
@@ -52,9 +55,15 @@ Una riga per chiamata: `run_id`, `item_id`, `stage`, `scheme_condition`, `scheme
 * accordo fra la risposta del campione 0 e la maggioranza dei cinque;
 * correlazione fra `p_logprob`, `p_verbal` e `p_sample` per CQ;
 * quante traversate per schema finiscono incomplete perché una risposta è `na` (specifica 03), con il nodo su cui si fermano;
-* latenza media e token per chiamata, e la proiezione di tempo per l'esecuzione completa (tutti gli item di `items.csv`, oggi 773, tutte le CQ, cinque campioni).
+* latenza media e token per chiamata, separando i token di ragionamento da quelli della risposta, quota di risposte troncate (`finish_reason` uguale a `length`), e la proiezione di tempo per l'esecuzione completa (tutti gli item di `items.csv`, oggi 773, tutte le CQ, cinque campioni).
 
-Regola d'arresto scritta nel rapporto: ogni CQ con più del 50 per cento di `cannot_be_determined` o più del 10 per cento di `invalid` su un modello va elencata in testa al rapporto; la stessa soglia del 50 per cento vale per `na`. La decisione su cosa fare non è automatica: si prende leggendo il rapporto.
+Poi, per ognuno dei due modelli, il confronto fra le due condizioni di ragionamento:
+* costo: rapporto fra token e fra latenze delle due condizioni, e proiezione di tempo della fase 2 con e senza la condizione accesa;
+* accordo fra le risposte del campione 0 nelle due condizioni, per CQ;
+* forma di `p_logprob`: quota di valori sopra 0.99 o sotto 0.01, per CQ e in totale. Con il ragionamento acceso la risposta arriva dopo un testo che l'ha già decisa, e la probabilità potrebbe concentrarsi agli estremi e perdere informazione;
+* accuratezza di stadio uno e correlazione fra `p_logprob`, `p_verbal` e `p_sample`, già calcolate per voce, affiancate.
+
+Regola d'arresto scritta nel rapporto: ogni CQ con più del 50 per cento di `cannot_be_determined` o più del 10 per cento di `invalid` su un modello va elencata in testa al rapporto; la stessa soglia del 50 per cento vale per `na`. La decisione su cosa fare non è automatica: si prende leggendo il rapporto. Lo stesso vale per la condizione con ragionamento acceso: se entra nella fase 2 si decide sul confronto qui sopra.
 
 ## 5. Test di accettazione
 
@@ -69,6 +78,7 @@ Tutti con il backend finto in `tests/fakes/llm.py`, che restituisce risposte det
 5. Parser: da un `raw.jsonl` finto con risposte valide, non valide e con logprobs parziali, `answers.csv` e `summary.csv` hanno i valori attesi; `p_logprob` si rinormalizza sulle risposte ammesse; un output che non rispetta lo schema è `invalid` e non fa saltare la riga. *Oggi hanno un test automatico la risposta valida, quella fuori schema che resta come `invalid` e le tre probabilità del sommario; il caso con logprob parziali no.*
 6. Condizione `predicted`: il piano genera chiamate di stadio due solo per gli item con schema predetto diverso dal gold. *Oggi senza test automatico.*
 7. `smoke_test.py` gira contro il backend finto (`--model fake`, il valore predefinito) e stampa il blocco logprobs. *Oggi senza test automatico: si lancia a mano.*
+8. `max_tokens`: una voce di `models.yaml` con `max_tokens` produce chiamate con quel valore al posto di quello della configurazione, e una chiave di cache diversa da una voce identica senza.
 
 ## 6. Cosa non fare
 * Niente parsing dentro il client: il client salva e basta.
@@ -77,4 +87,4 @@ Tutti con il backend finto in `tests/fakes/llm.py`, che restituisce risposte det
 * Niente chiamate ai modelli nei test.
 
 ## 7. Definizione di fatto
-Lint e test verdi (comandi nel README); `plan` e `execute` funzionano contro il backend finto e contro vLLM sul cluster con un modello (verifica con `smoke_test.py`); `pilot_report.md` prodotto su 50 item e 2 modelli; riepilogo con i numeri del rapporto e le CQ sopra soglia.
+Lint e test verdi (comandi nel README); `plan` e `execute` funzionano contro il backend finto e contro vLLM sul cluster con un modello (verifica con `smoke_test.py`); `pilot_report.md` prodotto su 50 item, 2 modelli e le loro due condizioni di ragionamento; riepilogo con i numeri del rapporto e le CQ sopra soglia.

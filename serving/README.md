@@ -10,6 +10,11 @@ Dieci righe, nell'ordine in cui si eseguono.
    L'API compatibile OpenAI e l'output strutturato sono attivi di default; se la tua
    versione di vLLM chiede di abilitarlo, aggiungi `--guided-decoding-backend outlines`.
    Se le note del modello in `models.yaml` elencano flag in piu', vanno aggiunti qui.
+   Qwen e Gemma hanno una voce con ragionamento spento e una con ragionamento acceso
+   (`_think`), servite dallo stesso server: si avviano sempre con il parser di ragionamento
+   indicato nelle note del modello e con `--max-model-len 16384`, perche' le voci `_think`
+   hanno `max_tokens` 8192. Senza parser di ragionamento l'output strutturato vincola il JSON
+   dal primo token e il modello non ragiona.
 2. **Dichiara l'endpoint** nel `.env` alla radice del repository, mai nel codice:
    ```
    LLM_BASE_URL=http://localhost:8000/v1
@@ -22,7 +27,8 @@ Dieci righe, nell'ordine in cui si eseguono.
    ```
    Stampa la risposta, il token della risposta dentro il JSON finale con la sua
    posizione, i `top_logprobs` a quel token e la latenza. Se prima del JSON c'e'
-   ragionamento (gpt oss) e un lettore ingenuo sarebbe finito li', lo dice. Se i logprob non arrivano lo dice in chiaro: allora `supports_logprobs` in
+   ragionamento (gpt oss, voci `_think`) e un lettore ingenuo sarebbe finito li', lo dice. Su una
+   voce `_think` controlla anche che il ragionamento ci sia stato e che la risposta non sia troncata. Se i logprob non arrivano lo dice in chiaro: allora `supports_logprobs` in
    `models.yaml` va messo a `false` e `p_logprob` restera' vuota per quel modello.
 4. **Conta le chiamate** prima di farle: `argfallacy run plan configs/pilot.yaml`.
 5. **Esegui**: `argfallacy run execute configs/pilot.yaml`. Interrompibile: rilanciando

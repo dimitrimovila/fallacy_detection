@@ -97,6 +97,18 @@ class RunConfig:
         return int(self.generation.get("max_tokens", 512))
 
 
+def max_tokens_for(spec: Mapping[str, Any], config: RunConfig) -> int:
+    """An entry's own ``max_tokens`` wins over the configuration's.
+
+    The entries that answer with reasoning on write their thinking before the
+    JSON and need far more room than the others.  Being a generation parameter
+    it travels into the cache key, so the same entry at another limit is a
+    different call and not a cached answer reused.
+    """
+    value = spec.get("max_tokens")
+    return config.max_tokens() if value is None else int(value)
+
+
 # ----------------------------------------------------------------------- plan
 @dataclass(frozen=True)
 class PlannedCall:
@@ -169,6 +181,7 @@ def plan(
             "reasoning": spec.get("reasoning") or {},
         }
         logprobs = bool(spec.get("supports_logprobs", True))
+        max_tokens = max_tokens_for(spec, config)
         for item in items:
             item_id = str(item["item_id"])
             if STAGE1 in config.stages:
@@ -180,7 +193,7 @@ def plan(
                         prompt=rendered.text, prompt_version=rendered.prompt_version,
                         json_schema=rendered.json_schema,
                         temperature=config.temperature(sample),
-                        max_tokens=config.max_tokens(), logprobs=logprobs,
+                        max_tokens=max_tokens, logprobs=logprobs,
                         **identity,
                     ))
             if STAGE2 not in config.stages:
@@ -199,7 +212,7 @@ def plan(
                         prompt=rendered.text, prompt_version=rendered.prompt_version,
                         json_schema=rendered.json_schema,
                         temperature=config.temperature(sample),
-                        max_tokens=config.max_tokens(), logprobs=logprobs,
+                        max_tokens=max_tokens, logprobs=logprobs,
                         **identity,
                     ))
     return calls
@@ -296,6 +309,7 @@ def build_manifest(
                     model_spec(name, models).get("supports_logprobs", True)
                 ),
                 "max_concurrency": int(model_spec(name, models).get("max_concurrency", 1)),
+                "max_tokens": max_tokens_for(model_spec(name, models), config),
                 "revision": model_spec(name, models).get("revision"),
                 "tier": model_spec(name, models).get("tier"),
                 "reasoning": model_spec(name, models).get("reasoning") or {},

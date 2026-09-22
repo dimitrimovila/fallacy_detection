@@ -1,4 +1,4 @@
-# Il pilota: 50 item, due modelli, cinque campioni.
+# Il pilota: 50 item, due modelli in due condizioni di ragionamento, cinque campioni.
 # `argfallacy run plan configs/pilot.yaml` conta le chiamate senza farne nessuna.
 
 name: pilot
@@ -13,7 +13,10 @@ items:
 
 stages: [stage1, stage2]
 scheme_condition: gold
-models: [qwen3_6_27b, gemma4_31b]
+# quattro voci: Qwen3.8 e Gemma 4, ciascuno con ragionamento spento e acceso.
+# Le voci `_think` hanno un `max_tokens` proprio in serving/models.yaml, che vale al
+# posto di quello qui sotto: il ragionamento arriva prima del JSON e 512 lo troncherebbe.
+models: [qwen3_8_27b, qwen3_8_27b_think, gemma4_31b, gemma4_31b_think]
 samples: 5
 prompt_version: v1
 

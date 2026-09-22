@@ -18,6 +18,19 @@ models:
     max_concurrency: 4
     notes: "Il modello di tutti i test del client."
 
+  fake_long:
+    tier: 1
+    model_id: "fake-model"
+    revision: "fake-revision-0001"
+    display_name: "Backend finto con max_tokens proprio"
+    enabled: true
+    supports_logprobs: true
+    is_reasoning: false
+    reasoning: {chat_template_kwargs: {enable_thinking: false}}
+    max_concurrency: 4
+    max_tokens: 8192
+    notes: "Identico a `fake` a parte `max_tokens`: come le voci `_think` dei modelli veri."
+
   fake_unpinned:
     tier: 1
     model_id: "fake-model"

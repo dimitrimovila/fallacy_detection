@@ -1,6 +1,7 @@
-# I modelli e come si servono. Versione 2.
+# I modelli e come si servono. Versione 3.
 #
-# Sei modelli in tre fasce (`tier`).
+# Sei modelli in tre fasce (`tier`), in otto voci: Qwen3.8 e Gemma 4 ne hanno due
+# ciascuno, con il ragionamento spento e acceso.
 #   tier 1: il pilota e l'esecuzione principale. Tre famiglie diverse, per la combinazione.
 #   tier 2: dopo il pilota. gpt oss 120b fa coppia con il 20b della fascia 1 per l'effetto
 #           taglia; K2 Horizon 32B porta una quarta famiglia.
@@ -14,33 +15,60 @@
 #             riproducono. Per il modello commerciale e' lo snapshot datato dell'API.
 # `reasoning` come si governa il ragionamento. `chat_template_kwargs` finisce in
 #             `extra_body` della chiamata; `reasoning_effort` e' un parametro della chiamata.
-#             Per Qwen e Gemma si spegne; per gpt oss non si spegne del tutto e si tiene al
-#             minimo, quindi le sue risposte non nascono nelle stesse condizioni degli altri
-#             modelli. Per K2 Horizon non si spegne, e il livello va ancora scelto.
+#             Qwen3.8 e Gemma 4 lo spengono e lo accendono sugli stessi pesi, quindi hanno
+#             due voci con lo stesso `model_id` e la stessa `revision`: la voce base con
+#             `enable_thinking: false`, la voce `_think` con `enable_thinking: true` e il
+#             livello di default del template. Per gpt oss non si spegne del tutto e si
+#             tiene al minimo, quindi le sue risposte non nascono nelle stesse condizioni
+#             degli altri modelli. Per K2 Horizon non si spegne, e il livello va ancora scelto.
+# `max_tokens` facoltativo: vale al posto di quello della configurazione. Serve alle voci
+#             `_think`, che scrivono il ragionamento prima del JSON e con i 512 della
+#             configurazione verrebbero troncate.
 # `enabled`   un modello spento non entra in nessun piano.
 # `supports_logprobs`  il server restituisce i logprob dei token.
 # `is_reasoning`       il modello puo' ragionare prima di rispondere.
 # `max_concurrency`    quante chiamate simultanee al massimo.
 #
-# revision, tier e reasoning entrano nel manifest di ogni esecuzione e nella chiave della
-# cache: cambiarne uno produce chiamate nuove, non risposte vecchie riusate.
+# revision, tier, reasoning e max_tokens entrano nel manifest di ogni esecuzione e nella
+# chiave della cache: cambiarne uno produce chiamate nuove, non risposte vecchie riusate.
 
-version: "2.0"
+version: "3.0"
 
 models:
 
   # ------------------------------------------------------------------- tier 1
-  qwen3_6_27b:
+  qwen3_8_27b:
     tier: 1
-    model_id: "Qwen/Qwen3.6-27B"
+    model_id: "Qwen/Qwen3.8-27B"
     revision: "PLACEHOLDER"
-    display_name: "Qwen3.6 27B"
+    display_name: "Qwen3.8 27B"
     enabled: true
     supports_logprobs: true
     is_reasoning: true
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
     max_concurrency: 8
-    notes: "Pilota. Ragionamento spento dal template di chat."
+    notes: >-
+      Pilota, condizione principale. Ragionamento spento dal template di chat. vLLM si
+      avvia con `--reasoning-parser qwen3` anche qui, perche' lo stesso server serve la
+      voce `_think`. Con il parser acceso e il ragionamento spento alcune versioni di vLLM
+      saltano in silenzio il vincolo dello schema JSON: lo smoke test va rifatto su questa
+      voce a ogni cambio di versione del server.
+
+  qwen3_8_27b_think:
+    tier: 1
+    model_id: "Qwen/Qwen3.8-27B"
+    revision: "PLACEHOLDER"
+    display_name: "Qwen3.8 27B (ragionamento acceso)"
+    enabled: true
+    supports_logprobs: true
+    is_reasoning: true
+    reasoning: {chat_template_kwargs: {enable_thinking: true}}
+    max_concurrency: 8
+    max_tokens: 8192
+    notes: >-
+      Stessi pesi e stessa revisione di `qwen3_8_27b`: cambia solo il ragionamento, acceso
+      al livello di default del template. Stesso server, avviato con
+      `--reasoning-parser qwen3` e `--max-model-len 16384`.
 
   gemma4_31b:
     tier: 1
@@ -52,7 +80,28 @@ models:
     is_reasoning: true
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
     max_concurrency: 8
-    notes: "Pilota. Ragionamento spento dal template di chat."
+    notes: >-
+      Pilota, condizione principale. Ragionamento spento dal template di chat. vLLM si
+      avvia con `--reasoning-parser gemma4` anche qui, perche' lo stesso server serve la
+      voce `_think`. Con il parser acceso e il ragionamento spento alcune versioni di vLLM
+      saltano in silenzio il vincolo dello schema JSON: lo smoke test va rifatto su questa
+      voce a ogni cambio di versione del server.
+
+  gemma4_31b_think:
+    tier: 1
+    model_id: "google/gemma-4-31B-it"
+    revision: "PLACEHOLDER"
+    display_name: "Gemma 4 31B (ragionamento acceso)"
+    enabled: true
+    supports_logprobs: true
+    is_reasoning: true
+    reasoning: {chat_template_kwargs: {enable_thinking: true}}
+    max_concurrency: 8
+    max_tokens: 8192
+    notes: >-
+      Stessi pesi e stessa revisione di `gemma4_31b`: cambia solo il ragionamento, acceso
+      al livello di default del template. Stesso server, avviato con
+      `--reasoning-parser gemma4` e `--max-model-len 16384`.
 
   gpt_oss_20b:
     tier: 1

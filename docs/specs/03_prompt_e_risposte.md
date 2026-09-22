@@ -60,7 +60,7 @@ Regole:
 
 Per ogni (item, stadio, CQ, modello): cinque chiamate. Campione 0 a temperatura 0: fornisce la risposta secca e `p_logprob`. Campioni da 1 a 4 a temperatura 0.7: forniscono, insieme allo 0, `p_sample` = frequenza della risposta `yes` (o `positive`) sui cinque. `p_verbal` = `confidence`/100 del campione 0, orientata: se la risposta secca è `no`, `p_verbal` = 1 meno confidence/100; se è `cannot_be_determined`, `p_verbal` è vuota e la riga porta `idk = true`. `na` non produce `p_verbal` allo stesso modo di `cannot_be_determined` — leggerlo come una bassa probabilità del sì deciderebbe, in silenzio, che `na` vale `no` — ma non alza `idk`, che resta vero solo per `cannot_be_determined`: le due risposte restano distinguibili a valle solo guardando `answer`, l'unica informazione che questo parser registra su di esse. Cosa significhi `na` per l'aggregazione resta un punto aperto per la fase 3, da chiudere sui dati veri: nessun valore numerico, non una regola provvisoria.
 
-I modelli con ragionamento interno (gpt oss, K2 Horizon) producono lo stesso JSON; il client legge i logprob alla posizione della risposta finale. Se per un modello i logprob non sono disponibili, `p_logprob` resta vuota e il manifest lo dichiara.
+I modelli con ragionamento interno (gpt oss, K2 Horizon, e Qwen3.8 e Gemma 4 nella condizione con ragionamento acceso, specifica 04) producono lo stesso JSON; il client legge i logprob alla posizione della risposta finale. Se per un modello i logprob non sono disponibili, `p_logprob` resta vuota e il manifest lo dichiara.
 
 ## 7. Test di accettazione
 

@@ -318,6 +318,62 @@ def test_an_unpinned_revision_refuses_to_run(items, schemes, backend):
     assert backend.calls == 0
 
 
+def test_the_max_tokens_of_an_entry_wins_over_the_configuration(items, schemes):
+    """Acceptance 8 of spec 04: `max_tokens` of a models.yaml entry, and its key."""
+    config = config_for([STAGE1], samples=1)
+    assert config.max_tokens() == 512
+
+    config.models = ["fake"]
+    plain = plan(config, items[:1], FAKE_MODELS, schemes)[0]
+    config.models = ["fake_long"]
+    own = plan(config, items[:1], FAKE_MODELS, schemes)[0]
+
+    assert plain.max_tokens == 512
+    assert own.max_tokens == 8192
+    assert own.request().max_tokens == 8192
+    assert own.key() != plain.key(), "max_tokens must reach the cache key"
+
+
+def test_the_manifest_declares_the_max_tokens_actually_used(items, schemes):
+    config = config_for([STAGE1], samples=1)
+    config.models = ["fake", "fake_long"]
+    calls = plan(config, items[:1], FAKE_MODELS, schemes)
+    manifest = build_manifest("run-mt", config, calls, FAKE_MODELS)
+
+    assert manifest["generation"]["max_tokens"] == 512
+    assert manifest["models"]["fake"]["max_tokens"] == 512
+    assert manifest["models"]["fake_long"]["max_tokens"] == 8192
+
+
+def test_the_pilot_plans_the_calls_the_spec_declares(schemes):
+    """50 items over four entries: 6960 calls, 250 of stage one and 1490 of stage two."""
+    from argfallacy.client import load_items
+
+    config = RunConfig.load(REPO_ROOT / "configs" / "pilot.yaml")
+    chosen = select_items(config, load_items())
+    calls = plan(config, chosen, load_models(), schemes)
+
+    assert len(config.models) == 4
+    assert len(calls) == 6960
+    for model in config.models:
+        mine = [c for c in calls if c.model == model]
+        assert len([c for c in mine if c.stage == STAGE1]) == 250, model
+        assert len([c for c in mine if c.stage == STAGE2]) == 1490, model
+
+
+def test_the_pilot_entries_differ_only_in_reasoning_and_room(schemes):
+    """The two conditions must be the same weights, and must not share a cache entry."""
+    models = load_models()
+    for off, on in (("qwen3_8_27b", "qwen3_8_27b_think"),
+                    ("gemma4_31b", "gemma4_31b_think")):
+        assert models[off]["model_id"] == models[on]["model_id"]
+        assert models[off]["revision"] == models[on]["revision"]
+        assert models[off]["reasoning"]["chat_template_kwargs"]["enable_thinking"] is False
+        assert models[on]["reasoning"]["chat_template_kwargs"]["enable_thinking"] is True
+        assert "max_tokens" not in models[off]
+        assert models[on]["max_tokens"] == 8192
+
+
 def test_item_selection_is_reproducible(schemes):
     from argfallacy.client import load_items
 
