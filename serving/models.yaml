@@ -18,7 +18,9 @@
 #             Qwen3.8 e Gemma 4 lo spengono e lo accendono sugli stessi pesi, quindi hanno
 #             due voci con lo stesso `model_id` e la stessa `revision`: la voce base con
 #             `enable_thinking: false`, la voce `_think` con `enable_thinking: true` e il
-#             livello di default del template. Per gpt oss non si spegne del tutto e si
+#             livello di default del template. Le due voci si servono con due avvii
+#             distinti del server, che differiscono per il parser di ragionamento: le note
+#             di ogni voce dicono con quali flag. Per gpt oss non si spegne del tutto e si
 #             tiene al minimo, quindi le sue risposte non nascono nelle stesse condizioni
 #             degli altri modelli. Per K2 Horizon non si spegne, e il livello va ancora scelto.
 # `max_tokens` facoltativo: vale al posto di quello della configurazione. Serve alle voci
@@ -48,11 +50,10 @@ models:
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
     max_concurrency: 8
     notes: >-
-      Pilota, condizione principale. Ragionamento spento dal template di chat. vLLM si
-      avvia con `--reasoning-parser qwen3` anche qui, perche' lo stesso server serve la
-      voce `_think`. Con il parser acceso e il ragionamento spento alcune versioni di vLLM
-      saltano in silenzio il vincolo dello schema JSON: lo smoke test va rifatto su questa
-      voce a ogni cambio di versione del server.
+      Pilota, condizione principale. Ragionamento spento dal template di chat. Il server
+      si avvia senza `--reasoning-parser`: con il parser acceso e nessun ragionamento vLLM
+      smette di applicare il vincolo dello schema JSON senza errori ne' avvisi, e le
+      risposte fuori formato diventerebbero `invalid` senza una causa visibile.
 
   qwen3_8_27b_think:
     tier: 1
@@ -67,7 +68,7 @@ models:
     max_tokens: 8192
     notes: >-
       Stessi pesi e stessa revisione di `qwen3_8_27b`: cambia solo il ragionamento, acceso
-      al livello di default del template. Stesso server, avviato con
+      al livello di default del template. Server a parte, avviato con
       `--reasoning-parser qwen3` e `--max-model-len 16384`.
 
   gemma4_31b:
@@ -81,11 +82,10 @@ models:
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
     max_concurrency: 8
     notes: >-
-      Pilota, condizione principale. Ragionamento spento dal template di chat. vLLM si
-      avvia con `--reasoning-parser gemma4` anche qui, perche' lo stesso server serve la
-      voce `_think`. Con il parser acceso e il ragionamento spento alcune versioni di vLLM
-      saltano in silenzio il vincolo dello schema JSON: lo smoke test va rifatto su questa
-      voce a ogni cambio di versione del server.
+      Pilota, condizione principale. Ragionamento spento dal template di chat. Il server
+      si avvia senza `--reasoning-parser`: con il parser acceso e nessun ragionamento vLLM
+      smette di applicare il vincolo dello schema JSON senza errori ne' avvisi, e le
+      risposte fuori formato diventerebbero `invalid` senza una causa visibile.
 
   gemma4_31b_think:
     tier: 1
@@ -100,7 +100,7 @@ models:
     max_tokens: 8192
     notes: >-
       Stessi pesi e stessa revisione di `gemma4_31b`: cambia solo il ragionamento, acceso
-      al livello di default del template. Stesso server, avviato con
+      al livello di default del template. Server a parte, avviato con
       `--reasoning-parser gemma4` e `--max-model-len 16384`.
 
   gpt_oss_20b:

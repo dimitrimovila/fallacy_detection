@@ -11,10 +11,12 @@ Dieci righe, nell'ordine in cui si eseguono.
    versione di vLLM chiede di abilitarlo, aggiungi `--guided-decoding-backend outlines`.
    Se le note del modello in `models.yaml` elencano flag in piu', vanno aggiunti qui.
    Qwen e Gemma hanno una voce con ragionamento spento e una con ragionamento acceso
-   (`_think`), servite dallo stesso server: si avviano sempre con il parser di ragionamento
-   indicato nelle note del modello e con `--max-model-len 16384`, perche' le voci `_think`
-   hanno `max_tokens` 8192. Senza parser di ragionamento l'output strutturato vincola il JSON
-   dal primo token e il modello non ragiona.
+   (`_think`), servite da due avvii distinti dello stesso modello. La voce spenta si avvia
+   senza parser di ragionamento: con il parser acceso e nessun ragionamento, vLLM dalla
+   0.19.0 in poi puo' saltare in silenzio il vincolo dello schema JSON. La voce `_think` si
+   avvia con il parser di ragionamento indicato nelle note del modello e con
+   `--max-model-len 16384`, perche' ha `max_tokens` 8192; senza parser l'output strutturato
+   vincola il JSON dal primo token e il modello non ragiona.
 2. **Dichiara l'endpoint** nel `.env` alla radice del repository, mai nel codice:
    ```
    LLM_BASE_URL=http://localhost:8000/v1
