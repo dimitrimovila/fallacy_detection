@@ -1,7 +1,7 @@
 # Spec 03. Prompts and answer format
 
 Version 1, 11 September 2026. Component: `src/argfallacy/prompts/`. Data: `prompts/`.
-Depends on: 01 and the data (`docs/dati.md`). Used by: 04.
+Depends on: 01 and the data (`docs/data.md`). Used by: 04.
 
 ## 1. Principles
 

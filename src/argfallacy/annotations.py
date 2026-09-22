@@ -1,7 +1,7 @@
 """The annotations table, and the reader of the ``Annotazione Dumitru`` sheets.
 
 ``data/items.csv`` and ``data/annotations.csv`` were frozen once from the
-workbook and from the prior runs (``docs/dati.md``).  Since then only the
+workbook and from the prior runs (``docs/data.md``).  Since then only the
 ``Annotazione Dumitru`` sheets move.  Each of them carries an ``item_id`` column,
 so a row finds its item by the identifier and never by the text; the text serves
 only as a check that the column was pasted on the right rows.

@@ -30,7 +30,7 @@ explanation: the path through the diagram, or the weights of the model that deci
 ```
 configs/          run configurations (the pilot: items, stages, models, samples)
 data/             the data: items.csv and annotations.csv
-docs/             specifications per component, data log, proposals (in Italian)
+docs/             specifications per component, data log, proposals
 labels/           label dictionaries: fallacies and schemes
 prompts/          versioned prompt templates, JSON Schemas of the answers, answer definitions
 schemes/          the eight scheme diagrams as YAML
@@ -74,7 +74,7 @@ workbook. Both were frozen once into two tables:
   annotator, the sheet and row, what the cell annotates, the canonical value and the
   cell as written.
 
-`docs/dati.md` (in Italian) records where every part comes from, what was corrected or
+`docs/data.md` records where every part comes from, what was corrected or
 dropped and why, and how to read each value. The earlier results are rescored on the
 same 601 items; reproducing their published numbers on all 607 rows is only an internal
 check of the scorer.

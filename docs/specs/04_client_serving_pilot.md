@@ -1,7 +1,7 @@
 # Spec 04. Interviewer, serving, minimal parser and pilot
 
 Version 2, 22 September 2026. Components: `src/argfallacy/client/`, `src/argfallacy/parse/` (minimal version), `serving/`.
-Depends on: 01, 03 and the data (`docs/dati.md`). Produces: `runs/<run_id>/`.
+Depends on: 01, 03 and the data (`docs/data.md`). Produces: `runs/<run_id>/`.
 
 ## 1. Serving on the cluster (`serving/`)
 
@@ -47,7 +47,7 @@ One line per call: `run_id`, `item_id`, `stage`, `scheme_condition`, `scheme`, `
 
 `configs/pilot.yaml`: 50 items chosen from `items.csv` with a gold scheme other than `none`, stratified by scheme in proportion with at least 4 per scheme, fixed seed; stage one and stage two in the `gold` condition; two models, Qwen3.8 27B and Gemma 4 31B, each in the two reasoning conditions, so four entries (`qwen3_8_27b`, `qwen3_8_27b_think`, `gemma4_31b`, `gemma4_31b_think`); five samples. Calls: 6960, per entry 250 of stage one and 1490 of stage two.
 
-`items.csv` contains neither the near duplicates nor the removed items (`docs/dati.md`, section 5), so the pilot draws from all the items with a gold scheme, that is, the test set of the experiments. The seeded draw runs within each stratum (same scheme).
+`items.csv` contains neither the near duplicates nor the removed items (`docs/data.md`, section 5), so the pilot draws from all the items with a gold scheme, that is, the test set of the experiments. The seeded draw runs within each stratum (same scheme).
 
 `argfallacy pilot report RUN_ID...` produces `pilot_report.md` with, per model:
 * stage one: accuracy on the gold scheme and a reduced confusion matrix;
