@@ -15,8 +15,9 @@ from the answers. This thesis starts from eight of Walton's schemes, turned into
 diagrams (identification question, ordered critical questions, and terminals that are
 either a specific fallacy or good argumentation) in the thesis of Enrico Bergamasco,
 *Schemi argomentativi e domande critiche nei Large Language Models come strumento di
-individuazione delle fallacie* (Master's thesis in Linguistics, University of Padova,
-academic year 2025/2026). A first stage asks which of the eight schemes a text
+individuazione delle fallacie* [Argumentation schemes and critical questions in Large
+Language Models as a tool for fallacy detection] (Master's thesis in Linguistics, University
+of Padova, academic year 2025/2026). A first stage asks which of the eight schemes a text
 follows, or none. A second stage puts each critical question of that scheme to several
 large language models, one question per call; every answer comes both as a plain
 answer (yes, no, cannot be determined from the text) and as a probability, from the
