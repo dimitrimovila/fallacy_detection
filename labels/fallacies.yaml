@@ -3,10 +3,10 @@
 # scorer mode that uses it. No content changed.
 # 1.4 compared with 1.3: added the coarse any_fallacy, for the rows where the annotator
 # says there is a fallacy without saying which.
-# 1.2 compared with 1.1: four new aliases, found by the audit of Eleni's results.csv files.
 # 1.3 compared with 1.2: the family name on its own is not a
 # coarse label but a kind of its own (family, see the families section), and the
 # uninterpretable outputs of the models are not idk but invalid_outputs.
+# 1.2 compared with 1.1: four new aliases, found by the audit of Eleni's results.csv files.
 # No terminal, no space and no arc changed in either of the two.
 # Replaces schemes/_vocabulary.yaml (version 1.0), of which it keeps
 # the keys terminals, coarse_labels, out_of_scope, aliases, idk_markers and the decisions
