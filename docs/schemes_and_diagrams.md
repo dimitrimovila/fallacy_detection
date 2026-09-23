@@ -695,7 +695,7 @@ of ours.
 **Status on the definitive PDF.** Both inversions are still present in the definitive PDF of
 14 September 2026, rechecked on the rendered pages. The two corrections stay.
 
-**Note for the comparison with the results.** The 608 items were evaluated with the uncorrected
+**Note for the comparison with the results.** The 607 rows of the previous runs (606 distinct texts) were evaluated with the uncorrected
 arcs. But the arcs are applied by the code to the answers already recorded, not by the
 prompt, so recomputing with the corrected arcs does not require a single new call to a
 model. Both versions can be obtained from the same data.
