@@ -35,7 +35,9 @@ STAGE2 = "stage2"
 DEFAULT_VERSION = "v1"
 
 CANNOT_BE_DETERMINED = "cannot_be_determined"
-"""The third option.  Enrico's thesis prints it; this is it made operational."""
+"""The third option, a choice of this project: the diagrams and the prompts described in
+Enrico's thesis admit only yes and no, and the thesis names an answer that cannot be
+determined from the text only as future work."""
 
 NOT_APPLICABLE = "na"
 """The fourth option, added the same way: never in a diagram's answer_space.

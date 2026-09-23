@@ -15,7 +15,8 @@ default:
   "yes": the text supports answering yes to the question
   "no": the text supports answering no to the question
 
-# The third option of Enrico's thesis, made operational. {options} becomes the real
+# The third option, a choice of this project: Enrico's thesis asks for yes or no and
+# names an answer that cannot be determined only as future work. {options} becomes the real
 # alternatives of the question, in the order in which the prompt lists them.
 cannot_be_determined: >-
   use this answer only if the text contains no information at all on the point
