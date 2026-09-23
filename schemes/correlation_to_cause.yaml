@@ -1,5 +1,6 @@
 scheme_id: correlation_to_cause
 name: Argument from correlation to cause
+version: "1.1"
 
 schema: |
   There is a positive or negative correlation between A and B.
@@ -65,7 +66,7 @@ graph:
       "no":  {node: CQ5}
     CQ5:
       # Question text taken verbatim from the thesis. In the thesis diagram
-      # (printed p. 66) the arcs are inverted with respect to the sense of the question and
+      # (printed p. 68) the arcs are inverted with respect to the sense of the question and
       # to the author's Comment. Here they are corrected: "yes" means that it
       # can be shown that the change does NOT depend on the definition, so
       # the argument holds.

@@ -30,8 +30,10 @@ They were corrected by inverting the two arcs and leaving the text of the questi
 `schemes_and_diagrams.md` §12.1 and in the YAML files, where they were verified on
 12 September 2026: in `correlation_to_cause.yaml` CQ5 exits `yes` towards good_argumentation and `no`
 towards definist_fallacy, with a note that explains the correction; in `slippery_slope.yaml` CQ5 exits
-`yes` towards slippery_slope and `no` towards good_argumentation, as the Comment of the thesis says. They do not require an experiment, because showing that a
-wrong arc produces wrong answers is not a result.
+`yes` towards slippery_slope and `no` towards good_argumentation, as the Comment of the thesis says. In the
+published version of the thesis (23 September 2026) the author corrected the arcs of slippery slope CQ5, which
+now coincide with the YAML; the correction of correlation to cause CQ5 stays. They do not require an experiment,
+because showing that a wrong arc produces wrong answers is not a result.
 
 **Reformulation proposals, which are the ones in this file.** Seven proposals, eight questions, six schemes. Here the current
 text is defensible and the rewriting is a design choice, so the difference between before and
@@ -93,7 +95,7 @@ answer space aligned with all the other nodes. In the YAML,
 
 ### 2.2 ad hominem, CQ3 — the question does not say what it asks
 
-**Current text (thesis, spelling corrected)**
+**Current text (thesis)**
 > Does the direct attack on the other person consist of an accusation that they are committed?
 
 **Diagnosis.** The complement is missing, so one does not know committed to what, and the node does not
@@ -173,9 +175,14 @@ scheme changes, so the regression snapshot must be updated.
 
 ### 2.4 cause to effect CQ2.1 and example CQ2.1 — two conditions and a reversed direction
 
-**Current text (thesis), identical in the two schemes except for `evidence` versus `example`**
-> Was the evidence cited selected in a clearly biased and malicious manner in order to undermine
+**Current text (YAML), identical in the two schemes except for `evidence` versus `example`**
+> Was the evidence cited chosen in such a clearly biased and malicious manner as to undermine
 > the validity of the generalization?
+
+The diagnosis below was written on the earlier wording, "selected in a clearly biased and malicious
+manner **in order to** undermine", which Eleni's runs used. In the published version of the thesis
+"as to" makes the undermining the effect of the biased selection rather than its purpose, which
+weakens the point on the reversed direction; the two conditions remain.
 
 **Diagnosis.** Two overlapping defects. The conditions are two, `biased` and `malicious`, and the
 second is a judgement on intention that cannot be read from the text. And `undermine` is reversed,
@@ -218,7 +225,7 @@ only one would introduce a difference between schemes that could not then be att
 ### 2.5 expert opinion, CQ1 — two conditions in a disjunction
 
 **Current text (thesis)**
-> Is S in a position to know whether A is true or false, or is S a genuine expert recognised by
+> Is S in a position to know whether A is true or false, or is S a genuine expert recognized by
 > the community of experts in D?
 
 **Diagnosis.** Two distinct conditions joined by `or`, so `no` requires both of them to fail. The
@@ -449,11 +456,11 @@ unknown answer.
 values recorded by the four pipelines (3569 with gpt-5) there are only `Yes`, `No` and ten
 `[MISSING ANSWER]`. Enrico's thesis does not provide for a third answer either. An earlier
 version of this paragraph said that the prompt listing printed in the thesis admits
-`Cannot be determined from the text`, but in the definitive PDF that listing is no longer there:
-§4.3.2 (pp. 109-110) describes the prompts only in words and asks, for stage two, for a binary
+`Cannot be determined from the text`, but in the definitive PDF that listing is no longer there, nor in
+the published version of 23 September 2026: §4.3.2 (pp. 113-114) describes the prompts only in words and asks, for stage two, for a binary
 answer, `Yes` or `No`, with a mandatory justification. An answer that cannot be
 determined appears in the thesis only among the future developments of the conclusions (ch. 6,
-pp. 149-151): "distinguere tra prove insufficienti e prove non esplicitate, per esempio con
+pp. 154-156): "distinguere tra prove insufficienti e prove non esplicitate, per esempio con
 una risposta non determinabile dal testo che non conduca automaticamente a una fallacia"
 [distinguishing between insufficient evidence and evidence left unstated, for example with an
 answer that cannot be determined from the text and does not automatically lead to a fallacy].

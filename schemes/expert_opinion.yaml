@@ -1,5 +1,6 @@
 scheme_id: expert_opinion
 name: Argument from expert opinion
+version: "1.1"
 
 schema: |
   S is an authoritative source (whether individual or collective) in the domain D.
@@ -24,16 +25,15 @@ critical_questions:
   - id: CQ1
     text: >-
       Is S in a position to know whether A is true or false, or is S a genuine
-      expert recognised by the community of experts in D?
+      expert recognized by the community of experts in D?
     note: >-
       Disjunctive: yes if either condition holds. Kept as a single node — splitting
       competence from peer recognition would turn one tolerant check into two
       independent ways of failing.
   - id: CQ2
     text: >-
-      The fact that S has asserted (or claimed) A is used as the sole supporting
-      consideration for the truth of the conclusion, without providing any other
-      type of argument?
+      Is the fact that S stated (or claimed) A used as the sole basis for supporting
+      the truth of the conclusion, without providing any other form of argument?
   - id: CQ3
     text: Did S really assert (or claim) A as true?
   - id: CQ3.1

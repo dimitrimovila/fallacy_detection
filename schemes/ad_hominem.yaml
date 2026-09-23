@@ -1,18 +1,18 @@
 scheme_id: ad_hominem
 name: Argument ad hominem
+version: "1.1"
 
 schema: |
-  If x is a person of good (bad) moral character, then what x says should be accepted
-  as more plausible (rejected as less plausible).
-  a is a person of good (bad) moral character.
-  Therefore what x says should be accepted as more plausible (rejected as less plausible).
+  a is a person of bad character.
+  Therefore, a's argument A should not be accepted.
 
 identification_question: >-
   Does the text shift the focus from arguments to personal judgments about the
   other person?
 
 variables:
-  "x, a": the person whose character is praised or attacked (x in the general rule, a in this case)
+  a: the person whose character is judged
+  A: the argument put forward by a
 
 default_answer_space: ["yes", "no"]
 

@@ -1,5 +1,6 @@
 scheme_id: example
 name: Argument from example
+version: "1.1"
 
 schema: |
   In this particular case, the individual a has property F and also property G.
@@ -25,18 +26,18 @@ critical_questions:
     text: Is the example typical of the kinds of cases that the generalization ranges over?
   - id: CQ2.1
     text: >-
-      Was the example cited selected in a clearly biased and malicious manner in
-      order to undermine the validity of the generalization?
+      Was the example cited chosen in such a clearly biased and malicious manner as
+      to undermine the validity of the generalization?
   - id: CQ2.2
     text: >-
       Is the example given so specific that it is statistically unrepresentative
-      and therefore cannot be used to support the generalisation?
+      and therefore cannot be used to support the generalization?
   - id: CQ2.3
-    text: Is the example given so extreme that it invalidates the generalisation?
+    text: Is the example given so extreme that it invalidates the generalization?
   - id: CQ3
     text: >-
       Does the example cited have characteristics that make it too different from
-      the generalisation drawn in the conclusion?
+      the generalization drawn in the conclusion?
 
 graph:
   start: CQ1

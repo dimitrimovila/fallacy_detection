@@ -1,5 +1,6 @@
 scheme_id: cause_to_effect
 name: Argument from cause to effect
+version: "1.1"
 
 schema: |
   Generally, if A occurs, then B will (might) occur.
@@ -27,12 +28,12 @@ critical_questions:
       generalization?
   - id: CQ2.1
     text: >-
-      Was the evidence cited selected in a clearly biased and malicious manner in
-      order to undermine the validity of the generalization?
+      Was the evidence cited chosen in such a clearly biased and malicious manner as
+      to undermine the validity of the generalization?
   - id: CQ2.2
     text: >-
       Is the evidence cited insufficient in quantitative terms to support the
-      generalisation?
+      generalization?
   - id: CQ3
     text: Is the relationship between cause and effect based solely on temporal sequence?
   - id: CQ4

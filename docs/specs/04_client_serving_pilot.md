@@ -34,7 +34,7 @@ SQLite in `runs/cache.sqlite`, a table with key = sha256 of (`model_id`, `prompt
 * `predicted` condition: the plan uses the stage-one predictions of the model itself and generates stage-two calls only for the items whose predicted scheme differs from the gold one; for the others the results of the `gold` condition are valid here too, and the parser knows it.
 
 ### 2.4 Manifest
-`manifest.json` with: `run_id`, full configuration, `model_id` and `display_name`, prompt version, schemes version (tag and hash of the content of `schemes/`), generation parameters, number of samples, start and end timestamps, number of calls planned, executed, served from the cache, failed, and the note `logprobs_available` per model.
+`manifest.json` with: `run_id`, full configuration, `model_id` and `display_name`, prompt version, schemes version (tag, the `version` that every YAML of `schemes/` declares and that the files must share, and hash of the content of `schemes/`), generation parameters, number of samples, start and end timestamps, number of calls planned, executed, served from the cache, failed, and the note `logprobs_available` per model.
 
 ### 2.5 `raw.jsonl`
 One line per call: `run_id`, `item_id`, `stage`, `scheme_condition`, `scheme`, `cq_id` (empty for stage one), `sample_index`, `model`, `model_id`, `revision`, `tier`, `reasoning`, `prompt_version`, `json_schema` (the schema sent to the model with that call), `params`, `cache_key`, `from_cache`, `raw_response`, `latency_s`, `error`. The file is append-only.

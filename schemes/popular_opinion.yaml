@@ -1,5 +1,6 @@
 scheme_id: popular_opinion
 name: Argument from popular opinion
+version: "1.1"
 
 schema: |
   If a large majority of some reference group accept A as true, then there is a

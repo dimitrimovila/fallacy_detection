@@ -209,6 +209,7 @@ def test_the_manifest_has_every_declared_field(items, schemes):
                   "started_at", "finished_at", "calls_planned", "calls_executed",
                   "calls_from_cache", "calls_failed"):
         assert field in manifest, field
+    assert manifest["schemes_version"]["tag"] and manifest["schemes_version"]["content_sha256"]
     entry = manifest["models"][MODEL]
     assert entry["model_id"] and entry["display_name"]
     assert "logprobs_available" in entry

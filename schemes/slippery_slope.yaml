@@ -1,24 +1,27 @@
 scheme_id: slippery_slope
 name: Slippery slope argument
+version: "1.1"
 
 schema: |
-  A0 is up for consideration as a proposal that seems initially like something that
-  should be brought about.
-  Bringing about A0 would likely have A1 as a consequence, which would in turn lead
-  to A2, and so on, through a sequence to An.
-  An is a horrible (disastrous) outcome.
-  Therefore, A0 should not be brought about.
+  Case C0 is tentatively acceptable as an initial presumption.
+  There exists a series of cases, C0, C1,..., Cn-1, where each case leads to the next
+  by a combination of causal, precedent, and/or analogy steps.
+  There is a climate of social opinion such that once people come to accept each
+  step as plausible (or as accepted practice), they will then be led to accept the
+  next step.
+  The penultimate step Cn-1 leads to a horrible outcome, Cn, which is not acceptable.
+  Therefore, C0 is not acceptable (contrary to the presumption of the initial premise).
 
 identification_question: >-
-  The text contains an argument claiming that if you allow or carry out a
-  particular action (even if it's small or seemingly harmless), it will inevitably
+  Does the text put forward the argument that, if a particular action is permitted
+  or carried out (even if it is minor or seemingly harmless), it will inevitably
   lead (through a chain of intermediate consequences) to an extreme or catastrophic
   final outcome?
 
 variables:
-  A0: the initial proposal
-  "A1, A2": the intermediate consequences in the chain from A0 to An
-  An: the final, disastrous outcome
+  C0: the initial case, tentatively acceptable
+  "C1, ..., Cn-1": the intermediate cases, each leading to the next
+  Cn: the horrible outcome that is not acceptable
 
 default_answer_space: ["yes", "no"]
 
@@ -28,7 +31,7 @@ critical_questions:
       Do any of the causal links in the chain lack sufficient evidence to support
       the claim that they will (might, must) occur?
   - id: CQ2
-    text: Is the outcome An as bad as suggested?
+    text: Is the outcome Cn as bad as suggested?
   - id: CQ3
     text: >-
       Is it possible to provide a precise definition that removes the ambiguity to
@@ -63,13 +66,11 @@ graph:
       "yes": {terminal: slippery_slope, reconvergence: true}
       "no":  {node: CQ5, reconvergence: true}
     CQ5:
-      # Question text taken verbatim from the thesis. In the thesis diagram the
-      # arcs are inverted with respect to the sense of the question and to the author's
-      # Comment, which says: "Una risposta negativa, ovvero l'assenza di anelli deboli,
-      # conduce alla conclusione di un'argomentazione valida [...] Se invece esistono
-      # anelli deboli, l'argomentazione rimane viziata" [A negative answer, that is, the
-      # absence of weak links, leads to the conclusion of a valid argument ... If instead
-      # there are weak links, the argument remains flawed]. Here they are corrected: "yes"
-      # means that there are weak links, hence the fallacy.
+      # "yes" means that there are weak links in the sequence, hence the fallacy, as in
+      # the thesis diagram and in its Comment: "Una risposta negativa, ovvero l'assenza di
+      # anelli deboli, conduce alla conclusione di un'argomentazione valida [...] Se invece
+      # esistono anelli deboli, l'argomentazione rimane viziata" [A negative answer, that
+      # is, the absence of weak links, leads to the conclusion of a valid argument ... If
+      # instead there are weak links, the argument remains flawed].
       "yes": {terminal: slippery_slope, reconvergence: true}
       "no":  {terminal: good_argumentation}

@@ -4,17 +4,17 @@
 strumento di individuazione delle fallacie* [Argumentation schemes and critical questions in Large
 Language Models as a tool for fallacy detection], master's thesis, University of Padova, Department
 of Linguistic and Literary Studies, academic year 2025-2026. Supervisor prof. Massimiliano Carrara,
-co-supervisor prof. Giovanni Da San Martino. **Definitive PDF confirmed by the author**, 14 September
-2026, 181 pages, **chapter 3**, §3.1 "Diagrammi degli schemi" [Diagrams of the schemes], printed
-pp. 46-92.
+co-supervisor prof. Giovanni Da San Martino. **Published version confirmed by the author**, 23 September
+2026, 182 pages, **chapter 3**, §3.1 "Diagrammi degli schemi" [Diagrams of the schemes], printed
+pp. 50-96.
 
-**Check against the definitive PDF.** On 14 and 15 September 2026 the scheme cards were compared
-block by block with the definitive PDF. The texts of the critical questions, the identification
-questions and the lists of fallacies coincide word for word with what is transcribed
-here, with the only exception recorded in §0.4. Two formal **Schema** blocks, ad hominem and slippery
-slope, did not coincide and were replaced: see §0.5. All the page references have been
-realigned to the numbering of the definitive PDF; the transcription had been made on the
-135-page PDF, whose numbers were +2.
+**Check against the published version.** On 23 September 2026 the scheme cards and the files of
+`schemes/` were compared block by block with the published version: formal schema, identification
+question, critical questions and terminals on the extracted text, formulas with subscripts and all
+eight diagrams on the rendered pages. They coincide with the thesis, except for the corrections of
+ours listed in the Conventions. The page references are those of the published version. The
+alignment is recorded in §0.6; §0.1-§0.5 record the earlier revisions and keep the page numbers of
+the PDFs of their time.
 
 **What this document contains.** Only the schemes. Argumentation scheme, identification
 question, critical questions, diagram, terminals, plus the structural properties that
@@ -25,10 +25,24 @@ follow from them. Dataset, annotation method, prompts, runs and results are in
 
 ## Conventions
 
-**The critical questions report the words of chapter 3**, with the spelling and grammar
-errors corrected. No reformulation, no word changed, no content
-added or removed. The corrections applied concern `committed`, `claimed`,
-`claim` in the infinitive and the spelling of the terminal `Good Argumentation`.
+**The critical questions report the words of chapter 3**. No reformulation, no content added or
+removed. The corrections of ours are the only differences from the published version, each for an
+evident error of the thesis, and they are also the only differences between the thesis and the files
+of `schemes/`:
+
+1. expert opinion CQ3, `claim` in the infinitive: "Did S really assert (or claim) A as true?"; the
+   thesis writes `(or claimed)`.
+2. cause to effect CQ2.1, `evidence` instead of `example`: "Was the evidence cited chosen in such a
+   clearly biased and malicious manner as to undermine the validity of the generalization?". The
+   scheme has no example, CQ2 and CQ2.2 speak of the evidence cited, and the Comment says that
+   "la domanda 2.1 indaga se le evidenze siano state selezionate" [question 2.1 asks whether the
+   evidence was selected]. See §3.
+3. the name of the non-fallacious terminal, `Good Argumentation` (below).
+4. the arcs of correlation to cause CQ5, inverted in the thesis with respect to its own question
+   and Comment (§4, §12.1).
+
+`committed` (ad hominem CQ3) and `claimed` (correlation to cause CQ3), corrections of ours on the
+earlier versions, are the text of the published version.
 
 **The text of the thesis and our observations are kept separate.** Everything that is not
 transcription is marked `⟶ our observation` or collected in §12. Nothing in the cards must be
@@ -36,9 +50,8 @@ attributed to Enrico unless it is transcribed.
 
 **The arcs of the diagrams** were read from the rasterised pages of the PDF, because the
 flowcharts are vector graphics and text extraction returns the labels `yes` and `no`
-in an order that cannot be reconstructed. The one of *expert opinion* was reread on this version
-because its structure changed; the other seven are reported from the previous reading, whose
-lists of CQs have no structural changes.
+in an order that cannot be reconstructed. All eight were reread on the rendered pages of the
+published version.
 
 **Notation.** `CQn: answer → destination`. `⟲` flags a reconvergence arc, that is, two or
 more paths that enter the same node or terminal.
@@ -47,16 +60,18 @@ more paths that enter the same node or terminal.
 prompt listing, a different version of ad hominem, and the prompts actually run in the
 experiments report a third one. The comparison is in §11 and does not contaminate the cards.
 
-**Name of the non-fallacious terminal.** In the definitive PDF the green terminal is called
-`Non-fallacious Argument`, while in the previous versions it was called `Good Argument` or
-`Good Argumentation` (in appendix B of the definitive PDF `Good Argument` remained). Here it stays
+**Name of the non-fallacious terminal.** In the published version the green terminal is called
+`Non-fallacious Argument` everywhere, appendix included, while in the earlier versions it was
+called `Good Argument` or `Good Argumentation`. Here it stays
 `Good Argumentation`: it is the same terminal, and the name changes neither the path nor the meaning.
 
 ---
 
 ## 0. Changelog with respect to the previous revision of this document
 
-The previous revision was based on the 73-page PDF. Comparison limited to the schemes.
+The previous revision was based on the 73-page PDF. Comparison limited to the schemes. §0.1-§0.5
+are the record of the revisions made on the drafts and on the PDF of 14 September 2026: their page
+numbers and their statements about the thesis refer to those versions. The current state is in §0.6.
 
 ### 0.1 Resolved
 
@@ -75,8 +90,10 @@ The previous revision was based on the 73-page PDF. Comparison limited to the sc
 
 ### 0.3 Unchanged in the thesis, corrected by us
 
-The two inverted polarities of correlation to cause CQ5 and slippery slope CQ5 are still present
-in the PDF. We corrected them by inverting the arcs, see §4, §8 and §12.1.
+The inverted polarity of correlation to cause CQ5 is still present in the published version: we
+corrected it by inverting the arcs, see §4 and §12.1. The one of slippery slope CQ5, which we had
+corrected in the same way, was corrected by the author in the published version: the thesis and our
+file coincide (§8).
 
 Ad hominem without a Good Argumentation terminal remains unchanged and uncorrected, because it is not
 a sign error but a coverage choice. See §12.4.
@@ -123,7 +140,7 @@ eight diverged from the definitive PDF, because the transcription dated back to 
 **Why it matters.** The formal schema is not decoration: in the stage-one prompt it is shown
 to the model together with the closed list of the eight schemes, instead of the bare label. If
 our YAML files carry the old schema, the model sees a text that is not that of the thesis.
-To be checked in the files of `schemes/`.
+The files of `schemes/` were aligned on 23 September 2026 (§0.6).
 
 **The prompt listing no longer exists.** In the definitive PDF, §4.3.2 (pp. 109-110) describes the
 prompts in words and does not report their text. It states that every critical question receives a
@@ -136,9 +153,35 @@ choice of ours, to be justified as such and not as an inheritance from the thesi
 files: our document must be compared with the thesis, block by block. §0.4 compared the
 two drafts of the thesis with each other, and for this reason it had not seen the two divergences.
 
+### 0.6 Alignment with the published version (23 September 2026, 182 pages)
+
+The version published on 23 September 2026, 182 pages, confirmed by the author, replaces the PDF of
+14 September (181 pages) as the reference. The files of `schemes/` go to version 1.1 and follow it,
+except for the corrections of ours listed in the Conventions. No arc was changed.
+
+| Scheme | What changed in the thesis, now in the cards and in `schemes/` |
+|---|---|
+| example, CQ2.1 | "Was the example cited chosen in such a clearly biased and malicious manner as to undermine…", before "selected in a clearly biased and malicious manner in order to undermine…" |
+| example, CQ2.2, CQ2.3, CQ3; cause to effect, CQ2.2 | `generalization`, before `generalisation` |
+| cause to effect, CQ2.1 | the same rewording as example CQ2.1, with `example` in place of `evidence`: we keep `evidence` (Conventions, correction 2) |
+| expert opinion, CQ1 | `recognized`, before `recognised` |
+| expert opinion, CQ2 | "Is the fact that S stated (or claimed) A used as the sole basis for supporting the truth of the conclusion, without providing any other form of argument?", before "The fact that S has asserted (or claimed) A is used as the sole supporting consideration…, without providing any other type of argument?" |
+| slippery slope, identification question | "Does the text put forward the argument that, if a particular action is permitted or carried out…?", before "The text contains an argument claiming that if you allow or carry out…?" |
+| slippery slope, schema | the fourth premise says `Cn`, before `C0` (a typo of the version of 14 September) |
+| slippery slope, CQ5 | the arcs are corrected by the author: `yes` leads to Slippery Slope, as in our file |
+| terminal names | `Non-fallacious Argument` everywhere, appendix included |
+
+Files of `schemes/` that were still behind the PDF of 14 September, now aligned: the formal
+schema of ad hominem and of slippery slope (§0.5), CQ2 of slippery slope with `Cn`, and the
+glossaries of the variables of the two schemes, which follow the formal schema. `committed` and
+`claimed` are now the text of the thesis and leave the list of corrections.
+
+Pages of the diagrams in the published version: 53 example, 58 analogy, 63 cause to effect,
+68 correlation to cause, 74 ad hominem, 81 expert opinion, 87 popular opinion, 94 slippery slope.
+
 ---
 
-## 1. Argument from example (§3.1.1, pp. 47-51)
+## 1. Argument from example (§3.1.1, pp. 51-55)
 
 **Schema**
 ```
@@ -153,10 +196,10 @@ Therefore, generally, if x has property F then x also has property G.
 **Critical questions**
 - **C.Q. 1** — Is the statement illustrated by the example clearly false or unrealistic?
 - **C.Q. 2** — Is the example typical of the kinds of cases that the generalization ranges over?
-  - **C.Q. 2.1** — Was the example cited selected in a clearly biased and malicious manner in order to undermine the validity of the generalization?
-  - **C.Q. 2.2** — Is the example given so specific that it is statistically unrepresentative and therefore cannot be used to support the generalisation?
-  - **C.Q. 2.3** — Is the example given so extreme that it invalidates the generalisation?
-- **C.Q. 3** — Does the example cited have characteristics that make it too different from the generalisation drawn in the conclusion?
+  - **C.Q. 2.1** — Was the example cited chosen in such a clearly biased and malicious manner as to undermine the validity of the generalization?
+  - **C.Q. 2.2** — Is the example given so specific that it is statistically unrepresentative and therefore cannot be used to support the generalization?
+  - **C.Q. 2.3** — Is the example given so extreme that it invalidates the generalization?
+- **C.Q. 3** — Does the example cited have characteristics that make it too different from the generalization drawn in the conclusion?
 
 **Diagram**
 ```
@@ -184,7 +227,7 @@ so it is a choice, not an error.
 
 ---
 
-## 2. Argument from analogy (§3.1.2, pp. 52-56)
+## 2. Argument from analogy (§3.1.2, pp. 56-60)
 
 **Schema**
 ```
@@ -222,7 +265,7 @@ Good Argumentation
 
 ---
 
-## 3. Argument from cause to effect (§3.1.3, pp. 57-61)
+## 3. Argument from cause to effect (§3.1.3, pp. 61-65)
 
 **Schema**
 ```
@@ -237,10 +280,16 @@ Therefore in this case, B will (might) occur.
 **Critical questions**
 - **C.Q. 1** — Is the implication that A leads to B (regardless of what judgement one might make about it) logically sound?
 - **C.Q. 2** — Is the evidence cited (if there is any) strong enough to warrant the causal generalization?
-  - **C.Q. 2.1** — Was the evidence cited selected in a clearly biased and malicious manner in order to undermine the validity of the generalization?
-  - **C.Q. 2.2** — Is the evidence cited insufficient in quantitative terms to support the generalisation?
+  - **C.Q. 2.1** — Was the evidence cited chosen in such a clearly biased and malicious manner as to undermine the validity of the generalization? ⚑
+  - **C.Q. 2.2** — Is the evidence cited insufficient in quantitative terms to support the generalization?
 - **C.Q. 3** — Is the relationship between cause and effect based solely on temporal sequence?
 - **C.Q. 4** — Are there other causal factors that clearly represent the real reason behind the occurrence of the effect?
+
+⚑ **Correction of ours.** The thesis writes "Was the **example** cited chosen…", the wording of
+example CQ2.1. This scheme has no example: CQ2 and CQ2.2 speak of the evidence cited, and the Comment
+says "la domanda 2.1 indaga se le evidenze siano state selezionate in maniera deliberatamente
+distorta e faziosa" [question 2.1 asks whether the evidence was selected in a deliberately distorted
+and partisan way]. We write `evidence`, as in the version of 14 September.
 
 **Diagram**
 ```
@@ -263,7 +312,7 @@ Causal Reductionism · Good Argumentation
 
 ---
 
-## 4. Argument from correlation to cause (§3.1.4, pp. 62-66)
+## 4. Argument from correlation to cause (§3.1.4, pp. 66-70)
 
 **Schema**
 ```
@@ -283,9 +332,8 @@ Therefore, A causes B.
 - **C.Q. 4** — Could there be a third factor C (or a set of several factors) that is the clear cause of B or of both A and B?
 - **C.Q. 5** — Can it be shown that the increase or change in B is not solely due to the way B is defined?
 
-⟶ *version note*. `observations` in the plural is the text of the definitive PDF, not a correction
-of ours. `claimed` remains a correction of ours, the thesis writes `Is the claim relationship`.
-See §0.4.
+⟶ *version note*. `observations` in the plural and `claimed` are the text of the published version;
+the earlier versions wrote `observation` and `Is the claim relationship`. See §0.4 and §0.6.
 
 **Diagram**
 ```
@@ -305,22 +353,22 @@ CQ5   yes → Good Argumentation      ⚑ arc corrected by us
       no  → Definist Fallacy        ⚑ arc corrected by us
 ```
 
-⚑ **Correction applied.** In the diagram of the thesis, checked on the rasterised page, printed
-p. 64, the arcs of CQ5 are the opposite, `yes` towards Definist
+⚑ **Correction applied.** In the diagram of the thesis, checked on the rendered page, printed
+p. 68, the arcs of CQ5 are the opposite, `yes` towards Definist
 Fallacy and `no` towards Good Argumentation. Given the text of the question that direction is
 reversed, and the Comment of the thesis itself confirms it, according to which the definist fallacy
 arises when the change in B is "un effetto della definizione stessa di B, piuttosto che un mutamento
 sostanziale del fenomeno osservato" [an effect of the very definition of B, rather than a substantial
 change in the observed phenomenon]. We inverted the two arcs, leaving the text
-of the question intact. Rechecked on the definitive PDF on 14 September 2026: the arcs are still
-inverted, the correction remains necessary.
+of the question intact. Rechecked on the published version of 23 September 2026: the arcs are
+still inverted, the correction remains necessary.
 
 **Terminals** — False Premise · Post Hoc · Questionable Cause · Hasty Generalization ·
 Causal Reductionism · Definist Fallacy · Good Argumentation
 
 ---
 
-## 5. Argument ad hominem (§3.1.5, pp. 67-72)
+## 5. Argument ad hominem (§3.1.5, pp. 71-76)
 
 **Schema**
 ```
@@ -328,8 +376,8 @@ a is a person of bad character.
 Therefore, a's argument A should not be accepted.
 ```
 
-⚑ **Schema replaced on 15 September 2026.** This is the text printed on p. 68 of the definitive
-PDF, with citation [6]. The previous revision of this document reported Walton's longer ethotic
+⚑ **Schema replaced on 15 September 2026.** This is the text printed on p. 72 of the published
+version, with citation [6]; the file `schemes/ad_hominem.yaml` carries it since version 1.1. The previous revision of this document reported Walton's longer ethotic
 formulation ("If x is a person of good (bad) moral character, then
 what x says should be accepted as more plausible…"), which came from the 135-page PDF and no longer
 appears in the thesis. It matters because the formal schema is shown to the model in the stage-one
@@ -374,7 +422,7 @@ space is not uniform across the nodes.
 
 ---
 
-## 6. Argument from expert opinion (§3.1.6, pp. 73-79)
+## 6. Argument from expert opinion (§3.1.6, pp. 77-83)
 
 **Schema**
 ```
@@ -389,8 +437,8 @@ Therefore A (and/or C) may (plausibly) be taken as true.
 > Does this text use the opinion of a (supposedly) authoritative source as evidence to support a claim?
 
 **Critical questions**
-- **C.Q. 1** — Is S in a position to know whether A is true or false, or is S a genuine expert recognised by the community of experts in D?
-- **C.Q. 2** — The fact that S has asserted (or claimed) A is used as the sole supporting consideration for the truth of the conclusion, without providing any other type of argument?
+- **C.Q. 1** — Is S in a position to know whether A is true or false, or is S a genuine expert recognized by the community of experts in D?
+- **C.Q. 2** — Is the fact that S stated (or claimed) A used as the sole basis for supporting the truth of the conclusion, without providing any other form of argument?
 - **C.Q. 3** — Did S really assert (or claim) A as true?
   - **C.Q. 3.1** — Is S taking part in the discussion?
 - **C.Q. 4** — Is there a conclusion C that differs from A but uses A to justify itself?
@@ -425,7 +473,7 @@ the diagram gives no rule for it. See §12.3.
 
 ---
 
-## 7. Argument from popular opinion (§3.1.7, pp. 80-85)
+## 7. Argument from popular opinion (§3.1.7, pp. 84-89)
 
 **Schema**
 ```
@@ -470,7 +518,7 @@ Appeal to Nature · Good Argumentation
 
 ---
 
-## 8. Slippery slope argument (§3.1.8, pp. 86-92)
+## 8. Slippery slope argument (§3.1.8, pp. 90-96)
 
 **Schema**
 ```
@@ -479,22 +527,22 @@ There exists a series of cases, C0, C1,..., Cn−1, where each case leads to the
 combination of causal, precedent, and/or analogy steps.
 There is a climate of social opinion such that once people come to accept each step as
 plausible (or as accepted practice), they will then be led to accept the next step.
-The penultimate step Cn−1 leads to a horrible outcome, C0, which is not acceptable.
+The penultimate step Cn−1 leads to a horrible outcome, Cn, which is not acceptable.
 Therefore, C0 is not acceptable (contrary to the presumption of the initial premise).
 ```
 
-⚑ **Schema replaced on 15 September 2026.** This is the text printed on p. 88 of the definitive
-PDF, with citation [9], in `C0 … Cn` notation. The previous revision reported the
+⚑ **Schema replaced on 15 September 2026.** This is the text printed on p. 92 of the published
+version, with citation [9], in `C0 … Cn` notation; the file `schemes/slippery_slope.yaml` carries it
+since version 1.1, with the subscripts written inline (`Cn-1`). The previous revision reported the
 version in `A0 … An` notation, which came from the 135-page PDF. As a consequence CQ 2 goes back
 to saying `Cn`, which is consistent with the schema: our correction from `Cn` to `An` is no longer
 needed.
 
-⟶ *our observation*. The text of the thesis contains a typo: "The penultimate step Cn−1
-leads to a horrible outcome, C0" should say `Cn`, and `Cn` is the outcome that CQ 2 refers to.
-We leave it as printed and flag it here.
+⟶ *version note*. The version of 14 September had a typo in the fourth premise, "…leads to a
+horrible outcome, C0"; the published version writes `Cn`, the outcome that CQ 2 refers to.
 
 **Identification question**
-> The text contains an argument claiming that if you allow or carry out a particular action (even if it's small or seemingly harmless), it will inevitably lead (through a chain of intermediate consequences) to an extreme or catastrophic final outcome?
+> Does the text put forward the argument that, if a particular action is permitted or carried out (even if it is minor or seemingly harmless), it will inevitably lead (through a chain of intermediate consequences) to an extreme or catastrophic final outcome?
 
 **Critical questions**
 - **C.Q. 1** — Do any of the causal links in the chain lack sufficient evidence to support the claim that they will (might, must) occur?
@@ -516,19 +564,18 @@ CQ4   yes → CQ4.1
       no  → CQ5
 CQ4.1 yes → Slippery Slope         ⟲
       no  → CQ5                    ⟲
-CQ5   yes → Slippery Slope         ⟲ · ⚑ arc corrected by us
-      no  → Good Argumentation     ⚑ arc corrected by us
+CQ5   yes → Slippery Slope         ⟲
+      no  → Good Argumentation
 ```
 
-⚑ **Correction applied.** In the diagram of the thesis, checked on the rasterised page, printed
-p. 90, the arcs of CQ5 are the opposite, `no` towards Slippery
-Slope and `yes` towards Good Argumentation. The presence of weak links in the chain is the fallacious
+⟶ *version note*. Up to the version of 14 September the diagram of the thesis had the arcs of CQ5
+the opposite way, `no` towards Slippery Slope and `yes` towards Good Argumentation, and we had
+corrected them. In the published version (printed p. 94, checked on the rendered page) the author
+corrected them: `yes` leads to Slippery Slope, and the thesis and our file coincide. The presence of weak links in the chain is the fallacious
 condition, not the sound one, and the Comment of the thesis on CQ1 confirms it: "se anche un solo
 anello causale risulta privo di adeguata giustificazione, la catena si spezza e l'argomentazione
 ricade nella fallacia dello slippery slope" [if even a single causal link lacks adequate
-justification, the chain breaks and the argument falls into the slippery slope fallacy]. We inverted
-the two arcs, leaving the text of the question intact. Rechecked on the definitive PDF on
-14 September 2026: the arcs are still inverted, the correction remains necessary.
+justification, the chain breaks and the argument falls into the slippery slope fallacy]. That is the direction of the published diagram.
 
 **Terminals** — Slippery Slope · Definist Fallacy · Good Argumentation
 
@@ -621,7 +668,7 @@ the first**, and it is the one transcribed in §1-8.
 | | source | role |
 |---|---|---|
 | **A** | thesis, chapter 3 | official and citable |
-| **B** | 135-page thesis, §4.3, prompt listing | **no longer exists.** In the definitive PDF §4.3.2 describes the prompts only in words, without a listing. It stays cited below because it documents a prompt that was never run, but it is no longer a citable source |
+| **B** | 135-page thesis, §4.3, prompt listing | **no longer exists.** In the published version §4.3.2 (pp. 113-114) describes the prompts only in words, without a listing. It stays cited below because it documents a prompt that was never run, but it is no longer a citable source |
 | **C** | `Lavoro di Enrico/src/prompts/template_stage2_*.txt` | the prompts actually run |
 | **D** | `Thesis/src/YAML/*.yaml` | Dumitru's encoding |
 
@@ -630,9 +677,9 @@ are not reported, because in this document and in our files the spelling is corr
 
 | Scheme, CQ | A, thesis ch. 3 | C, run | D, YAML |
 |---|---|---|---|
-| example CQ2.1 | "**Was** the example cited selected in a clearly biased and malicious manner…" | "**Is** the example cited selected…" | "…selected **on the basis of biased quality criteria that undermine the strength**…" |
+| example CQ2.1 | "**Was** the example cited chosen in such a clearly biased and malicious manner…" | "**Is** the example cited selected…" | "…selected **on the basis of biased quality criteria that undermine the strength**…" |
 | analogy CQ4 | "…A is false (true)?" | "…A is false (**or** true)?" | same as A |
-| cause to effect CQ2.1 | "…clearly biased **and malicious** manner in order to **undermine** the validity…" | same as A | "…clearly biased manner in order to **support** the generalization" |
+| cause to effect CQ2.1 | "…clearly biased **and malicious** manner as to **undermine** the validity…" | same as A | "…clearly biased manner in order to **support** the generalization" |
 | correlation to cause CQ5 | "Can it be shown that … is **not** solely due to the way B is defined?" | same as A | "Is the increase or change in B **solely an artefact** of the way B is defined?" |
 | ad hominem CQ1 | branches on `positive` / `negative` | the text asks negative or positive but the format **imposes `Yes` or `No`** | `answer_space: ["positive", "negative"]` |
 | ad hominem CQ3 | "…that they **are committed**?" | "…that they **committed [something]**?" | "…that they **are committed to a group, cause or interest**?" |
@@ -670,18 +717,19 @@ the author, because it is not a typo.
 
 ### 12.1 Inverted polarities, corrected
 
-Two nodes have their arcs inverted with respect to the text of their own question. Checked by reading
-the diagrams on the rasterised pages of the PDF, not from the text extraction.
+Two nodes had their arcs inverted with respect to the text of their own question; in the published
+version only the first still has. Checked by reading the diagrams on the rendered pages of the PDF,
+not from the text extraction.
 
-**correlation to cause, CQ5**, printed p. 64. "Can it be shown that
+**correlation to cause, CQ5**, printed p. 68. "Can it be shown that
 the increase or change in B is **not** solely due to the way B is defined?" In the thesis `yes`
 leads to Definist Fallacy. But `yes` means that it can be shown that the change does **not**
 depend on the definition, that is, that the argument holds. The Comment of the thesis confirms it:
 the definist fallacy arises when the change is "un effetto della definizione stessa di B" [an effect
 of the very definition of B].
 
-**slippery slope, CQ5**, printed p. 90. "Are there weak links in the
-sequence…?" In the thesis `no` leads to Slippery Slope. But the presence of weak links is the
+**slippery slope, CQ5**, printed p. 94. "Are there weak links in the
+sequence…?" Up to the version of 14 September `no` led to Slippery Slope. But the presence of weak links is the
 fallacious condition. The Comment on CQ1 confirms it: "se anche un solo anello causale risulta
 privo di adeguata giustificazione … l'argomentazione ricade nella fallacia dello slippery slope"
 [if even a single causal link lacks adequate justification … the argument falls into the slippery
@@ -692,8 +740,10 @@ in the thesis. It is the minimal correction and requires no rewording. It also a
 diagram with the Comment that the author wrote, so it does not introduce an interpretation
 of ours.
 
-**Status on the definitive PDF.** Both inversions are still present in the definitive PDF of
-14 September 2026, rechecked on the rendered pages. The two corrections stay.
+**Status on the published version.** Rechecked on the rendered pages of the version of
+23 September 2026: correlation to cause CQ5 is still inverted, and our correction stays; slippery
+slope CQ5 was corrected by the author and coincides with our file, so it is no longer a correction
+of ours.
 
 **Note for the comparison with the results.** The 607 rows of the previous runs (606 distinct texts) were evaluated with the uncorrected
 arcs. But the arcs are applied by the code to the answers already recorded, not by the
@@ -703,9 +753,14 @@ model. Both versions can be obtained from the same data.
 ### 12.2 Questions with a double condition
 
 **example CQ2.1 and cause to effect CQ2.1** contain two joined conditions, `clearly biased`
-**and** `malicious`, and attribute to the selection the intent to *undermine* the generalization,
-while in the flow the node serves to identify whoever selects evidence to *support* their own thesis
-unduly.
+**and** `malicious`. In the published version they say "chosen in such a clearly biased and
+malicious manner **as to** undermine the validity of the generalization": undermining the validity is
+the effect of the biased selection, no longer its purpose ("in order to" in the earlier versions).
+Read this way, `yes` leading to Cherry Picking is the right answer for the fallacy, and the text stays.
+The Comment of cause to effect still speaks of the purpose, evidence selected "al fine di avvalorare
+la generalizzazione causale" [in order to support the causal generalization]: it describes the aim of
+whoever argues, the question the effect on the validity. The two are compatible, and the difference is
+only recorded here.
 
 **expert opinion CQ1** joins two distinct conditions, being in a position to know and being
 recognised by the community of experts. With `or` the connective is defined, but the case "competent

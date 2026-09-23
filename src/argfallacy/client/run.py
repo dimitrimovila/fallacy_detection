@@ -283,6 +283,17 @@ def schemes_hash(directory: str | Path = SCHEMES_DIR) -> str:
     return digest.hexdigest()
 
 
+def schemes_tag(directory: str | Path = SCHEMES_DIR) -> str:
+    """The `version` that every scheme YAML declares; the files must agree."""
+    tags = {
+        yaml.safe_load(path.read_text(encoding="utf-8")).get("version")
+        for path in sorted(Path(directory).glob("*.yaml"))
+    }
+    if len(tags) != 1 or None in tags:
+        raise SchemeError(f"the scheme files must declare one shared version, found {tags}")
+    return str(tags.pop())
+
+
 def make_run_id(config_name: str, when: datetime | None = None) -> str:
     when = when or datetime.now(UTC)
     return f"{when.strftime('%Y%m%dT%H%M%SZ')}_{config_name}"
@@ -321,6 +332,7 @@ def build_manifest(
             prompt_version(STAGE2, config.prompt_version),
         ],
         "schemes_version": {
+            "tag": schemes_tag(),
             "files": sorted(p.name for p in SCHEMES_DIR.glob("*.yaml")),
             "content_sha256": schemes_hash(),
         },
