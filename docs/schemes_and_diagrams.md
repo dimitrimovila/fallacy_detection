@@ -602,7 +602,7 @@ reconstructed.
 | correlation to cause | 7 | ad hominem | 6 |
 | example | 6 | popular opinion | 6 |
 | cause to effect | 6 | slippery slope | 6 |
-| expert opinion | 6 | analogy | 4 |
+| expert opinion | 5 | analogy | 4 |
 
 **Non-uniform answer space.** All the nodes branch on `yes` and `no` except CQ1 of
 ad hominem, which branches on `positive` and `negative`.
