@@ -18,6 +18,11 @@ Three checks matter more than the rest:
   passing ``enable_thinking`` through, and a ``length`` finish means the object
   was cut off before it closed.
 
+The exit code is zero only if the entry can be run: a job stops on anything else.
+Besides a refusal, an error or an answer token missing from the JSON, that means
+no reasoning or a cut-off answer on an entry that asks for thinking, and no
+logprobs on an entry whose ``supports_logprobs`` is true.
+
     python serving/smoke_test.py --model qwen3_8_27b        # a key of serving/models.yaml
     python serving/smoke_test.py --model qwen3_8_27b_think  # same weights, thinking on
     python serving/smoke_test.py --model fake               # the fake backend, no network
@@ -179,14 +184,17 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Finish    : {response.finish_reason}")
     if response.usage:
         print(f"Tokens    : {json.dumps(response.usage)}")
+    unusable = False
     if thinking_on(spec):
         count, source = reasoning_tokens(response)
         print(f"Thinking  : {count} tokens ({source})")
         if count == 0:
+            unusable = True
             print("WARNING: this entry asks for reasoning and there was none. "
                   "Check that the server passes `enable_thinking` to the template and that it "
                   "was launched with the reasoning parser given in the model's notes.")
         if response.finish_reason == "length":
+            unusable = True
             print(f"WARNING: response cut off at {max_tokens} tokens "
                   f"(finish_reason = length): the reasoning used up the room for the "
                   f"JSON. Raise the entry's `max_tokens` in serving/models.yaml.")
@@ -196,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
         print("LOGPROBS NOT AVAILABLE.")
         print("Set `supports_logprobs: false` for this model in serving/models.yaml.")
         print("`p_logprob` will stay empty and the manifest will say so.")
-        return 0
+        return 1 if unusable or spec.get("supports_logprobs", True) else 0
 
     content = response.logprobs.get("content") or []
     position = answer_position(response.logprobs, rendered.answer_options, ANSWER_KEY)
@@ -234,7 +242,7 @@ def main(argv: list[str] | None = None) -> int:
     if partial:
         print("\nWARNING: an admitted answer does not appear among the top_logprobs.")
         print("The parser marks such rows `logprob_partial`.")
-    return 0 if agrees else 1
+    return 0 if agrees and not unusable else 1
 
 
 if __name__ == "__main__":

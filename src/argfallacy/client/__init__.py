@@ -20,6 +20,7 @@ from .run import (
     read_raw,
     schemes_hash,
     select_items,
+    select_models,
     summarise_plan,
 )
 
@@ -29,5 +30,6 @@ __all__ = [
     "RunConfig", "PlannedCall", "plan", "summarise_plan", "execute",
     "build_manifest", "schemes_hash", "make_run_id", "read_raw",
     "load_models", "model_spec", "max_tokens_for", "load_items", "select_items",
+    "select_models",
     "GOLD", "PREDICTED", "RAW_NAME", "MANIFEST_NAME",
 ]

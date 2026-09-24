@@ -35,7 +35,7 @@ docs/             specifications per component, data log, proposals
 labels/           label dictionaries: fallacies and schemes
 prompts/          versioned prompt templates, JSON Schemas of the answers, answer definitions
 schemes/          the eight scheme diagrams as YAML
-serving/          the models, how to serve them with vLLM, a smoke test
+serving/          the models, how to serve them with vLLM, a smoke test, the cluster jobs
 src/argfallacy/   the Python package: schemes, labels, annotations, prompts, client, parse, eval, CLI
 tests/            pytest suite, with a fake model backend (no network calls)
 runs/             created at run time: raw JSONL answers and manifests (not versioned)
@@ -85,8 +85,9 @@ check of the scorer.
 Tests and lint:
 
 ```bash
-python -m ruff check src tests serving/smoke_test.py
+python -m ruff check src tests serving
 python -m pytest tests
+for f in serving/slurm/*; do bash -n "$f"; done     # syntax of the cluster jobs
 ```
 
 Updating the rows of the `Annotazione Dumitru` sheets in `data/annotations.csv` from the
@@ -96,11 +97,13 @@ workbook at `WORKBOOK_PATH` (each of those sheets carries an `item_id` column):
 argfallacy annotations update
 ```
 
-Serving a model on the cluster, then checking it answers with log-probabilities:
+Serving one entry of `serving/models.yaml`, then checking it answers with
+log-probabilities (the smoke test exits with a code other than zero if the entry cannot
+be run):
 
 ```bash
-vllm serve <model_id> --revision <revision> --dtype auto --max-model-len 8192 --port 8000
-python serving/smoke_test.py --model <name in serving/models.yaml>
+vllm serve $(python serving/serve_command.py <entry>) --dtype auto --port 8000
+python serving/smoke_test.py --model <entry>
 ```
 
 The models are served with vLLM 0.30.0, installed with pip in a conda environment of its
@@ -110,15 +113,25 @@ pinned Hugging Face commits, except two placeholders: K2 Horizon, until its chec
 chosen, and the commercial model, disabled. Calls refuse to start while a revision is a
 placeholder. Qwen and Gemma each have a second entry
 with reasoning on (`_think`), served by a separate launch with the reasoning parser and
-`--max-model-len 16384`; the entry with reasoning off is served without the parser. See
-`serving/README.md`.
+`--max-model-len 16384`; the entry with reasoning off is served without the parser. The
+flags of each entry are its `serve_args`. See `serving/README.md`.
 
-Pilot (50 items, two models, each with reasoning off and on, five samples):
+Pilot (50 items, two models, each with reasoning off and on, five samples). A server
+serves one entry at a time, so each entry is run after its own launch, and `--run-id`
+gathers the four into one run:
 
 ```bash
-argfallacy run plan configs/pilot.yaml         # counts the calls, makes none
-argfallacy run execute configs/pilot.yaml      # makes the calls, writes runs/<run_id>/
-argfallacy parse <run_id>                      # answers.csv and summary.csv
+argfallacy run plan configs/pilot.yaml                     # counts the calls, makes none
+argfallacy run execute configs/pilot.yaml --run-id <run_id> --model <entry>
+argfallacy parse <run_id>                                  # answers.csv and summary.csv
+```
+
+On the cluster two Slurm jobs do this, launching and stopping the servers themselves
+(preparation in `serving/README.md`):
+
+```bash
+sbatch serving/slurm/smoke.sbatch <entry>      # the smoke test of one entry
+sbatch serving/slurm/pilot.sbatch <run_id>     # the four entries of the pilot, in order
 ```
 
 Scoring the earlier runs (the folder at `PRIOR_RUNS_DIR`) in both modes of the scorer:

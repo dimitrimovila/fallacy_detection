@@ -207,12 +207,13 @@ def test_the_manifest_has_every_declared_field(items, schemes):
     for field in ("run_id", "config", "models", "prompt_versions", "schemes_version",
                   "generation", "n_samples", "scheme_condition",
                   "started_at", "finished_at", "calls_planned", "calls_executed",
-                  "calls_from_cache", "calls_failed"):
+                  "calls_from_cache", "calls_failed", "calls_per_model"):
         assert field in manifest, field
     assert manifest["schemes_version"]["tag"] and manifest["schemes_version"]["content_sha256"]
     entry = manifest["models"][MODEL]
     assert entry["model_id"] and entry["display_name"]
     assert "logprobs_available" in entry
+    assert "serve_args" in entry
 
 
 def test_the_manifest_is_written_and_updated(tmp_path, items, schemes, cache):
@@ -417,3 +418,118 @@ def test_the_logprob_is_read_on_the_answer_token_not_in_the_reasoning(schemes):
     masses, partial = logprob_masses(response.logprobs, rendered.answer_options, "answer")
     assert masses[answer] == pytest.approx(REAL_WEIGHT, abs=1e-6)
     assert not partial
+
+
+def test_one_entry_at_a_time_writes_the_run_of_the_whole_configuration(tmp_path, schemes):
+    """The pilot job serves one entry per launch and calls `execute --model` for each.
+
+    Four invocations with the same run id must leave the same `raw.jsonl` and the
+    same manifest, timestamps aside, as one invocation over the whole configuration.
+    """
+    from argfallacy.client import load_items
+
+    config = RunConfig.load(REPO_ROOT / "configs" / "pilot.yaml")
+    chosen = select_items(config, load_items())[:2]
+    models = load_models()
+
+    def run(where: Path, invocations) -> list[dict]:
+        manifests = []
+        with ResponseCache(where / "cache.sqlite") as store:
+            for only in invocations:
+                manifests.append(execute(
+                    config, chosen, run_id="pilot", runs_dir=where, backend=FakeBackend(),
+                    cache=store, models=models, schemes=schemes, only=only,
+                    sleep=lambda _: None,
+                ))
+        return manifests
+
+    whole = run(tmp_path / "whole", [None])
+    split = run(tmp_path / "split", [[entry] for entry in config.models])
+
+    whole_keys = [r["cache_key"] for r in read_raw(tmp_path / "whole" / "pilot")]
+    split_keys = [r["cache_key"] for r in read_raw(tmp_path / "split" / "pilot")]
+    assert split_keys == whole_keys
+
+    on_disk = json.loads((tmp_path / "split" / "pilot" / "manifest.json").read_text("utf-8"))
+    assert on_disk == split[-1]
+    assert split[-1]["started_at"] == split[0]["started_at"], "started_at is the first one's"
+
+    def untimed(manifest: dict) -> dict:
+        return {k: v for k, v in manifest.items() if k not in ("started_at", "finished_at")}
+
+    assert untimed(split[-1]) == untimed(whole[-1])
+    planned = len(plan(config, chosen, models, schemes))
+    assert split[0]["calls_planned"] == planned, "every invocation describes the whole run"
+    assert split[-1]["calls_executed"] == planned
+    for entry in config.models:
+        counts = split[-1]["calls_per_model"][entry]
+        assert counts["executed"] == counts["planned"] > 0, entry
+        assert counts["failed"] == 0
+
+
+def test_an_entry_not_in_the_configuration_stops_plan_and_execute(tmp_path, items, schemes,
+                                                                    backend, cache):
+    config = config_for([STAGE1], samples=1)
+    # in the models file, but not among the models of the configuration
+    unknown = ["fake_long"]
+
+    with pytest.raises(SchemeError, match=r"fake_long.*\['fake'\]"):
+        plan(config, items[:1], FAKE_MODELS, schemes, only=unknown)
+    with pytest.raises(SchemeError, match=r"fake_long.*\['fake'\]"):
+        execute(config, items[:1], run_id="x", runs_dir=tmp_path, backend=backend, cache=cache,
+                models=FAKE_MODELS, schemes=schemes, only=unknown, sleep=lambda _: None)
+    assert backend.calls == 0
+    assert not (tmp_path / "x").exists()
+
+
+def test_the_command_line_lists_the_entries_of_the_configuration(capsys):
+    from argfallacy.cli import main
+
+    with pytest.raises(SystemExit) as stop:
+        main(["run", "plan", str(REPO_ROOT / "configs" / "pilot.yaml"), "--model", "nope"])
+    message = str(stop.value)
+    assert "nope" in message
+    for entry in ("qwen3_8_27b", "qwen3_8_27b_think", "gemma4_31b", "gemma4_31b_think"):
+        assert entry in message
+    assert "calls" not in capsys.readouterr().out, "nothing was planned"
+
+
+def _serve_command():
+    import importlib.util
+
+    path = REPO_ROOT / "serving" / "serve_command.py"
+    spec = importlib.util.spec_from_file_location("serve_command", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _flag(args: list[str], name: str) -> str | None:
+    return args[args.index(name) + 1] if name in args else None
+
+
+@pytest.mark.parametrize("entry,parser,room", [
+    ("qwen3_8_27b", None, "8192"),
+    ("gemma4_31b", None, "8192"),
+    ("qwen3_8_27b_think", "qwen3", "16384"),
+    ("gemma4_31b_think", "gemma4", "16384"),
+])
+def test_the_serve_command_of_each_pilot_entry(entry, parser, room):
+    """Reasoning off without a parser; reasoning on with the model's parser and room."""
+    spec = load_models()[entry]
+    args = _serve_command().command(entry)
+
+    assert args[:3] == [spec["model_id"], "--revision", spec["revision"]]
+    assert _flag(args, "--reasoning-parser") == parser
+    assert _flag(args, "--max-model-len") == room
+    assert args.count("--max-model-len") == 1
+
+
+def test_the_serve_command_refuses_an_unpinned_revision(capsys):
+    serve_command = _serve_command()
+    assert "PLACEHOLDER" in load_models()["k2_horizon_32b"]["revision"]
+
+    assert serve_command.main(["k2_horizon_32b"]) != 0
+    printed = capsys.readouterr()
+    assert printed.out == "", "a job reading the command must get nothing to launch"
+    assert "no pinned revision" in printed.err

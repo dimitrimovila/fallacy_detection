@@ -28,12 +28,24 @@ def _cmd_annotations_update(args: argparse.Namespace) -> int:
     return 0
 
 
+def _entries(config, names: list[str] | None) -> list[str]:
+    """The entries named with ``--model``, or all of them; an unknown name stops here."""
+    from .client import select_models
+    from .schemes import SchemeError
+
+    try:
+        return select_models(config, names)
+    except SchemeError as error:
+        raise SystemExit(str(error)) from None
+
+
 def _cmd_run_plan(args: argparse.Namespace) -> int:
     from .client import ResponseCache, RunConfig, load_items, plan, select_items, summarise_plan
 
     config = RunConfig.load(args.config)
+    entries = _entries(config, args.model)
     items = select_items(config, load_items(args.items))
-    calls = plan(config, items)
+    calls = plan(config, items, only=entries)
     with ResponseCache() as cache:
         report = summarise_plan(calls, cache)
     print(f"configuration  : {config.name}")
@@ -56,14 +68,22 @@ def _cmd_run_execute(args: argparse.Namespace) -> int:
     from .client import RunConfig, execute, load_items, select_items
 
     config = RunConfig.load(args.config)
+    entries = _entries(config, args.model)
     items = select_items(config, load_items(args.items))
-    manifest = execute(config, items, run_id=args.run_id)
+    manifest = execute(config, items, run_id=args.run_id, only=entries)
     print(f"run_id          : {manifest['run_id']}")
     print(f"calls           : planned {manifest['calls_planned']}, "
           f"executed {manifest['calls_executed']}, "
           f"from cache {manifest['calls_from_cache']}, "
           f"failed {manifest['calls_failed']}")
-    return 1 if manifest["calls_failed"] else 0
+    per_model = manifest["calls_per_model"]
+    if args.model:
+        for name in entries:
+            counts = per_model[name]
+            print(f"  {name:<14}: planned {counts['planned']}, executed {counts['executed']}, "
+                  f"from cache {counts['from_cache']}, failed {counts['failed']}")
+    # the exit code speaks for the entries this invocation ran
+    return 1 if any(per_model[name]["failed"] for name in entries) else 0
 
 
 def _cmd_parse(args: argparse.Namespace) -> int:
@@ -121,8 +141,14 @@ def build_parser() -> argparse.ArgumentParser:
         parser_for.add_argument(
             "--items", default=None, help="an items table (default: data/items.csv)"
         )
+        parser_for.add_argument(
+            "--model", action="append", default=None, metavar="NAME",
+            help="only this entry of the configuration; can be repeated",
+        )
         if name == "execute":
-            parser_for.add_argument("--run-id", default=None, help="resume this run")
+            parser_for.add_argument(
+                "--run-id", default=None, help="resume this run, or add entries to it"
+            )
         parser_for.set_defaults(func=func)
 
     parse_cmd = sub.add_parser("parse", help="turn a run's raw.jsonl into tables")

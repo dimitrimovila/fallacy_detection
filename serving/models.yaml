@@ -1,4 +1,4 @@
-# The models and how they are served. Version 3.1.
+# The models and how they are served. Version 3.2.
 #
 # Six models in three tiers (`tier`), in eight entries: Qwen3.8 and Gemma 4 have two
 # each, with reasoning off and on. The open models are served with vLLM 0.30.0, installed
@@ -21,23 +21,28 @@
 #             two entries with the same `model_id` and the same `revision`: the base entry
 #             with `enable_thinking: false`, the `_think` entry with `enable_thinking: true`
 #             and the template's default level. The two entries are served by two separate
-#             launches of the server, which differ in the reasoning parser: the notes of
-#             each entry say with which flags. For gpt oss it does not switch off entirely
+#             launches of the server, which differ in the reasoning parser: `serve_args` of
+#             each entry gives the flags. For gpt oss it does not switch off entirely
 #             and is kept at the minimum, so its answers are not produced under the same
 #             conditions as those of the other models. For K2 Horizon it does not switch
 #             off, and the level is still to be chosen.
 # `max_tokens` optional: applies instead of the one in the configuration. The `_think`
 #             entries need it: they write their reasoning before the JSON, and with the 512
 #             of the configuration they would be cut off.
+# `serve_args` the flags of `vllm serve` that depend on the entry. `serving/serve_command.py`
+#             prints `model_id --revision revision` followed by them, and `--max-model-len
+#             8192` when they do not set it; the job adds port, host, tensor parallelism and
+#             dtype. The commercial model has none: it is not served with vLLM.
 # `enabled`   a disabled model enters no plan.
 # `supports_logprobs`  the server returns the token logprobs.
 # `is_reasoning`       the model can reason before answering.
 # `max_concurrency`    the maximum number of simultaneous calls.
 #
 # revision, tier, reasoning and max_tokens go into the manifest of every run and into the
-# cache key: changing one of them produces new calls, not old answers reused.
+# cache key: changing one of them produces new calls, not old answers reused. serve_args goes
+# into the manifest only: the entry already determines it.
 
-version: "3.1"
+version: "3.2"
 
 models:
 
@@ -52,6 +57,7 @@ models:
     is_reasoning: true
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
     max_concurrency: 8
+    serve_args: []
     notes: >-
       Pilot, main condition. Reasoning switched off by the chat template. The server
       starts without `--reasoning-parser`: with the parser on and no reasoning, vLLM
@@ -69,10 +75,12 @@ models:
     reasoning: {chat_template_kwargs: {enable_thinking: true}}
     max_concurrency: 8
     max_tokens: 8192
+    serve_args: [--reasoning-parser, qwen3, --max-model-len, "16384"]
     notes: >-
       Same weights and same revision as `qwen3_8_27b`: only the reasoning changes, switched
-      on at the template's default level. Separate server, launched with
-      `--reasoning-parser qwen3` and `--max-model-len 16384`.
+      on at the template's default level. Separate server: without the reasoning parser,
+      structured output would constrain the JSON from the first token and the model would
+      not reason; the context holds the prompt and the 8192 tokens of `max_tokens`.
 
   gemma4_31b:
     tier: 1
@@ -84,6 +92,7 @@ models:
     is_reasoning: true
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
     max_concurrency: 8
+    serve_args: []
     notes: >-
       Pilot, main condition. Reasoning switched off by the chat template. The server
       starts without `--reasoning-parser`: with the parser on and no reasoning, vLLM
@@ -101,10 +110,12 @@ models:
     reasoning: {chat_template_kwargs: {enable_thinking: true}}
     max_concurrency: 8
     max_tokens: 8192
+    serve_args: [--reasoning-parser, gemma4, --max-model-len, "16384"]
     notes: >-
       Same weights and same revision as `gemma4_31b`: only the reasoning changes, switched
-      on at the template's default level. Separate server, launched with
-      `--reasoning-parser gemma4` and `--max-model-len 16384`.
+      on at the template's default level. Separate server: without the reasoning parser,
+      structured output would constrain the JSON from the first token and the model would
+      not reason; the context holds the prompt and the 8192 tokens of `max_tokens`.
 
   gpt_oss_20b:
     tier: 1
@@ -116,6 +127,7 @@ models:
     is_reasoning: true
     reasoning: {reasoning_effort: low}
     max_concurrency: 8
+    serve_args: []
     notes: "The reasoning does not switch off: effort at the minimum. The logprobs must be read on the answer token inside the JSON, not on the first generated token."
 
   # ------------------------------------------------------------------- tier 2
@@ -129,6 +141,7 @@ models:
     is_reasoning: true
     reasoning: {reasoning_effort: low}
     max_concurrency: 4
+    serve_args: []
     notes: "Pairs with gpt_oss_20b: same family, only the size changes. Same caveat on the reasoning."
 
   k2_horizon_32b:
@@ -141,13 +154,15 @@ models:
     is_reasoning: true
     reasoning: {}
     max_concurrency: 4
+    serve_args: [--trust-remote-code, --reasoning-parser, k2_horizon, --tool-call-parser, k2_horizon]
     notes: >-
       Dense, 32B. The reasoning does not switch off: it is set with `reasoning_effort` in
       `chat_template_kwargs`, and the model card documents only `high`. While `reasoning`
       stays empty the model reasons at the template's default level. The repository
       holds a stage 1 checkpoint, with the final version announced: the revision
-      must be pinned to the checkpoint actually used. vLLM also needs `--trust-remote-code`,
-      `--reasoning-parser k2_horizon`, `--tool-call-parser k2_horizon`.
+      must be pinned to the checkpoint actually used. The repository carries code of its
+      own, which vLLM runs only with `--trust-remote-code`, and vLLM has a reasoning parser
+      and a tool call parser for this model.
 
   # ------------------------------------------------------------------- tier 3
   gpt_5_5:

@@ -19,7 +19,7 @@ import hashlib
 import json
 import math
 import os
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -63,6 +63,25 @@ def model_spec(name: str, models: Mapping[str, Any] | None = None) -> dict[str, 
     if name not in models:
         raise SchemeError(f"unknown model {name!r}; serving/models.yaml has {sorted(models)}")
     return models[name]
+
+
+def select_models(config: RunConfig, only: Sequence[str] | None = None) -> list[str]:
+    """The entries of the configuration that one invocation runs, in its order.
+
+    All of them by default.  A job that serves one entry per launch of the server
+    names that entry; a name the configuration does not have stops everything
+    before any call, since the job would otherwise send nothing, or send the calls
+    of one entry to the server launched for another.
+    """
+    if not only:
+        return list(config.models)
+    unknown = [name for name in only if name not in config.models]
+    if unknown:
+        raise SchemeError(
+            f"{unknown} not among the models of the configuration {config.name!r}: "
+            f"{config.models}"
+        )
+    return [name for name in config.models if name in only]
 
 
 # --------------------------------------------------------------------- config
@@ -155,20 +174,25 @@ def plan(
     models: Mapping[str, Any] | None = None,
     schemes: Mapping[str, Any] | None = None,
     predictions: Mapping[str, str] | None = None,
+    only: Sequence[str] | None = None,
 ) -> list[PlannedCall]:
     """Every call the configuration asks for, in the order they will be made.
+
+    ``only`` keeps the named entries of the configuration (see
+    :func:`select_models`).
 
     In the ``predicted`` condition, stage two is planned only for the items whose
     predicted scheme differs from the gold one: where the two agree, the calls
     made in the ``gold`` condition answer this condition too, and the parser
     knows it.
     """
+    entries = select_models(config, only)
     models = models if models is not None else load_models()
     schemes = schemes if schemes is not None else load_all()
     items = list(items)
     calls: list[PlannedCall] = []
 
-    for model_name in config.models:
+    for model_name in entries:
         spec = model_spec(model_name, models)
         if not spec.get("enabled", True):
             raise SchemeError(
@@ -324,6 +348,7 @@ def build_manifest(
                 "revision": model_spec(name, models).get("revision"),
                 "tier": model_spec(name, models).get("tier"),
                 "reasoning": model_spec(name, models).get("reasoning") or {},
+                "serve_args": model_spec(name, models).get("serve_args"),
             }
             for name in sorted(used)
         },
@@ -349,10 +374,29 @@ def build_manifest(
         "calls_executed": 0,
         "calls_from_cache": 0,
         "calls_failed": 0,
+        "calls_per_model": {
+            name: {"planned": sum(1 for c in calls if c.model == name),
+                   "executed": 0, "from_cache": 0, "failed": 0}
+            for name in config.models
+        },
     }
 
 
 # -------------------------------------------------------------------- execute
+def _rows(path: Path) -> Iterator[dict[str, Any]]:
+    """The lines of a ``raw.jsonl`` that parse; a line cut off by a crash is skipped."""
+    if not path.is_file():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            yield json.loads(line)
+        except json.JSONDecodeError:
+            continue
+
+
 def _already_written(path: Path) -> set[str]:
     """Keys of the calls this run has already answered.
 
@@ -361,22 +405,55 @@ def _already_written(path: Path) -> set[str]:
     and went wrong.  So a retried call leaves two lines with the same key, one
     with ``error`` and one without, which is history rather than duplication.
     """
-    if not path.is_file():
-        return set()
-    keys: set[str] = set()
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError:
-            continue
+    return {
+        row["cache_key"] for row in _rows(path)
+        if not row.get("error") and "cache_key" in row
+    }
+
+
+def _count_calls(manifest: dict[str, Any], path: Path) -> None:
+    """Executed, from the cache and failed, over the whole ``raw.jsonl`` of the run.
+
+    Per entry and in total, whichever entries this invocation ran.  A call counts
+    once: its answered line says executed or from the cache, and a call that has
+    only error lines is failed.  A failure answered on a later try is no longer
+    failed; its error line stays in the file as history.
+    """
+    per_model = manifest["calls_per_model"]
+    for counts in per_model.values():
+        counts.update(executed=0, from_cache=0, failed=0)
+    answered: set[tuple[str, str]] = set()
+    tried: set[tuple[str, str]] = set()
+    for row in _rows(path):
+        call = (str(row.get("model")), str(row.get("cache_key")))
+        counts = per_model.setdefault(
+            call[0], {"planned": 0, "executed": 0, "from_cache": 0, "failed": 0}
+        )
         if row.get("error"):
-            continue
-        if "cache_key" in row:
-            keys.add(row["cache_key"])
-    return keys
+            tried.add(call)
+        elif call not in answered:
+            answered.add(call)
+            counts["from_cache" if row.get("from_cache") else "executed"] += 1
+    for model, _ in tried - answered:
+        per_model[model]["failed"] += 1
+    for field_name in ("executed", "from_cache", "failed"):
+        manifest[f"calls_{field_name}"] = sum(c[field_name] for c in per_model.values())
+
+
+def _write_manifest(path: Path, manifest: dict[str, Any]) -> None:
+    path.write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n"
+    )
+
+
+def _first_start(path: Path) -> str | None:
+    """When the first invocation of this run started, if one already wrote a manifest."""
+    if not path.is_file():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8")).get("started_at")
+    except json.JSONDecodeError:
+        return None
 
 
 def _is_retryable(message: str) -> bool:
@@ -409,8 +486,16 @@ def execute(
     predictions: Mapping[str, str] | None = None,
     max_attempts: int = 3,
     sleep: Any = None,
+    only: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     """Run the plan, writing the manifest and one line per call.
+
+    ``only`` runs the named entries of the configuration and leaves the others
+    alone (see :func:`select_models`).  Several invocations with the same
+    ``run_id`` write one run: the manifest always describes the whole
+    configuration, with the calls planned for every entry, the counts read from
+    the whole ``raw.jsonl``, the start of the first invocation and the end of
+    the last.
 
     Returns the manifest as written.  Raises nothing on a failed call: the
     failure is a line in ``raw.jsonl`` with ``error`` set and no cache entry, so
@@ -418,6 +503,7 @@ def execute(
     """
     import time
 
+    entries = select_models(config, only)
     sleep = sleep or time.sleep
     models = models if models is not None else load_models()
     schemes = schemes if schemes is not None else load_all()
@@ -430,15 +516,13 @@ def execute(
     manifest_path = run_dir / MANIFEST_NAME
 
     manifest = build_manifest(run_id, config, calls, models)
-    manifest["started_at"] = datetime.now(UTC).isoformat()
-    manifest_path.write_text(
-        json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n"
-    )
+    manifest["started_at"] = _first_start(manifest_path) or datetime.now(UTC).isoformat()
+    _count_calls(manifest, raw_path)
+    _write_manifest(manifest_path, manifest)
 
     owns_cache = cache is None
     cache = cache or ResponseCache()
     written = _already_written(raw_path)
-    executed = from_cache = failed = 0
 
     try:
         by_model: dict[str, list[PlannedCall]] = {}
@@ -446,7 +530,7 @@ def execute(
             by_model.setdefault(call.model, []).append(call)
 
         with open(raw_path, "a", encoding="utf-8", newline="\n") as sink:
-            for model_name in config.models:
+            for model_name in entries:
                 todo = [c for c in by_model.get(model_name, []) if c.key() not in written]
                 if not todo:
                     continue
@@ -465,12 +549,6 @@ def execute(
                 # map keeps plan order even though the calls overlap in flight
                 with ThreadPoolExecutor(max_workers=limit) as pool:
                     for call, response, hit in pool.map(one, todo):
-                        if hit:
-                            from_cache += 1
-                        elif response.error:
-                            failed += 1
-                        else:
-                            executed += 1
                         sink.write(dumps(_raw_line(run_id, config, call, response, hit)) + "\n")
                         written.add(call.key())
                         sink.flush()
@@ -479,12 +557,8 @@ def execute(
             cache.close()
 
     manifest["finished_at"] = datetime.now(UTC).isoformat()
-    manifest["calls_executed"] = executed
-    manifest["calls_from_cache"] = from_cache
-    manifest["calls_failed"] = failed
-    manifest_path.write_text(
-        json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n"
-    )
+    _count_calls(manifest, raw_path)
+    _write_manifest(manifest_path, manifest)
     return manifest
 
 

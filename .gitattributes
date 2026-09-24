@@ -1,5 +1,6 @@
 # Fixed line endings. The cluster runs Linux, and the hash of schemes/ recorded in the manifest of
-# every run must not depend on the operating system the repository was cloned on.
+# every run must not depend on the operating system the repository was cloned on. A job script
+# with CRLF does not run there at all.
 *.csv   text eol=lf
 *.jsonl text eol=lf
 *.md    text eol=lf
@@ -7,3 +8,5 @@
 *.yml   text eol=lf
 *.json  text eol=lf
 *.py    text eol=lf
+*.sh     text eol=lf
+*.sbatch text eol=lf
