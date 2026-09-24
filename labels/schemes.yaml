@@ -23,12 +23,12 @@ schemes:
     name: "Argument from Correlation to Cause"
     aliases: ["Argument from Correlation to Cause", "Correlation to Cause", "correlation_to_cause",
               "Correlation to effect"]
-    note: "Correlation to effect e' un lapsus di Enrico nel workbook (9 righe di cause_to_effect): non esiste uno schema con quel nome."
+    note: "Correlation to effect is a slip in the workbook (9 rows of cause_to_effect): no scheme has that name."
 
   ad_hominem:
     name: "Ad Hominem"
     aliases: ["Ad Hominem", "Argument ad hominem", "ad_hominem"]
-    note: "Unico schema senza terminale Good Argumentation."
+    note: "The only scheme without a Good Argumentation terminal."
 
   expert_opinion:
     name: "Argument from Expert Opinion"
@@ -37,7 +37,7 @@ schemes:
   popular_opinion:
     name: "Argument from Popular Opinion"
     aliases: ["Argument from Popular Opinion", "Popular Opinion", "popular_opinion"]
-    note: "Il foglio del workbook si chiama new_ad_populum ma lo schema e' popular opinion. Ad populum e' una fallacia, non uno schema: non aggiungerlo qui."
+    note: "The workbook sheet is called new_ad_populum, but the scheme is popular opinion. Ad populum is a fallacy, not a scheme: do not add it here."
 
   slippery_slope:
     name: "Slippery Slope"
@@ -46,7 +46,7 @@ schemes:
   none:
     name: "No scheme"
     aliases: ["none", "no", "no scheme", "nessuno", "nessuno schema"]
-    note: "Schema giudicato assente da un annotatore del workbook. Nessun item del test set ha questo gold."
+    note: "Scheme judged absent by an annotator of the workbook. No item of the test set has this gold."
 
 special_values:
   # SNI appears in the scheme columns of the workbook next to YES and NO, and means idk,

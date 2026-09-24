@@ -29,7 +29,7 @@ version: "1.6"
 families:
   ad_hominem:
     label: "Ad Hominem"
-    note: "Usata dagli spazi collassati. Include Ad Fidentia e Poisoning the Well, come nel collassamento di Eleni."
+    note: "Used by the collapsed spaces. Includes Ad Fidentia and Poisoning the Well, as in Eleni's collapse."
 
 terminals:
   good_argumentation:
@@ -109,7 +109,7 @@ coarse_labels:
 
 # Found in the data, produced by no diagram. Outside the label spaces.
 out_of_scope:
-  appeal_to_emotion: {label: "Appeal to Emotion", note: "Vecchio terminale di ad hominem CQ1 positive, sostituito da Appeal to Authority. Puo' comparire in predizioni fatte con la versione precedente."}
+  appeal_to_emotion: {label: "Appeal to Emotion", note: "Former terminal of ad hominem CQ1 positive, replaced by Appeal to Authority. It can appear in predictions made with the previous version."}
 
 # Label spaces: terminal id -> id in the space. Whatever is not listed stays itself.
 spaces:
@@ -183,13 +183,13 @@ idk_markers: ["?", "??", "idk", "unknown", "non so", "dubbio", "indeterminato"]
 # it collapses onto no class, it is never excluded from the denominator, and the audit
 # counts it separately as an invalid output of the model that produced it.
 invalid_outputs:
-  "Ad Hominem Red Herring": "due etichette in una"
-  "Appeal to Emotion/Ad Populum": "due etichette in una"
-  "Appeal to Emotion/False Premise": "due etichette in una"
-  "Red Herring/Straw Man": "due etichette in una"
-  "None, but close to Appeal to Authority or Ad Populum, however the argument is more accurately described as an inductive generalization based on multiple testimonies": "prosa al posto di una etichetta"
-  "Uncertain: Unexpected answer for 'cq2' (expected: yes/no): '[MISSING ANSWER]'": "messaggio di errore della pipeline al posto di una etichetta"
-  "Uncertain: Unexpected answer for 'cq3' (expected: yes/no): '[MISSING ANSWER]'": "messaggio di errore della pipeline al posto di una etichetta"
+  "Ad Hominem Red Herring": "two labels in one"
+  "Appeal to Emotion/Ad Populum": "two labels in one"
+  "Appeal to Emotion/False Premise": "two labels in one"
+  "Red Herring/Straw Man": "two labels in one"
+  "None, but close to Appeal to Authority or Ad Populum, however the argument is more accurately described as an inductive generalization based on multiple testimonies": "prose instead of a label"
+  "Uncertain: Unexpected answer for 'cq2' (expected: yes/no): '[MISSING ANSWER]'": "pipeline error message instead of a label"
+  "Uncertain: Unexpected answer for 'cq3' (expected: yes/no): '[MISSING ANSWER]'": "pipeline error message instead of a label"
 
 # Values that mean an empty cell. The audit counts them separately.
 missing_markers: ["", "nan", "NaN", "n/a", "N/A"]
