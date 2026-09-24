@@ -18,7 +18,7 @@ from ..schemes.loader import (
     resolve_for_scheme,
 )
 from .audit import UNKNOWN, audit, format_audit, invalid_outputs, invalid_share
-from .compat import COMPAT_SPACE, compat_merge_map, compat_normalize
+from .compat import COMPAT_SPACE, compat_normalize, compat_normalize_scheme
 from .spaces import collapse, label_space
 from .vocabulary import (
     light_normalize,
@@ -34,6 +34,6 @@ __all__ = [
     "load_scheme_vocabulary", "normalize_scheme_label", "scheme_ids",
     "light_normalize",
     "label_space", "collapse",
-    "compat_normalize", "compat_merge_map", "COMPAT_SPACE",
+    "compat_normalize", "compat_normalize_scheme", "COMPAT_SPACE",
     "audit", "format_audit", "UNKNOWN", "invalid_outputs", "invalid_share",
 ]

@@ -50,7 +50,7 @@ audit(series, kind="fallacy")               # -> table: raw string, count, id, s
 
 `audit` raises no exceptions: for every distinct raw string it returns the count, the translated id or `UNKNOWN`, and the status (`terminal`, `coarse`, `out_of_scope`, `idk`, `missing`, `UNKNOWN`).
 
-Compat mode, in a single function with a docstring: lower case, then exactly one of three affix rules, tried in this order: if the string starts with `ad hominem (` and ends with `)` the part in parentheses is kept; otherwise, if it ends with ` ad hominem` the suffix is removed; otherwise, if it starts with `ad hominem ` the prefix is removed; finally leading and trailing spaces removed. The third rule is needed only for `qwen3.8_27b/zero-shot`, where 31 predictions carry the prefix instead of the suffix: with the first two rules alone that run is off by 0.0577. The family name comes from `labels/fallacies.yaml`, not from the code. The compat comparison is equality between strings transformed this way. No partial credit, no aliases.
+Compat mode is a port of the two label normalizations of the scoring code of the prior runs (spec 06, section 2). `compat_normalize_scheme`, for scheme labels: strip and lower case, remove a leading `argument from`, then a leading `argument`, turn every run of `_`, `-` and `.` into a space, squeeze whitespace, and turn a label that starts with `good ` into `good argument`. `compat_normalize`, for fallacy labels: the scheme normalization first; then a prefix pattern (`ad hominem`, an optional `(`, `:` or `-`, the subtype, an optional `)`) and, failing that, the mirror suffix pattern, whose captured subtype replaces the text only if it is one of the six members of the family; in `collapsed_compat`, the five members that space merges become `ad hominem`; last, `casual reductionism` becomes `causal reductionism`. The family and its members come from the families, terminals and spaces of `labels/fallacies.yaml`, the other strings from its `compat` block, not from the code. The compat comparison is equality between strings transformed this way. No partial credit, no aliases.
 
 ### 3.4 Constraints checked at load time (to be added to the loader)
 * Aliases unique after normalization; an alias cannot point to two ids.
@@ -68,7 +68,7 @@ Since 20 September 2026 `tests/` keeps only the tests that defend a result, chec
 5. `collapse` is total over the 25 ids for both spaces; the sizes are 20 and 21 (25 fine; the symmetric space merges six ids, Eleni's five). On the 23 labels with support in the current gold they become 18 and 19, and 19 is the number of classes of the collapsed row of Eleni's `metrics.csv` files.
 6. Audit of `gold_fallacy` and `predicted_fallacy` in Eleni's `results.csv` files (`PRIOR_RUNS_DIR`; test skipped if missing): zero `UNKNOWN`. Every new string must be added to the aliases and reported in the summary.
 7. Audit of `gold_scheme` and `predicted_scheme`: zero `UNKNOWN`.
-8. Compat: on the `results.csv` of every model, the share of rows with `compat_normalize(predicted) == compat_normalize(gold)` matches the `final_label` accuracy of its `metrics.csv`, tolerance 0.0005. The same for the collapsed row, merging with `collapsed_compat` in the compat space, on the strings put through `compat_normalize`, not on the canonical ids.
+8. Compat: moved to spec 06, whose acceptance tests 1 to 3 reproduce every row of the `metrics.csv`, `classwise_metrics.csv` and `per_dataset_micro_f1.csv` files of the prior runs within 1e-9.
 9. No label string as a literal outside `labels/*.yaml`, `schemes/*.yaml` and `tests/`: a test searches the source code for `"Tu quoque"`, `"Good argument"`, `"Ad Populum"` and fails if it finds them elsewhere. *Today without an automatic test.*
 
 ## 5. What not to do
@@ -77,4 +77,4 @@ Since 20 September 2026 `tests/` keeps only the tests that defend a result, chec
 * Do not touch `data/` or Eleni's files to make the tests pass.
 
 ## 6. Definition of done
-Lint and tests pass (commands in the README); the tests of section 4 without a note are present (6, 7 and 8 are skipped without `PRIOR_RUNS_DIR`); summary with the aliases added.
+Lint and tests pass (commands in the README); the tests of section 4 without a note are present (6 and 7 are skipped without `PRIOR_RUNS_DIR`; 8 is in spec 06); summary with the aliases added.

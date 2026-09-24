@@ -365,12 +365,16 @@ has already measured them on Eleni's runs, and the numbers below come from there
 to a high kappa, the reformulation has made the question answerable, regardless of how the
 final accuracy goes.
 
-**The information ceiling of the answer vector.** In the diagnosis it was 0.669 weighted on gpt-5,
-against 0.558 for the majority class and 0.375 for the tree. The three numbers have not been
-recomputed and remain unverified: they must be redone by the scorer on the test set of the experiments
-before going into the thesis, and the recomputation joins the requirements of spec 06 when it is
-written. The thesis plan reports 0.665 and 0.398 for the same quantities, so the difference must be
-settled there. If v1 raises the ceiling, the questions carry more
+**The information ceiling of the answer vector.** Recomputed by the scorer (spec 06, section 3.6)
+on Eleni's pipeline runs, fine space, all the items, with the items grouped by the scheme the model
+predicted. On the 607 rows of the diagnosis the ceiling is 0.669 on gpt-5 and 0.666 on average over
+the four models (from 0.662 to 0.671), the majority class per scheme 0.557 on gpt-5 and 0.558 on
+average. The numbers written here before mixed these bases: 0.669 was the ceiling on gpt-5, 0.558 the
+four-model mean of the majority. On the 601 items of the test set of the experiments the ceiling is
+0.669 on gpt-5 (0.666 on average, from 0.662 to 0.669) and the majority 0.556 on gpt-5 (0.557 on
+average, from 0.554 to 0.561); with the items grouped by the gold scheme the majority is 0.579. The
+value of the tree, 0.374 on gpt-5 in the diagnosis, is the accuracy of A0 and is recomputed with the
+aggregators (spec 07). If v1 raises the ceiling, the questions carry more
 information. If it raises only the accuracy without raising the ceiling, the gain comes from the
 aggregation, not from the questions.
 
@@ -530,8 +534,9 @@ were recomputed and come out exact: gpt-5 pipeline 0.374, zero-shot 0.565, recog
 scheme 0.834; on the other models the pipeline is between 0.402 and 0.412 and the scheme between
 0.815 and 0.843. The errors above are therefore local to the per-node details of this document.
 
-**What remains unverified.** The information ceiling and the two comparison terms of section 5,
-0.669, 0.558 and 0.375, which require the scorer and the aggregators.
+**What remains unverified.** The value of the tree in section 5, which requires the aggregator A0
+(spec 07). The information ceiling and the majority class are recomputed by the scorer, with their
+basis, in section 5.
 
 **Mixed bases.** None left: §2.6 on analogy CQ4, which was on a gold basis, is now on the
 predicted subset like the rest of the document, with 0.19 agreement and the two percentages of

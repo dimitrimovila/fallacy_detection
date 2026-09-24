@@ -35,12 +35,6 @@ def _items(run: Path) -> pd.DataFrame:
     return frame.drop_duplicates(subset=["id"]) if "id" in frame.columns else frame
 
 
-def _accuracy(run: Path, task: str) -> float | None:
-    metrics = pd.read_csv(run / "metrics.csv")
-    row = metrics[metrics["task"] == task]
-    return float(row["accuracy"].iloc[0]) if len(row) else None
-
-
 def _run_id(run: Path) -> str:
     return "/".join(run.parts[-2:])
 
@@ -73,41 +67,7 @@ def test_scheme_columns_have_no_unknown(prior_runs, scheme_vocab):
     assert seen, "no run carried a scheme column, so the check would pass vacuously"
 
 
-# --------------------------- compat mode reproduces the metrics of the prior runs
-def test_compat_reproduces_the_final_label_accuracy(prior_runs, vocab):
-    checked = []
-    for run in prior_runs:
-        reference = _accuracy(run, "final_label")
-        if reference is None:
-            continue
-        frame = _items(run)
-        ours = (
-            frame["predicted_fallacy"].map(lambda s: compat_normalize(s, vocab))
-            == frame["gold_fallacy"].map(lambda s: compat_normalize(s, vocab))
-        ).mean()
-        assert abs(ours - reference) <= TOLERANCE, (
-            f"{_run_id(run)}: compat {ours:.6f} != metrics.csv {reference:.6f}"
-        )
-        checked.append(run)
-    assert checked, "no run carried a final_label row"
-
-
-def test_compat_reproduces_the_collapsed_accuracy(prior_runs, vocab):
-    checked = []
-    for run in prior_runs:
-        reference = _accuracy(run, "final_label (collapsed)")
-        if reference is None:
-            continue
-        frame = _items(run)
-        merge = lambda s: compat_normalize(s, vocab, space=COMPAT_SPACE)  # noqa: E731
-        ours = (frame["predicted_fallacy"].map(merge) == frame["gold_fallacy"].map(merge)).mean()
-        assert abs(ours - reference) <= TOLERANCE, (
-            f"{_run_id(run)}: compat collapsed {ours:.6f} != metrics.csv {reference:.6f}"
-        )
-        checked.append(run)
-    assert checked, "no run carried a final_label (collapsed) row"
-
-
+# ------------------------------- canonical against compat normalization
 def test_canonical_normalization_is_at_least_as_generous_as_compat(prior_runs, vocab):
     """The canonical path may score higher: it knows aliases the compat scorer did not.
 

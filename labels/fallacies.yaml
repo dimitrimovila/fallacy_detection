@@ -1,4 +1,6 @@
-# Vocabulary of the fallacy labels. Version 1.5.
+# Vocabulary of the fallacy labels. Version 1.6.
+# 1.6 compared with 1.5: the compat block, with the strings that the scoring code of the
+# prior runs writes in its own code. No terminal, alias or space changed.
 # 1.5 compared with 1.4: the space collapsed_eleni is called collapsed_compat, like the
 # scorer mode that uses it. No content changed.
 # 1.4 compared with 1.3: added the coarse any_fallacy, for the rows where the annotator
@@ -17,7 +19,7 @@
 # Rule: a new alias is added here, never in the code.
 # Aliases are compared after light normalization: lower case, whitespace squeezed.
 
-version: "1.5"
+version: "1.6"
 
 # Families. A family id is a class in the collapsed spaces and is not one in the
 # fine space. normalize_label recognises it with kind "family": it accepts no
@@ -125,6 +127,18 @@ spaces:
     ad_hominem_circumstantial: ad_hominem
     ad_hominem_guilt_by_association: ad_hominem
     poisoning_the_well: ad_hominem
+
+# Compat mode only: the string rules of the scoring code of the prior runs, besides the
+# ad hominem family and its members, which it takes from the sections above. The canonical
+# mode never reads this block, and compat mode never reads the aliases.
+compat:
+  # Removed from the start of a label, in this order, each at most once; the words may be
+  # separated by any whitespace.
+  removed_prefixes: ["argument from", "argument"]
+  # A label that starts with the key followed by a space becomes the value, whole.
+  replaced_by_prefix: {"good": "good argument"}
+  # Rewritten last, after the ad hominem rules, by exact match.
+  rewrites: {"casual reductionism": "causal reductionism"}
 
 # Raw label (lower case, whitespace squeezed) -> id. Applies to terminals, coarse and out_of_scope.
 # Besides this table the loader applies one deterministic rule only: spaces to underscores

@@ -40,6 +40,8 @@ By corpus: LOGIC 271 items (192 in the test set), EthiX 178 (144), NLAS 209 (197
 
 **The test set of the experiments** is the set of rows with `in_test_set` true: 601 items. Eleni has 606 distinct ones. The five missing ones are near duplicates (section 5.2). Eleni's text `33f6dfaf9c4e41f1` appears twice, with ids 469 and 495, and is a single item with `eleni_id` equal to `469;495`.
 
+**Three gold terminals outside the diagram of their gold scheme.** Three NLAS items of the test set have gold scheme `popular_opinion` and gold fallacy `non_sequitur`, a terminal that only expert opinion produces: `a122bba5789304c0`, `c8cdc8019c39370e`, `cf3b4d6783d834d0` (Eleni's ids 114, 117, 148). Enrico's verdict in `Copia di new_ad_populum_Enrico` (rows 24, 29, 62) is `non_sequitur` too. The gold is kept as it is, with no correction: the scorer scores them like any other item and lists them in its report. In the gold scheme condition no aggregator built on the diagrams can get them right.
+
 **The 172 items outside the test set** come from the base sheets of the workbook. 170 have a verdict by Enrico and form the second evaluation of spec 08 (P6). The other two are the new texts of Slippery slope (section 5.5).
 
 ## 4. `annotations.csv`

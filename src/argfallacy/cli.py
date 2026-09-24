@@ -1,5 +1,5 @@
 """Command line: ``argfallacy annotations update``, ``argfallacy run plan|execute CONFIG``,
-``argfallacy parse RUN_ID``."""
+``argfallacy parse RUN_ID``, ``argfallacy score prior``."""
 
 from __future__ import annotations
 
@@ -76,6 +76,27 @@ def _cmd_parse(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_score_prior(args: argparse.Namespace) -> int:
+    import os
+    from pathlib import Path
+
+    from .client.run import default_runs_dir
+    from .eval import score_prior
+    from .schemes import SchemeError
+
+    prior_dir = os.environ.get("PRIOR_RUNS_DIR")
+    if not prior_dir:
+        raise SystemExit("no prior runs: set PRIOR_RUNS_DIR in .env")
+    out = Path(args.out) if args.out else default_runs_dir() / "scores" / "prior"
+    try:
+        written = score_prior(prior_dir, out)
+    except SchemeError as error:
+        raise SystemExit(str(error)) from None
+    for name, path in written.items():
+        print(f"  {name}: {path}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="argfallacy")
     sub = parser.add_subparsers(dest="group", required=True)
@@ -107,6 +128,15 @@ def build_parser() -> argparse.ArgumentParser:
     parse_cmd = sub.add_parser("parse", help="turn a run's raw.jsonl into tables")
     parse_cmd.add_argument("run_id")
     parse_cmd.set_defaults(func=_cmd_parse)
+
+    score = sub.add_parser("score", help="compute the metrics").add_subparsers(
+        dest="command", required=True
+    )
+    prior_cmd = score.add_parser(
+        "prior", help="score the prior runs under PRIOR_RUNS_DIR, compat and canonical"
+    )
+    prior_cmd.add_argument("--out", default=None, help="default: runs/scores/prior/")
+    prior_cmd.set_defaults(func=_cmd_score_prior)
     return parser
 
 

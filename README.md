@@ -36,7 +36,7 @@ labels/           label dictionaries: fallacies and schemes
 prompts/          versioned prompt templates, JSON Schemas of the answers, answer definitions
 schemes/          the eight scheme diagrams as YAML
 serving/          the models, how to serve them with vLLM, a smoke test
-src/argfallacy/   the Python package: schemes, labels, annotations, prompts, client, parse, CLI
+src/argfallacy/   the Python package: schemes, labels, annotations, prompts, client, parse, eval, CLI
 tests/            pytest suite, with a fake model backend (no network calls)
 runs/             created at run time: raw JSONL answers and manifests (not versioned)
 ```
@@ -117,7 +117,24 @@ argfallacy run execute configs/pilot.yaml      # makes the calls, writes runs/<r
 argfallacy parse <run_id>                      # answers.csv and summary.csv
 ```
 
-Not implemented yet: the pilot report, the full runs, the aggregators and the evaluation.
+Scoring the earlier runs (the folder at `PRIOR_RUNS_DIR`) in both modes of the scorer:
+
+```bash
+argfallacy score prior                         # writes runs/scores/prior/
+argfallacy score prior --out <folder>
+```
+
+The canonical mode rescores every run on the 601 items of the test set, with the gold of
+`data/items.csv`: `metrics.csv` and `classwise.csv`, in the fine and the symmetric collapsed
+label space, and `baselines.csv`, with the majority class per scheme and the information
+ceiling of the answer vector. The compat mode counts like the scoring code of the earlier
+runs, and its three files (`compat_*.csv`) reproduce theirs; it only checks the scorer and
+gives no number of the thesis. `report.md` lists the rows that stand for no item, the gold
+labels that the diagram of their gold scheme does not produce, and the predictions that are
+no class of the label space.
+
+Not implemented yet: the pilot report, the full runs, the aggregators, and the evaluation
+beyond the scorer (intervals, paired tests, abstention curves).
 
 ## License
 
