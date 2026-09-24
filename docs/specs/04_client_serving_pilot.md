@@ -1,16 +1,17 @@
 # Spec 04. Interviewer, serving, minimal parser and pilot
 
-Version 2, 22 September 2026. Components: `src/argfallacy/client/`, `src/argfallacy/parse/` (minimal version), `serving/`.
+Version 3, 24 September 2026. Components: `src/argfallacy/client/`, `src/argfallacy/parse/` (minimal version), `serving/`.
 Depends on: 01, 03 and the data (`docs/data.md`). Produces: `runs/<run_id>/`.
 
 ## 1. Serving on the cluster (`serving/`)
 
-* `serving/models.yaml`: one entry per model with `tier`, `model_id` (the name vLLM serves it under), `revision` (the Hugging Face commit), `display_name`, `enabled`, `supports_logprobs`, `is_reasoning`, `reasoning`, `max_concurrency`, `notes`, and optionally `max_tokens`. Tier 1: Qwen3.8 27B, Gemma 4 31B, gpt oss 20b; tier 2: gpt oss 120b, K2 Horizon 32B; tier 3: GPT 5.5, disabled. The exact names of the Hugging Face repositories are fixed in `serving/models.yaml`.
+* `serving/models.yaml`: one entry per model with `tier`, `model_id` (the name vLLM serves it under), `revision` (the Hugging Face commit), `display_name`, `enabled`, `supports_logprobs`, `is_reasoning`, `reasoning`, `max_concurrency`, `notes`, and optionally `max_tokens`. Tier 1: Qwen3.8 27B, Gemma 4 31B, gpt oss 20b; tier 2: gpt oss 120b, K2 Horizon 32B; tier 3: GPT 5.5, disabled. The exact names of the Hugging Face repositories are fixed in `serving/models.yaml`, and so are the revisions: a `main` commit for every open model, checked on 24 September 2026, the same for the two entries of a model. K2 Horizon keeps `PLACEHOLDER` until its checkpoint is chosen, on 28 September 2026, and while a revision is `PLACEHOLDER` the client refuses to call that model.
 * Reasoning conditions. Qwen3.8 and Gemma 4 switch reasoning on and off over the same weights, so each of them has two entries with the same `model_id` and `revision` and a different `reasoning`: `qwen3_8_27b` and `gemma4_31b` with `enable_thinking: false`, `qwen3_8_27b_think` and `gemma4_31b_think` with `enable_thinking: true` and the template's default level. The main condition is reasoning off. The `reasoning` goes into the cache key, so the two entries share no answers.
 * The `max_tokens` of an entry applies instead of the configuration's. The entries with reasoning on need it, since they write their reasoning before the JSON: for them 8192. Being a generation parameter, it goes into the cache key and into the manifest.
-* `serving/README.md`: a ten-line runbook. Launching vLLM with the OpenAI-compatible API and structured output enabled, with an example:
+* vLLM version: 0.30.0 for every model and every entry, installed with pip in a conda environment of its own. It is the first version that supports K2 Horizon (reasoning and tool parsers), and it serves all the models of the plan. The standard wheel is built for CUDA 13.0 and needs an NVIDIA driver 580 or later; with an older driver the CUDA 12.9 variant of the same version is installed, with the command of the vLLM documentation for a specific CUDA version. The first job on the cluster reads the driver of the node with `nvidia-smi` and chooses the wheel.
+* `serving/README.md`: a ten-line runbook. Installing vLLM as above, with both commands. Launching vLLM with the OpenAI-compatible API and structured output enabled, with an example:
   ```
-  vllm serve <model_id> --dtype auto --max-model-len 8192 --port 8000
+  vllm serve <model_id> --revision <revision> --dtype auto --max-model-len 8192 --port 8000
   ```
   For Qwen and Gemma the two conditions are served by two launches of the same model, same vLLM version and same weights. The entry with reasoning off is served without a reasoning parser: with the parser on and no reasoning, vLLM from 0.19.0 onwards can silently skip the JSON schema constraint. The `_think` entry is served with vLLM's reasoning parser and with a `--max-model-len` large enough for `max_tokens` plus the prompt (16384): without a parser, structured output constrains the JSON from the very first token and the model cannot reason. The run proceeds model by model, so restarting the server between the two entries is enough.
   Then the instructions to reach the endpoint from one's own computer if the cluster requires an SSH tunnel, and the way to launch it as a job if the cluster uses a scheduler. The cluster-specific part is still to be completed.

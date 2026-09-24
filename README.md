@@ -99,12 +99,16 @@ argfallacy annotations update
 Serving a model on the cluster, then checking it answers with log-probabilities:
 
 ```bash
-vllm serve <model_id> --dtype auto --max-model-len 8192 --port 8000
+vllm serve <model_id> --revision <revision> --dtype auto --max-model-len 8192 --port 8000
 python serving/smoke_test.py --model <name in serving/models.yaml>
 ```
 
-The model revisions in `serving/models.yaml` must be pinned before any real run:
-calls refuse to start while a revision is a placeholder. Qwen and Gemma each have a second entry
+The models are served with vLLM 0.30.0, installed with pip in a conda environment of its
+own; the standard wheel needs an NVIDIA driver 580 or later, and `serving/README.md` gives
+the CUDA 12.9 variant for older drivers. The model revisions in `serving/models.yaml` are
+pinned Hugging Face commits, except two placeholders: K2 Horizon, until its checkpoint is
+chosen, and the commercial model, disabled. Calls refuse to start while a revision is a
+placeholder. Qwen and Gemma each have a second entry
 with reasoning on (`_think`), served by a separate launch with the reasoning parser and
 `--max-model-len 16384`; the entry with reasoning off is served without the parser. See
 `serving/README.md`.

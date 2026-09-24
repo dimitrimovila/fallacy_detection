@@ -1,7 +1,8 @@
-# The models and how they are served. Version 3.
+# The models and how they are served. Version 3.1.
 #
 # Six models in three tiers (`tier`), in eight entries: Qwen3.8 and Gemma 4 have two
-# each, with reasoning off and on.
+# each, with reasoning off and on. The open models are served with vLLM 0.30.0, installed
+# as `serving/README.md` says.
 #   tier 1: the pilot and the main run. Three different families, for the combination.
 #   tier 2: after the pilot. gpt oss 120b pairs with the 20b of tier 1 for the size
 #           effect; K2 Horizon 32B brings a fourth family.
@@ -9,10 +10,11 @@
 #
 # `model_id`  the name vLLM serves the model under: the repository passed to `vllm serve`.
 # `revision`  the Hugging Face commit of the repository, the same one passed to `vllm serve
-#             --revision`. >>> TO BE COMPLETED <<< While it holds PLACEHOLDER,
-#             `ask()` refuses to start: without a pinned commit the model can change
-#             underneath us between the pilot and the full run, and the numbers do not
-#             reproduce. For the commercial model it is the dated snapshot of the API.
+#             --revision`. While it holds PLACEHOLDER, `ask()` refuses to start: without a
+#             pinned commit the model can change underneath us between the pilot and the
+#             full run, and the numbers do not reproduce. K2 Horizon keeps PLACEHOLDER
+#             until its checkpoint is chosen. For the commercial model it is the dated
+#             snapshot of the API.
 # `reasoning` how the reasoning is controlled. `chat_template_kwargs` ends up in the
 #             `extra_body` of the call; `reasoning_effort` is a parameter of the call.
 #             Qwen3.8 and Gemma 4 switch it off and on over the same weights, so they have
@@ -35,7 +37,7 @@
 # revision, tier, reasoning and max_tokens go into the manifest of every run and into the
 # cache key: changing one of them produces new calls, not old answers reused.
 
-version: "3.0"
+version: "3.1"
 
 models:
 
@@ -43,7 +45,7 @@ models:
   qwen3_8_27b:
     tier: 1
     model_id: "Qwen/Qwen3.8-27B"
-    revision: "PLACEHOLDER"
+    revision: "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
     display_name: "Qwen3.8 27B"
     enabled: true
     supports_logprobs: true
@@ -59,7 +61,7 @@ models:
   qwen3_8_27b_think:
     tier: 1
     model_id: "Qwen/Qwen3.8-27B"
-    revision: "PLACEHOLDER"
+    revision: "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
     display_name: "Qwen3.8 27B (reasoning on)"
     enabled: true
     supports_logprobs: true
@@ -75,7 +77,7 @@ models:
   gemma4_31b:
     tier: 1
     model_id: "google/gemma-4-31B-it"
-    revision: "PLACEHOLDER"
+    revision: "842da3794eaa0b77d5f08bae87a17459d91ff475"
     display_name: "Gemma 4 31B"
     enabled: true
     supports_logprobs: true
@@ -91,7 +93,7 @@ models:
   gemma4_31b_think:
     tier: 1
     model_id: "google/gemma-4-31B-it"
-    revision: "PLACEHOLDER"
+    revision: "842da3794eaa0b77d5f08bae87a17459d91ff475"
     display_name: "Gemma 4 31B (reasoning on)"
     enabled: true
     supports_logprobs: true
@@ -107,7 +109,7 @@ models:
   gpt_oss_20b:
     tier: 1
     model_id: "openai/gpt-oss-20b"
-    revision: "PLACEHOLDER"
+    revision: "6cee5e81ee83917806bbde320786a8fb61efebee"
     display_name: "gpt oss 20b"
     enabled: true
     supports_logprobs: true
@@ -120,7 +122,7 @@ models:
   gpt_oss_120b:
     tier: 2
     model_id: "openai/gpt-oss-120b"
-    revision: "PLACEHOLDER"
+    revision: "b5c939de8f754692c1647ca79fbf85e8c1e70f8a"
     display_name: "gpt oss 120b"
     enabled: true
     supports_logprobs: true
