@@ -69,9 +69,9 @@ graph:
     CQ5:
       # "yes" means that there are weak links in the sequence, hence the fallacy, as in
       # the thesis diagram and in its Comment: "Una risposta negativa, ovvero l'assenza di
-      # anelli deboli, conduce alla conclusione di un'argomentazione valida [...] Se invece
+      # anelli deboli, conduce alla conclusione di un'argomentazione accettabile [...] Se invece
       # esistono anelli deboli, l'argomentazione rimane viziata" [A negative answer, that
-      # is, the absence of weak links, leads to the conclusion of a valid argument ... If
+      # is, the absence of weak links, leads to the conclusion of an acceptable argument ... If
       # instead there are weak links, the argument remains flawed].
       "yes": {terminal: slippery_slope, reconvergence: true}
       "no":  {terminal: good_argumentation}
