@@ -35,6 +35,13 @@ published version of the thesis (23 September 2026) the author corrected the arc
 now coincide with the YAML; the correction of correlation to cause CQ5 stays. They do not require an experiment,
 because showing that a wrong arc produces wrong answers is not a result.
 
+The same holds for one text correction. Ad hominem CQ3 in the thesis stops at "an accusation that
+they are committed?", without a complement; the Comment of the thesis (printed p. 75) states that the
+commitment is to a group, movement or category perceived negatively. The YAML carries the missing
+complement: "…that they are committed to a group, movement or cause (for example political,
+religious or ideological) that is viewed negatively?" (`schemes_and_diagrams.md`, Conventions,
+correction 5, and §12.0). It is not a reformulation: the reformulation of §2.2 stays a proposal.
+
 **Reformulation proposals, which are the ones in this file.** Seven proposals, eight questions, six schemes. Here the current
 text is defensible and the rewriting is a design choice, so the difference between before and
 after is measurable and counts as a result.
@@ -43,8 +50,8 @@ after is measurable and counts as a result.
 
 ## 1. Protocol
 
-**v0** — text of the questions as in the thesis, spelling corrected, CQ5 arcs corrected in the two
-schemes. It is the current state of the YAML files and of the prompts. The baseline is our phase 2
+**v0** — text of the questions as in the thesis, spelling corrected, the missing complement of ad
+hominem CQ3 added from the Comment of the thesis (§0), CQ5 arcs corrected in the two schemes. It is the current state of the YAML files and of the prompts. The baseline is our phase 2
 runs on the 601 items of the test set of the experiments: the 606 distinct texts of Eleni's 607 rows,
 minus five near duplicates. Eleni's runs are not v0: Eleni's prompt
 admitted only `Yes` and `No`, six questions out of 48 had a text different from that of the thesis, and
@@ -98,7 +105,12 @@ answer space aligned with all the other nodes. In the YAML,
 **Current text (thesis)**
 > Does the direct attack on the other person consist of an accusation that they are committed?
 
-**Diagnosis.** The complement is missing, so one does not know committed to what, and the node does not
+**Text in v0 (YAML)**, with the complement stated by the Comment of the thesis (§0)
+> Does the direct attack on the other person consist of an accusation that they are committed to a
+> group, movement or cause (for example political, religious or ideological) that is viewed
+> negatively?
+
+**Diagnosis**, on the text of the thesis. The complement is missing, so one does not know committed to what, and the node does not
 discriminate: it fires on any direct attack and sends to the Guilt by Association terminal cases
 that have nothing to do with guilt by association. The overlap with CQ4 on hypocrisy,
 that is, being committed to a position inconsistent with one's own conduct, remains a cause, but a
@@ -112,7 +124,17 @@ association labels are 8 in all (gold basis). Of the 18 gold `tu quoque` (gold b
 labelled Guilt by Association. In the executed prompt the question also contained the placeholder
 `[something]`, left in the text.
 
-**Proposal**, if the intended terminal stays Guilt by Association
+**What v0 already fixes.** The missing complement, which is the first cause in the diagnosis. The
+sense is settled by the Comment of the thesis (printed p. 75): the attack accuses the other person of
+a personal commitment "ad esempio politico, religioso o ideologico" [for example political,
+religious or ideological], and discredits them "in virtù dell'appartenenza dell'interlocutore a un
+gruppo, movimento o categoria percepiti negativamente" [by virtue of the other person's membership
+of a group, movement or category perceived negatively]. So the terminal Guilt by Association is the
+right one, and the complement is applied in v0 as a correction of an evident error, not as a
+reformulation. What v0 does not fix is the partial overlap with CQ4: the text still does not say that
+the attack is on the association rather than on the person's own conduct.
+
+**Proposal** for v1
 > Does the attack discredit the person by associating them with a group, cause or individual
 > regarded as disreputable, rather than by addressing their own conduct or claims?
 
@@ -124,11 +146,12 @@ The subordinate clause with `rather than` is the part that separates it from CQ2
 > Does the direct attack on the other person consist of an accusation that they are committed to
 > a group, cause or interest?
 
-It intervenes less on the original text, adds only the missing complement and chooses the sense
-of guilt by association. It does not, however, separate the case from CQ4 explicitly.
+It added only the missing complement. It is superseded by the text of v0, which takes the
+complement from the Comment of the thesis; like v0, it does not separate the case from CQ4.
 
-**To be clarified with the author before applying.** Which of the two senses was intended. If the
-intended sense was commitment to a position, then it is the terminal that is wrong, not the question.
+**Sense settled by the Comment.** No question for the author remains open on this node. The v1
+proposal is measured against v0, that is, against the question with its complement, so its gain
+can only come from the separation from CQ4.
 
 ---
 
@@ -340,7 +363,7 @@ Comment of the thesis is consistent with it, so it is not an error.
 | # | Scheme, CQ | Defect | Graph changes | Author needed |
 |---|---|---|---|---|
 | 2.1 | ad hominem CQ1 | non-binary answer space | no | no |
-| 2.2 | ad hominem CQ3 | incomplete predicate, the node does not discriminate | no | **yes** |
+| 2.2 | ad hominem CQ3 | the node does not discriminate; partial overlap with CQ4 (the incomplete predicate is corrected in v0) | no | no |
 | 2.3 | cause to effect CQ2 | never fires, the subtree presupposes evidence | only with proposal B | recommended |
 | 2.4 | cause to effect CQ2.1 and example CQ2.1 | double condition, reversed direction | no | no |
 | 2.5 | expert opinion CQ1 | two conditions in a disjunction | no | recommended |
@@ -399,6 +422,17 @@ to know what was there before without having to search the history.
 | `ad_hominem.yaml` | CQ3 | "committed to a group, cause or interest" | §2.2, variant |
 
 None of them touches the graph.
+
+**Ad hominem CQ3, complement restored.** The alignment left the YAML with the bare "an accusation
+that they are committed?" of the thesis. The complement is back, in other words: "…that they are
+committed to a group, movement or cause (for example political, religious or ideological) that is
+viewed negatively?". Reason: the thesis text lacks it, and its Comment (printed p. 75) states the
+sense, a commitment or tie that is political, religious or ideological, and membership of a group,
+movement or category perceived negatively; so the omission is an evident error of the text, corrected
+like cause to effect CQ2.1 (`schemes_and_diagrams.md`, Conventions, correction 5). The Comment's
+"tale da motivarne la posizione" [such as to motivate their position] is not carried over, because a
+commitment that motivates a position is the bias of CQ2 (Circumstantial). Text only, the graph does
+not change; the schemes stay at version 1.1, because no real run had happened yet.
 
 ### 6.2 `expert_opinion.yaml`, structural intervention
 

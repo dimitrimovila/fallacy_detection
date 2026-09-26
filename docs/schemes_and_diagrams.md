@@ -40,9 +40,27 @@ of `schemes/`:
 3. the name of the non-fallacious terminal, `Good Argumentation` (below).
 4. the arcs of correlation to cause CQ5, inverted in the thesis with respect to its own question
    and Comment (§4, §12.1).
+5. ad hominem CQ3, the missing complement: "Does the direct attack on the other person consist of
+   an accusation that they are committed to a group, movement or cause (for example political,
+   religious or ideological) that is viewed negatively?". The thesis stops at "an accusation that
+   they are committed?", which does not say committed to what. The Comment, printed p. 75, states
+   the intended sense: "la terza domanda verifica se l'attacco consista nell'accusare
+   l'interlocutore di un impegno o vincolo personale (ad esempio politico, religioso o ideologico)
+   tale da motivarne la posizione. In questo caso si ricade nella fallacia guilt by association: la
+   credibilità dell'argomentazione viene minata non in base al suo contenuto, ma in virtù
+   dell'appartenenza dell'interlocutore a un gruppo, movimento o categoria percepiti negativamente"
+   [the third question checks whether the attack consists in accusing the other person of a
+   personal commitment or tie (for example political, religious or ideological) such as to
+   motivate their position. In this case one falls into the guilt by association fallacy: the
+   credibility of the argument is undermined not on the basis of its content, but by virtue of the
+   other person's membership of a group, movement or category perceived negatively]. "tale da
+   motivarne la posizione" [such as to motivate their position] is left out on purpose: a personal
+   commitment that motivates a position is bias, which is CQ2 (Circumstantial), and including it
+   would make the two nodes overlap. See §5 and §12.0.
 
-`committed` (ad hominem CQ3) and `claimed` (correlation to cause CQ3), corrections of ours on the
-earlier versions, are the text of the published version.
+The spelling `committed` (ad hominem CQ3) and `claimed` (correlation to cause CQ3), corrections of
+ours on the earlier versions, are the text of the published version; the complement of ad hominem
+CQ3 is correction 5.
 
 **The text of the thesis and our observations are kept separate.** Everything that is not
 transcription is marked `⟶ our observation` or collected in §12. Nothing in the cards must be
@@ -71,7 +89,7 @@ called `Good Argument` or `Good Argumentation`. Here it stays
 
 The previous revision was based on the 73-page PDF. Comparison limited to the schemes. §0.1-§0.5
 are the record of the revisions made on the drafts and on the PDF of 14 September 2026: their page
-numbers and their statements about the thesis refer to those versions. The current state is in §0.6.
+numbers and their statements about the thesis refer to those versions. The current state is in §0.6 and §0.7.
 
 ### 0.1 Resolved
 
@@ -178,6 +196,12 @@ glossaries of the variables of the two schemes, which follow the formal schema. 
 
 Pages of the diagrams in the published version: 53 example, 58 analogy, 63 cause to effect,
 68 correlation to cause, 74 ad hominem, 81 expert opinion, 87 popular opinion, 94 slippery slope.
+
+### 0.7 Complement of ad hominem CQ3 (26 September 2026)
+
+CQ3 of ad hominem receives the complement that the thesis leaves out, taken from its own Comment
+(printed p. 75): correction 5 of the Conventions. Text only; the graph, the arcs and the terminal do
+not change. The schemes stay at version 1.1, because no real run had happened yet.
 
 ---
 
@@ -389,10 +413,19 @@ prompt. See §0.5.
 **Critical questions**
 - **C.Q. 1** — Is the opinion expressed about the other person negative (and intended to undermine their credibility) or positive (and intended to enhance their credibility)?
 - **C.Q. 2** — Does the direct attack on the other person amount to an accusation that they are biased?
-- **C.Q. 3** — Does the direct attack on the other person consist of an accusation that they are committed?
+- **C.Q. 3** — Does the direct attack on the other person consist of an accusation that they are committed to a group, movement or cause (for example political, religious or ideological) that is viewed negatively? ⚑
 - **C.Q. 4** — Is the direct attack on the other person an accusation of hypocrisy?
 - **C.Q. 5** — Is the direct attack on the other person intended to undermine their self-confidence?
 - **C.Q. 6** — Is a direct attack on the other person used as a pretext to discredit them even before the discussion has begun?
+
+⚑ **Correction of ours.** The thesis stops at "…an accusation that they are committed?". The
+complement comes from the Comment, printed p. 75, which speaks of "un impegno o vincolo personale
+(ad esempio politico, religioso o ideologico)" [a personal commitment or tie (for example
+political, religious or ideological)] and of "l'appartenenza dell'interlocutore a un gruppo,
+movimento o categoria percepiti negativamente" [the other person's membership of a group, movement
+or category perceived negatively]. The Comment's "tale da motivarne la posizione" [such as to
+motivate their position] is left out, because a commitment that motivates a position is the bias of
+CQ2. Conventions, correction 5; §12.0.
 
 **Diagram**
 ```
@@ -701,19 +734,37 @@ it comes back the misalignment between the text of the question and the terminal
 are described in §12.1 and §12.2 and must be resolved by the author, by changing the text or the
 arc, not by us rewriting the question on our own.
 
+For ad hominem CQ3 the column A above stays the text of the thesis. The files of `schemes/` add to
+it the complement stated by the Comment of A (Conventions, correction 5; §12.0), in words other than
+those of D.
+
 ---
 
 ## 12. Our observations on the schemes
 
 Nothing in this section is text of the thesis.
 
-### 12.0 Ambiguity of CQ3 of ad hominem
+### 12.0 Ambiguity of CQ3 of ad hominem, resolved
 
-With the spelling corrected, the question remains ambiguous. "An accusation that they are committed"
-does not say committed to what, and the terminal is Guilt by Association. If the sense is commitment
-to an inconsistent position, it is tu quoque; if it is membership of a discredited group, it is
-guilt by association. The diagram chooses the second, the text does not say so. To be clarified with
-the author, because it is not a typo.
+With the spelling corrected, the question of the thesis remains ambiguous. "An accusation that they
+are committed" does not say committed to what, and the terminal is Guilt by Association. If the
+sense is commitment to an inconsistent position, it is tu quoque; if it is membership of a
+discredited group, it is guilt by association. The diagram chooses the second, the text does not say
+so.
+
+**Resolved by the Comment.** The Comment of the thesis (printed p. 75) states the second sense: an
+accusation of "un impegno o vincolo personale (ad esempio politico, religioso o ideologico)" [a
+personal commitment or tie (for example political, religious or ideological)], where the
+credibility is undermined "in virtù dell'appartenenza dell'interlocutore a un gruppo, movimento o
+categoria percepiti negativamente" [by virtue of the other person's membership of a group, movement
+or category perceived negatively]. The missing complement is therefore an evident error of the text,
+and it is applied as correction 5 of the Conventions: "…that they are committed to a group, movement
+or cause (for example political, religious or ideological) that is viewed negatively?". The clause
+"tale da motivarne la posizione" [such as to motivate their position] is not carried over: a
+personal commitment that motivates a position is bias, which is CQ2 (Circumstantial), and with it
+the two nodes would overlap. The partial overlap with CQ4 (tu quoque) is not a defect of the text
+and stays; the reformulation that separates it is a proposal for experiment 2
+(`cq_proposals.md` §2.2).
 
 ### 12.1 Inverted polarities, corrected
 
