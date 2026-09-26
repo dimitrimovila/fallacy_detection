@@ -57,6 +57,15 @@ of `schemes/`:
    motivarne la posizione" [such as to motivate their position] is left out on purpose: a personal
    commitment that motivates a position is bias, which is CQ2 (Circumstantial), and including it
    would make the two nodes overlap. See §5 and §12.0.
+6. slippery slope CQ3, the object of the definition: "Is it possible to provide a precise
+   definition of the initial action or of the concepts involved that removes the ambiguity to such
+   an extent as to halt the decline?". The thesis writes "a precise definition that removes the
+   ambiguity", which does not say a definition of what. The Comment, printed p. 95, states it: "è
+   possibile fornire una definizione sufficientemente precisa dell'atto iniziale o dei concetti
+   coinvolti, tale da eliminare l'ambiguità che alimenta la catena verso le conseguenze peggiori?"
+   [is it possible to provide a sufficiently precise definition of the initial act or of the
+   concepts involved, such as to remove the ambiguity that feeds the chain towards the worst
+   consequences?]. See §8.
 
 The spelling `committed` (ad hominem CQ3) and `claimed` (correlation to cause CQ3), corrections of
 ours on the earlier versions, are the text of the published version; the complement of ad hominem
@@ -197,11 +206,15 @@ glossaries of the variables of the two schemes, which follow the formal schema. 
 Pages of the diagrams in the published version: 53 example, 58 analogy, 63 cause to effect,
 68 correlation to cause, 74 ad hominem, 81 expert opinion, 87 popular opinion, 94 slippery slope.
 
-### 0.7 Complement of ad hominem CQ3 (26 September 2026)
+### 0.7 Complements of ad hominem CQ3 and slippery slope CQ3 (26 September 2026)
 
 CQ3 of ad hominem receives the complement that the thesis leaves out, taken from its own Comment
 (printed p. 75): correction 5 of the Conventions. Text only; the graph, the arcs and the terminal do
 not change. The schemes stay at version 1.1, because no real run had happened yet.
+
+On the same day, for the same reason, CQ3 of slippery slope receives the object of its definition,
+"of the initial action or of the concepts involved", taken from its Comment (printed p. 95):
+correction 6 of the Conventions. Text only, as above.
 
 ---
 
@@ -580,10 +593,16 @@ horrible outcome, C0"; the published version writes `Cn`, the outcome that CQ 2 
 **Critical questions**
 - **C.Q. 1** — Do any of the causal links in the chain lack sufficient evidence to support the claim that they will (might, must) occur?
 - **C.Q. 2** — Is the outcome Cn as bad as suggested?
-- **C.Q. 3** — Is it possible to provide a precise definition that removes the ambiguity to such an extent as to halt the decline?
+- **C.Q. 3** — Is it possible to provide a precise definition of the initial action or of the concepts involved that removes the ambiguity to such an extent as to halt the decline? ⚑
 - **C.Q. 4** — Are there other steps required to fill in the sequence of events and make it plausible?
   - **C.Q. 4.1** — Would these steps lead to a different conclusion?
 - **C.Q. 5** — Are there weak links in the sequence, where specific critical questions should be asked on whether one event will really lead to another?
+
+⚑ **Correction of ours.** The thesis writes "Is it possible to provide a precise definition that
+removes the ambiguity…", without saying a definition of what. The object comes from the Comment,
+printed p. 95: "una definizione sufficientemente precisa dell'atto iniziale o dei concetti
+coinvolti" [a sufficiently precise definition of the initial act or of the concepts involved].
+Conventions, correction 6.
 
 **Diagram**
 ```

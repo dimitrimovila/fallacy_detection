@@ -32,9 +32,11 @@ na: >-
   tell how it stands, answer cannot_be_determined instead and lower your
   confidence.
 
-# The CQs whose answers are not yes and no. The options are listed in the order written
-# here, which is the order in which the question names them. The set must match the
-# answer_space of the diagram, otherwise rendering fails.
+# The CQs whose answers need a definition of their own: those whose answers are not
+# yes and no, and the yes/no questions whose literal reading is narrower than the one
+# the annotation uses. The options are listed in the order written here, which is the
+# order in which the question names them. The set must match the answer_space of the
+# diagram, otherwise rendering fails.
 per_cq:
   ad_hominem:
     CQ1:
@@ -44,3 +46,12 @@ per_cq:
       positive: >-
         the opinion expressed about the other person is positive and intended to
         enhance their credibility
+  expert_opinion:
+    CQ3.1:
+      "yes": >-
+        S has expressed a position of their own on the issue being discussed, either
+        within the exchange or elsewhere (for example in a statement, an interview or a
+        publication the text refers to); S need not be present in the exchange
+      "no": >-
+        S has not expressed any position of their own on the issue being discussed:
+        the claim is ascribed to S without S having spoken on it

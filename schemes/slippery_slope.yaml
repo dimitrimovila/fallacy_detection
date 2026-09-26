@@ -34,8 +34,9 @@ critical_questions:
     text: Is the outcome Cn as bad as suggested?
   - id: CQ3
     text: >-
-      Is it possible to provide a precise definition that removes the ambiguity to
-      such an extent as to halt the decline?
+      Is it possible to provide a precise definition of the initial action or of the
+      concepts involved that removes the ambiguity to such an extent as to halt the
+      decline?
   - id: CQ4
     text: >-
       Are there other steps required to fill in the sequence of events and make it

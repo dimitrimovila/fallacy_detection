@@ -35,12 +35,31 @@ published version of the thesis (23 September 2026) the author corrected the arc
 now coincide with the YAML; the correction of correlation to cause CQ5 stays. They do not require an experiment,
 because showing that a wrong arc produces wrong answers is not a result.
 
-The same holds for one text correction. Ad hominem CQ3 in the thesis stops at "an accusation that
-they are committed?", without a complement; the Comment of the thesis (printed p. 75) states that the
-commitment is to a group, movement or category perceived negatively. The YAML carries the missing
-complement: "…that they are committed to a group, movement or cause (for example political,
-religious or ideological) that is viewed negatively?" (`schemes_and_diagrams.md`, Conventions,
-correction 5, and §12.0). It is not a reformulation: the reformulation of §2.2 stays a proposal.
+The same holds for two text corrections, each taken from the Comment of its own question. Ad
+hominem CQ3 in the thesis stops at "an accusation that they are committed?", without a complement;
+the Comment of the thesis (printed p. 75) states that the commitment is to a group, movement or
+category perceived negatively. The YAML carries the missing complement: "…that they are committed
+to a group, movement or cause (for example political, religious or ideological) that is viewed
+negatively?" (`schemes_and_diagrams.md`, Conventions, correction 5, and §12.0). It is not a
+reformulation: the reformulation of §2.2 stays a proposal. Slippery slope CQ3 in the thesis asks for
+"a precise definition" without saying of what; the Comment (printed p. 95) says "dell'atto iniziale o
+dei concetti coinvolti" [of the initial act or of the concepts involved]. The YAML reads "Is it
+possible to provide a precise definition of the initial action or of the concepts involved that
+removes the ambiguity to such an extent as to halt the decline?" (correction 6).
+
+**A project choice in the prompt, not a correction.** Expert opinion CQ3.1, "Is S taking part in
+the discussion?", keeps the text of the thesis, but the prompt defines its two answers
+(`prompts/stage2_v1_answers.yaml`, `per_cq`): `yes` if S has expressed a position of their own on
+the issue, within the exchange or elsewhere (a statement, an interview, a publication the text
+refers to), without needing to be present in the exchange; `no` if the claim is ascribed to S
+without S having spoken on it. Read literally, the question almost never gets `yes` on these texts,
+because the expert is never present in the exchange: in the prior runs gpt-5 never answers `yes`
+(§2.5), so Strawman, the terminal of `yes`, is unreachable from this scheme. The human annotation
+of the `Annotazione Dumitru` sheets already uses this broader sense, fixed on 15 September 2026;
+without the definition, models and annotation would answer two different questions. The Comment of
+the thesis (printed p. 82) speaks only of "la discussione in corso" [the discussion in progress] and
+does not settle
+the point, so this is a declared choice of the project, not a correction of the thesis.
 
 **Reformulation proposals, which are the ones in this file.** Seven proposals, eight questions, six schemes. Here the current
 text is defensible and the rewriting is a design choice, so the difference between before and
@@ -50,8 +69,9 @@ after is measurable and counts as a result.
 
 ## 1. Protocol
 
-**v0** — text of the questions as in the thesis, spelling corrected, the missing complement of ad
-hominem CQ3 added from the Comment of the thesis (§0), CQ5 arcs corrected in the two schemes. It is the current state of the YAML files and of the prompts. The baseline is our phase 2
+**v0** — text of the questions as in the thesis, spelling corrected, the missing complements of ad
+hominem CQ3 and slippery slope CQ3 added from the Comments of the thesis (§0), the answers of expert
+opinion CQ3.1 defined in the prompt (§0), CQ5 arcs corrected in the two schemes. It is the current state of the YAML files and of the prompts. The baseline is our phase 2
 runs on the 601 items of the test set of the experiments: the 606 distinct texts of Eleni's 607 rows,
 minus five near duplicates. Eleni's runs are not v0: Eleni's prompt
 admitted only `Yes` and `No`, six questions out of 48 had a text different from that of the thesis, and
