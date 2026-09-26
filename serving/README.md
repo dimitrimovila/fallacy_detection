@@ -17,7 +17,8 @@ interactive session.
    ```
    With an older driver, the last line is replaced by the CUDA 12.9 variant, with the
    command of the vLLM documentation for a specific CUDA version, the version fixed
-   instead of read from the latest release:
+   instead of read from the latest release. On `labdasan0` the driver is 575.57.08, so
+   this is the variant used there:
    ```
    export VLLM_VERSION=0.30.0
    export CUDA_VERSION=129
@@ -93,7 +94,7 @@ one of them, so every launch splits the model over the two.
 2. Read the driver of the node with a short interactive job, and install vLLM (step 1
    above) with the matching wheel, in the environment `vllm-0.30.0`:
    ```
-   srun --partition=owner1 --account=thesis --gres=gpu:1 --mem=4G --time=00:05:00 nvidia-smi
+   srun --partition=owner1 --gres=gpu:1 --mem=4G --time=00:05:00 nvidia-smi
    ```
 3. Create the environment of the client, `argfallacy`, from the root of the repository:
    ```

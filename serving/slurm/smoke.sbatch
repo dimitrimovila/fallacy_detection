@@ -1,7 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=smoke
 #SBATCH --partition=owner1
-#SBATCH --account=thesis
 #SBATCH --gres=gpu:2
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
