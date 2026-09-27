@@ -24,7 +24,7 @@ use_env "$CLIENT_ENV"
 # (assigned first: a failure inside `eval "$(...)"` would not stop the job)
 settings=$(python -c 'import shlex; from argfallacy.env import load_env; print("\n".join(f"export {k}={shlex.quote(v)}" for k, v in load_env().items()))')
 eval "$settings"
-: "${HF_HOME:?set HF_HOME in the .env: the folder under /storage that holds the weights}"
+: "${HF_HOME:?set HF_HOME in the .env: the folder under /extra that holds the weights}"
 : "${LLM_API_KEY:?set LLM_API_KEY in the .env: any string, vLLM does not check it}"
 
 # 2. what the job runs on
@@ -38,6 +38,10 @@ use_env "$CLIENT_ENV"
 #    the front-end: the job does not depend on the network of the node
 export HF_HUB_OFFLINE=1
 export VLLM_NO_USAGE_STATS=1
+# FlashInfer compiles its sampling kernels on first use with the nvcc it finds in the
+# environment; a CUDA 13 compiler there gives kernels that a CUDA 12.9 driver cannot
+# run. The PyTorch sampler draws from the same top-k and top-p distribution.
+export VLLM_USE_FLASHINFER_SAMPLER=0
 
 # 4. the node is shared: a port of this job, and a server that listens only on the node
 PORT=$((20000 + SLURM_JOB_ID % 20000))

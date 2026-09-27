@@ -11,22 +11,49 @@ interactive session.
    the header; on the cluster, with the short interactive job of the preparation below).
    The standard wheel is built for CUDA 13.0 and needs an NVIDIA driver 580 or later:
    ```
-   conda create -n vllm-0.30.0 python=3.12 -y
+   conda create -n vllm-0.30.0 -c conda-forge --override-channels python=3.12 -y
    conda activate vllm-0.30.0
-   pip install vllm==0.30.0
+   python -m pip install vllm==0.30.0
    ```
-   With an older driver, the last line is replaced by the CUDA 12.9 variant, with the
-   command of the vLLM documentation for a specific CUDA version, the version fixed
-   instead of read from the latest release. On `labdasan0` the driver is 575.57.08, so
-   this is the variant used there:
+   Python comes from conda-forge alone: on the cluster `conda create` with the default
+   Anaconda channels stops with `CondaToSNonInteractiveError`, because their Terms of
+   Service are not accepted, and without the environment `pip` installs into the shared
+   base Python and writes into `~/.local`. Before every installation, `which python`
+   must point to `envs/vllm-0.30.0`, and pip is run as `python -m pip`. Only Python
+   comes from conda: PyTorch comes through pip, because a PyTorch installed with conda
+   links NCCL statically and can break vLLM.
+
+   With an older driver the CUDA 12.9 variant of the same version is installed. On
+   `labdasan0` the driver is 575.57.08, so this is the variant used there. The command of
+   the vLLM documentation for a specific CUDA version (the `+cu129` wheel with
+   `--extra-index-url https://download.pytorch.org/whl/cu129`) left there a PyTorch built
+   for CUDA 13.0 and the standard vLLM of PyPI, whose extension needs `libcudart.so.13`
+   and does not import. The `+cu129` wheel itself is right: it requires `torch==2.13.0`,
+   `torchvision==0.28.0`, `torchaudio==2.11.0` and `flashinfer-python==0.6.18.post1`, and
+   its extension needs `libcudart.so.12`. These three commands, in this order, gave a
+   working environment:
    ```
-   export VLLM_VERSION=0.30.0
-   export CUDA_VERSION=129
-   export CPU_ARCH=$(uname -m)
-   pip install "https://github.com/vllm-project/vllm/releases/download/v${VLLM_VERSION}/vllm-${VLLM_VERSION}+cu${CUDA_VERSION}-cp38-abi3-manylinux_2_28_${CPU_ARCH}.whl" --extra-index-url "https://download.pytorch.org/whl/cu${CUDA_VERSION}"
+   python -m pip install "torch==2.13.0+cu129" "torchvision==0.28.0+cu129" "torchaudio==2.11.0+cu129" --index-url https://download.pytorch.org/whl/cu129
+   python -m pip install --no-deps --force-reinstall "https://github.com/vllm-project/vllm/releases/download/v0.30.0/vllm-0.30.0+cu129-cp38-abi3-manylinux_2_28_x86_64.whl"
+   python -m pip install "cuda-python~=12.9.0"
    ```
-   Only Python comes from conda: PyTorch arrives with vLLM through pip, because a
-   PyTorch installed with conda links NCCL statically and can break vLLM.
+   They repaired an environment where the other dependencies of vLLM were already
+   installed: `--no-deps` keeps pip from replacing the PyTorch of the first line, and
+   installs nothing else. Whether a new environment reaches the same state with the same
+   order, without `--no-deps` on the second line and without the CUDA 13 libraries, has
+   not been tried; `pip check` at the end says what is missing. `cuda-python` stays in
+   the environment, at 12.9: `flashinfer-python` and the `nvidia-cutlass-dsl-libs-*`
+   packages need it, and the 13.x series clashes with `cuda-bindings` 12.9.
+
+   The check, whatever the variant (the versions shown are those of the CUDA 12.9 one):
+   ```
+   python -m pip show vllm     # Version: 0.30.0+cu129
+   python -m pip check         # no broken requirements
+   python -c 'import torch, vllm; print(vllm.__version__, torch.__version__, torch.version.cuda)'
+   ```
+   The last line prints `0.30.0 2.13.0+cu129 12.9`. On the cluster the environment is
+   written to the network home, and the whole installation takes hours: the wheel of
+   vLLM alone is 545 MB, 1.6 GB and about 5,100 files once installed.
 2. **Launch vLLM** on the node with the GPU, one entry of `serving/models.yaml` per launch:
    ```
    vllm serve $(python serving/serve_command.py <entry>) --dtype auto --port 8000
@@ -96,51 +123,76 @@ one of them, so every launch splits the model over the two.
    ```
    srun --partition=owner1 --gres=gpu:1 --mem=4G --time=00:05:00 nvidia-smi
    ```
+   The front-end closes idle SSH sessions: the installation and the downloads of point 5
+   run inside `tmux`. Jobs submitted with `sbatch` do not depend on the session.
 3. Create the environment of the client, `argfallacy`, from the root of the repository:
    ```
-   conda create -n argfallacy python=3.12 -y
+   conda create -n argfallacy -c conda-forge --override-channels python=3.12 -y
    conda activate argfallacy
-   pip install -e .
+   python -m pip install -e .
    ```
    The names of the two environments are written in `serving/slurm/common.sh`; keeping
    them apart means the dependencies of the client cannot move those of vLLM.
 4. Write the `.env` of the cluster, at the root of the repository: `HF_HOME`, a folder
-   under `/storage` for the weights, and `LLM_API_KEY`, any string. `LLM_BASE_URL` is
+   under `/extra` for the weights, and `LLM_API_KEY`, any string. `LLM_BASE_URL` is
    not needed: the job sets it.
    ```
-   HF_HOME=/storage/<user>/huggingface
+   HF_HOME=/extra/<user>/huggingface
    LLM_API_KEY=any-string
    ```
+   The weights go under `/extra`, not `/storage`: `/storage` is shared by the whole
+   department and was nearly full (98 per cent) when the weights of the pilot were
+   downloaded, while `/extra` had 23 TB free. `labdasan0` mounts the same `/extra`.
 5. Download the weights of the pinned revisions, with the Hugging Face command line
    of the vLLM environment and the same `HF_HOME`; `<model_id>` and `<revision>` are
    those of `serving/models.yaml`, and the pilot needs Qwen3.8 and Gemma 4, each for
-   its two entries. The space under `/storage` is shared: check it first with `df -h`.
+   its two entries. The space under `/extra` is shared: check it first with `df -h`.
    ```
-   export HF_HOME=/storage/<user>/huggingface
+   export HF_HOME=/extra/<user>/huggingface
    hf download <model_id> --revision <revision>
    ```
-   The job runs with `HF_HUB_OFFLINE=1`: it reads the weights from there and does not
-   depend on the network of the node.
+   No token is needed: neither repository of the pilot is gated. Each model takes a
+   little more than an hour, and the two of the pilot occupy 111 GB. When `hf` suggests
+   upgrading `huggingface_hub`, the suggestion is ignored: it would change a library of
+   the vLLM environment. The job runs with `HF_HUB_OFFLINE=1`: it reads the weights from
+   there and does not depend on the network of the node. The first launch of a model
+   reads its weights at about 110 MB/s (eight minutes for Qwen3.8) and compiles it; the
+   compilation is cached in `~/.cache/vllm/torch_compile_cache`, so the later launches of
+   the same model skip it.
 
-**Running.** From the root of the repository on the front-end:
+**Running.** From the root of the repository on the front-end, in the environment
+`argfallacy`:
 
 ```
-sbatch serving/slurm/smoke.sbatch qwen3_8_27b          # one entry
+argfallacy run plan configs/pilot.yaml                 # counts the calls, makes none
+RUN_ID=$(date -u +%Y%m%dT%H%M%SZ)_pilot
+echo $RUN_ID | tee -a ~/run_ids.txt                    # kept for a resubmission
+sbatch serving/slurm/pilot.sbatch $RUN_ID
 squeue -u $USER                                        # the job and its node
-sbatch serving/slurm/pilot.sbatch <run_id>             # after the four smoke tests
 ```
 
-The smoke test is run on each of the four entries of the pilot before the pilot job.
-A `<run_id>` of the usual form is `$(date -u +%Y%m%dT%H%M%SZ)_pilot`; resubmitting the
-pilot job with the same `<run_id>` resumes from the missing calls. The log of the job
-is `runs/slurm/<job name>-<job id>.out`, and every launch of vLLM has its own,
-`runs/slurm/<job id>-<entry>-vllm.log`.
+The pilot job runs the smoke test on every entry before its calls, so no separate smoke
+test is needed first: a failed one stops the job before any call of that entry, the
+calls already made stay, and resubmitting the job with the same `RUN_ID` resumes from
+the missing calls. `smoke.sbatch` tries one entry without creating a run, for a new
+model, a new revision or another node:
+
+```
+sbatch serving/slurm/smoke.sbatch qwen3_8_27b
+```
+
+In `squeue`, a `TIME` of `INVALID` in the first seconds of a job is not an error. The
+log of the job is `runs/slurm/<job name>-<job id>.out`, and every launch of vLLM has
+its own, `runs/slurm/<job id>-<entry>-vllm.log`.
 
 What a job does, in order: it activates conda and exports the settings of the `.env`
 (a variable already set wins); it prints `nvidia-smi`, the versions of vLLM and
 PyTorch, the CUDA version PyTorch was built for and the GPUs it sees; it sets
-`HF_HUB_OFFLINE=1`; it takes a port derived from the job id, because the node is
-shared, and exports `LLM_BASE_URL=http://127.0.0.1:<port>/v1`, with the server
+`HF_HUB_OFFLINE=1`, and `VLLM_USE_FLASHINFER_SAMPLER=0`, because FlashInfer compiles
+its sampling kernels on first use with the `nvcc` of the environment, and with a CUDA 13
+compiler there the kernels need a driver newer than that of `labdasan0` (the sampler of
+PyTorch draws from the same top-k and top-p distribution); it takes a port derived from
+the job id, because the node is shared, and exports `LLM_BASE_URL=http://127.0.0.1:<port>/v1`, with the server
 listening only on that address. Then, for each entry, it launches `vllm serve` with the
 command of step 2 plus `--tensor-parallel-size` equal to the GPUs of the job, waits for
 `/health` (and stops if the server exits), runs the smoke test, and stops the server,
