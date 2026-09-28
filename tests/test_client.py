@@ -8,6 +8,7 @@ that are about *not* calling: the cache and the resume.
 from __future__ import annotations
 
 import json
+from functools import partial
 from pathlib import Path
 
 import pytest
@@ -544,11 +545,14 @@ def test_the_serve_command_of_each_pilot_entry(entry, parser, room):
     assert args.count("--max-model-len") == 1
 
 
-def test_the_serve_command_refuses_an_unpinned_revision(capsys):
+def test_the_serve_command_refuses_an_unpinned_revision(capsys, monkeypatch):
     serve_command = _serve_command()
-    assert "PLACEHOLDER" in load_models()["k2_horizon_32b"]["revision"]
+    fakes = Path(__file__).parent / "fakes" / "models.yaml"
+    monkeypatch.setattr(serve_command, "command",
+                        partial(serve_command.command, models_file=fakes))
+    assert "PLACEHOLDER" in load_models(fakes)["fake_unpinned"]["revision"]
 
-    assert serve_command.main(["k2_horizon_32b"]) != 0
+    assert serve_command.main(["fake_unpinned"]) != 0
     printed = capsys.readouterr()
     assert printed.out == "", "a job reading the command must get nothing to launch"
     assert "no pinned revision" in printed.err
