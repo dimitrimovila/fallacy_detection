@@ -1,4 +1,4 @@
-# The models and how they are served. Version 3.5.
+# The models and how they are served. Version 3.6.
 #
 # Six models in three tiers (`tier`), in eight entries: Qwen3.8 and Gemma 4 have two
 # each, with reasoning off and on. The open models are served with vLLM 0.30.0, installed
@@ -41,7 +41,7 @@
 # cache key: changing one of them produces new calls, not old answers reused. serve_args goes
 # into the manifest only: the entry already determines it.
 
-version: "3.5"
+version: "3.6"
 
 models:
 
@@ -172,7 +172,9 @@ models:
       content of a message as a list of parts, while the template, at this revision,
       reads the content only when it is a string. The prompt then reaches the model
       empty: 10 prompt tokens against 549 for Qwen3.8 on the same prompt, and an answer
-      about a greeting.
+      about a greeting. vLLM does not fill `usage.reasoning_tokens` for this model: it is
+      0 even when the model reasons, so the length of the reasoning comes from the text
+      of the reasoning field of the message, not from `usage`.
 
   # ------------------------------------------------------------------- tier 3
   gpt_5_5:
