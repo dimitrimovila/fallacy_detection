@@ -1,6 +1,6 @@
 # Spec 04. Interviewer, serving, minimal parser and pilot
 
-Version 4.1, 27 September 2026. Components: `src/argfallacy/client/`, `src/argfallacy/parse/` (minimal version), `serving/` (with `serving/serve_command.py` and the jobs in `serving/slurm/`), `.gitattributes`.
+Version 4.2, 28 September 2026. Components: `src/argfallacy/client/`, `src/argfallacy/parse/` (minimal version), `serving/` (with `serving/serve_command.py` and the jobs in `serving/slurm/`), `.gitattributes`.
 Depends on: 01, 03 and the data (`docs/data.md`). Produces: `runs/<run_id>/`.
 
 ## 1. Serving on the cluster (`serving/`)
@@ -54,7 +54,7 @@ SQLite in `runs/cache.sqlite`, a table with key = sha256 of (`model_id`, `prompt
 The manifest describes the whole configuration, whichever entries an invocation executes: the calls planned are those of all the entries; executed, served from the cache and failed are counted over the whole `raw.jsonl` of the run, per entry (`calls_per_model`) and in total; `started_at` is the one of the first invocation, `finished_at` the one of the last. A call counts once: its answered line says executed or served from the cache, and a call with only error lines is failed, so a failure answered on a later try is no longer counted as failed.
 
 ### 2.5 `raw.jsonl`
-One line per call: `run_id`, `item_id`, `stage`, `scheme_condition`, `scheme`, `cq_id` (empty for stage one), `sample_index`, `model`, `model_id`, `revision`, `tier`, `reasoning`, `prompt_version`, `json_schema` (the schema sent to the model with that call), `params`, `cache_key`, `from_cache`, `raw_response`, `latency_s`, `error`. The file is append-only.
+One line per call: `run_id`, `item_id`, `stage`, `scheme_condition`, `scheme`, `cq_id` (empty for stage one), `sample_index`, `model`, `model_id`, `revision`, `tier`, `reasoning`, `prompt_version`, `json_schema` (the schema sent to the model with that call), `params`, `cache_key`, `from_cache`, `raw_response`, `latency_s`, `error`. The file is append-only. It is read one line at a time, never whole, by the resume, by the counts of the manifest and by the parser: the pilot left 13 GB of it. A line ends only at a newline, so a line separator that the JSON leaves inside a string (U+2028, U+0085) does not cut it.
 
 ## 3. Minimal parser (`argfallacy.parse`, pilot version)
 
@@ -100,6 +100,7 @@ All of them with the fake backend in `tests/fakes/llm.py`, which returns determi
 10. An entry not in the configuration stops `plan` and `execute` before any call.
 11. `serve_command.py`: for `qwen3_8_27b` and `gemma4_31b` the command has no `--reasoning-parser`; for `qwen3_8_27b_think` and `gemma4_31b_think` it has the parser of the model and `--max-model-len 16384`; for `k2_horizon_32b` it refuses, while the revision is `PLACEHOLDER`.
 12. `bash -n` on the scripts of `serving/slurm/`. They cannot be run outside the cluster, and no job is launched to test them. *Run by hand: no automatic test.* The exit codes of the smoke test are checked by hand against the fake backend.
+13. Reading `raw.jsonl`: `read_raw` returns the first row before decoding the second line, and a line with U+2028 and U+0085 inside a string comes back as one row.
 
 ## 6. What not to do
 * No parsing inside the client: the client saves, and that is all.

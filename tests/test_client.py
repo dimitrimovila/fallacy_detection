@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 from argfallacy.client import (
+    RAW_NAME,
     RawResponse,
     Request,
     ResponseCache,
@@ -26,6 +27,7 @@ from argfallacy.client import (
     read_raw,
     select_items,
 )
+from argfallacy.client.call import dumps
 from argfallacy.paths import REPO_ROOT
 from argfallacy.prompts import STAGE1, STAGE2, answer_schema
 from argfallacy.schemes import SchemeError, load_all
@@ -162,6 +164,23 @@ def test_a_failed_call_is_retried_on_the_next_run(tmp_path, items, schemes, cach
                        cache=cache, models=models, schemes=schemes, sleep=lambda _: None)
     assert manifest["calls_executed"] == 2
     assert healthy.calls == 2
+
+
+def test_raw_jsonl_is_read_one_line_at_a_time(tmp_path):
+    """A run can leave gigabytes of ``raw.jsonl``: it is never read whole.
+
+    The first row comes back before the second line is decoded, and the line
+    separators that ``ensure_ascii=False`` leaves inside a string do not cut
+    the line in two.
+    """
+    first = {"cache_key": "k", "raw_response": {"content": "yes no\x85idk"}}
+    (tmp_path / RAW_NAME).write_text(
+        dumps(first) + "\n" + "not json\n", encoding="utf-8", newline="\n"
+    )
+    rows = read_raw(tmp_path)
+    assert next(rows) == first
+    with pytest.raises(json.JSONDecodeError):
+        next(rows)
 
 
 def test_the_plan_counts_stage_one_plus_the_cqs_of_each_scheme(items, schemes):

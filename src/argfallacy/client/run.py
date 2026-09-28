@@ -383,14 +383,19 @@ def build_manifest(
 
 
 # -------------------------------------------------------------------- execute
+def _lines(path: Path) -> Iterator[str]:
+    """The non-blank lines of a file, one at a time: a ``raw.jsonl`` can run to gigabytes."""
+    with open(path, encoding="utf-8") as lines:
+        for line in lines:
+            if line.strip():
+                yield line
+
+
 def _rows(path: Path) -> Iterator[dict[str, Any]]:
     """The lines of a ``raw.jsonl`` that parse; a line cut off by a crash is skipped."""
     if not path.is_file():
         return
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
+    for line in _lines(path):
         try:
             yield json.loads(line)
         except json.JSONDecodeError:
@@ -593,18 +598,15 @@ def _raw_line(
     }
 
 
-def read_raw(run_dir: str | Path) -> list[dict[str, Any]]:
-    """Every line of a run's ``raw.jsonl``, in the order it was written."""
+def read_raw(run_dir: str | Path) -> Iterator[dict[str, Any]]:
+    """Every line of a run's ``raw.jsonl``, in the order it was written, one at a time."""
     path = Path(run_dir)
     if path.is_dir():
         path = path / RAW_NAME
     if not path.is_file():
         raise SchemeError(f"no {RAW_NAME} at {path}")
-    return [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
+    # a generator returned, not a generator function: a missing file fails here, at the call
+    return (json.loads(line) for line in _lines(path))
 
 
 def allocate(sizes: Mapping[str, int], n: int, minimum: int = 0) -> dict[str, int]:
