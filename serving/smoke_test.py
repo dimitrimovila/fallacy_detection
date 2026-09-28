@@ -5,8 +5,12 @@ Sends one stage-two call with structured output and logprobs and prints what
 came back: the answer, the token where the answer value starts *inside the final
 JSON* and its position, the alternatives at that token, and the latency.
 
-Three checks matter more than the rest:
+Four checks matter more than the rest:
 
+* whether the prompt reached the model.  A chat template that drops the content
+  of the message leaves the model a prompt of a few tokens, and it answers
+  something all the same; fewer than a quarter of the tokens expected at four
+  characters per token means the prompt was not read;
 * whether logprobs arrive at all.  That decides ``supports_logprobs`` in
   ``serving/models.yaml`` and whether ``p_logprob`` will exist for that model;
 * whether the token read is the answer's.  A reasoning model writes thinking
@@ -14,14 +18,14 @@ Three checks matter more than the rest:
   The script says where a naive reader — first answer-looking token — would have
   landed, and warns if that is somewhere else;
 * on an entry that reasons, whether thinking actually happened and whether the
-  answer survived it.  Zero reasoning tokens means the server is not passing the
-  reasoning settings through, and a ``length`` finish means the object was cut
-  off before it closed.
+  answer survived it.  No reasoning, neither in ``usage`` nor in the reasoning
+  field of the message, means the server is not passing the reasoning settings
+  through, and a ``length`` finish means the object was cut off before it closed.
 
 The exit code is zero only if the entry can be run: a job stops on anything else.
 Besides a refusal, an error or an answer token missing from the JSON, that means
-no reasoning or a cut-off answer on an entry that reasons, and no logprobs on an
-entry whose ``supports_logprobs`` is true.
+a prompt the server did not read, no reasoning or a cut-off answer on an entry
+that reasons, and no logprobs on an entry whose ``supports_logprobs`` is true.
 
     python serving/smoke_test.py --model qwen3_8_27b        # a key of serving/models.yaml
     python serving/smoke_test.py --model qwen3_8_27b_think  # same weights, thinking on
@@ -66,6 +70,10 @@ FAKE_SPEC = {
 }
 THINK_END = "</think>"
 DEFAULT_MAX_TOKENS = 256
+CHARS_PER_TOKEN = 4
+"""A rough size of a token: enough to tell a prompt read whole from one that was dropped."""
+PROMPT_FLOOR = 0.25
+"""The share of the expected prompt tokens below which the prompt was not read."""
 
 
 def build_backend(model_name: str, fake_reasoning: bool):
@@ -96,32 +104,35 @@ def thinking_on(spec) -> bool:
     return bool(kwargs.get("enable_thinking", spec.get("is_reasoning", False)))
 
 
-def reasoning_tokens(response) -> tuple[int, str]:
+def reasoning_length(response) -> tuple[int, str]:
     """How much thinking there was, and where the number comes from.
 
-    vLLM reports it in ``usage`` when the server runs a reasoning parser, which
-    is how Qwen and Gemma are served.  The readings after that are estimates for
-    a server without one, where the thinking arrives as ``reasoning_content`` or
-    is left inside the content between the think markers.  Zero from any of them
-    is the answer the caller needs: the entry asked to reason and did not.
+    Two sources, in order: ``usage``, where vLLM counts the reasoning tokens, and
+    the reasoning field of the message (``reasoning_content`` or ``reasoning``),
+    where the reasoning parser puts the thinking.  ``usage`` can say zero while
+    the field is full, as it did for K2 Horizon, so its zero is not the answer.
+    The readings after those are for a server without a parser, where the
+    thinking stays in the content before the think marker.  Zero from all of them
+    is the answer the caller needs: the entry reasons and did not.
     """
     details = (response.usage or {}).get("completion_tokens_details") or {}
-    if details.get("reasoning_tokens") is not None:
-        return int(details["reasoning_tokens"]), "usage"
+    counted = int(details.get("reasoning_tokens") or 0)
+    if counted:
+        return counted, "tokens, from usage"
 
     message = ((response.raw or {}).get("choices") or [{}])[0].get("message") or {}
-    thinking = message.get("reasoning_content") or message.get("reasoning")
-    if thinking:
-        return len(str(thinking).split()), "words of reasoning_content, not tokens"
+    for name in ("reasoning_content", "reasoning"):
+        if message.get(name):
+            return len(str(message[name])), f"characters, from the {name} of the message"
 
     tokens = (response.logprobs or {}).get("content") or []
     for index, entry in enumerate(tokens):
         if THINK_END in str(entry.get("token", "")):
-            return index + 1, f"tokens up to {THINK_END}"
+            return index + 1, f"tokens up to {THINK_END}, from the logprobs"
     if THINK_END in (response.content or ""):
         head = (response.content or "").split(THINK_END)[0]
-        return len(head.split()), f"words before {THINK_END}, not tokens"
-    return 0, "no reasoning in the response"
+        return len(head), f"characters before {THINK_END}, from the content"
+    return 0, "no reasoning in usage, in the message or in the content"
 
 
 def naive_position(logprobs, options) -> int | None:
@@ -191,9 +202,21 @@ def main(argv: list[str] | None = None) -> int:
     if response.usage:
         print(f"Tokens    : {json.dumps(response.usage)}")
     unusable = False
+    prompt_tokens = (response.usage or {}).get("prompt_tokens")
+    expected = len(rendered.text) / CHARS_PER_TOKEN
+    if prompt_tokens is None:
+        print("Prompt    : no prompt_tokens in usage, not checked")
+    else:
+        print(f"Prompt    : {prompt_tokens} tokens read, about {expected:.0f} expected "
+              f"from {len(rendered.text)} characters")
+        if prompt_tokens < PROMPT_FLOOR * expected:
+            unusable = True
+            print("WARNING: the server read far fewer tokens than the prompt holds: the chat "
+                  "template dropped the content of the message. Check the content format "
+                  "of the template (`--chat-template-content-format` in the `serve_args`).")
     if thinking_on(spec):
-        count, source = reasoning_tokens(response)
-        print(f"Thinking  : {count} tokens ({source})")
+        count, source = reasoning_length(response)
+        print(f"Thinking  : {count} {source}")
         if count == 0:
             unusable = True
             print("WARNING: this entry reasons and there was no reasoning. "

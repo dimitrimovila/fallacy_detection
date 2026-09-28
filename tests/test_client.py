@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from functools import partial
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -616,3 +617,45 @@ def test_the_smoke_test_checks_the_reasoning_of_the_entries_that_reason():
         assert thinking_on(models[entry]), entry
     for entry in ("qwen3_8_27b", "gemma4_31b"):
         assert models[entry]["is_reasoning"] and not thinking_on(models[entry]), entry
+
+
+def _server_like(prompt_tokens: int | None = None, reasoning: str | None = None):
+    """The fake backend with ``usage`` and the message changed as a real server changes them.
+
+    ``usage`` counts no reasoning tokens, as vLLM did for K2 Horizon.
+    """
+    fake = FakeBackend()
+
+    def create(**kwargs):
+        payload = fake.create(**kwargs)
+        payload["usage"]["completion_tokens_details"] = {"reasoning_tokens": 0}
+        if prompt_tokens is not None:
+            payload["usage"]["prompt_tokens"] = prompt_tokens
+        if reasoning is not None:
+            payload["choices"][0]["message"]["reasoning_content"] = reasoning
+        return payload
+
+    return SimpleNamespace(create=create)
+
+
+def test_the_smoke_test_reads_the_reasoning_in_the_message(monkeypatch, capsys):
+    """``usage`` at zero and the thinking in ``reasoning_content``: there was reasoning."""
+    smoke_test = _serving_script("smoke_test")
+    thinking = "The claim rests on a doctorate, not on expertise in tariffs."
+    monkeypatch.setattr(smoke_test, "build_backend", lambda *_: _server_like(reasoning=thinking))
+    assert smoke_test.main(["--model", "fake", "--fake-reasoning"]) == 0
+    printed = capsys.readouterr().out
+    assert f"Thinking  : {len(thinking)} characters, from the reasoning_content" in printed
+
+    monkeypatch.setattr(smoke_test, "build_backend", lambda *_: _server_like())
+    assert smoke_test.main(["--model", "fake", "--fake-reasoning"]) != 0, "no reasoning anywhere"
+
+
+def test_the_smoke_test_fails_on_a_prompt_the_server_did_not_read(monkeypatch):
+    """Ten prompt tokens for a prompt of thousands of characters, as K2 Horizon read it."""
+    smoke_test = _serving_script("smoke_test")
+    monkeypatch.setattr(smoke_test, "build_backend", lambda *_: _server_like(prompt_tokens=10))
+    assert smoke_test.main(["--model", "fake"]) != 0
+
+    monkeypatch.setattr(smoke_test, "build_backend", lambda *_: _server_like())
+    assert smoke_test.main(["--model", "fake"]) == 0
