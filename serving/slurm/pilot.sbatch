@@ -4,7 +4,7 @@
 #SBATCH --gres=gpu:2
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
-#SBATCH --time=04:00:00
+#SBATCH --time=10:00:00
 #SBATCH --output=runs/slurm/%x-%j.out
 #
 # The pilot, one entry of configs/pilot.yaml at a time and in its order: launch the
@@ -16,8 +16,8 @@
 #
 # A failed smoke test stops the job before any call of that entry. Failed calls do
 # not stop it: they are listed at the end, and resubmitting the job with the same
-# RUN_ID makes only the calls still missing. The time is a first value, to be
-# corrected once the real latency is known.
+# RUN_ID makes only the calls still missing. Ten hours: the four entries of the pilot
+# took about 7 h 50 min in all.
 
 set -euo pipefail
 RUN_ID=${1:?usage: sbatch serving/slurm/pilot.sbatch RUN_ID}

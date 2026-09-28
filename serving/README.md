@@ -85,11 +85,11 @@ interactive session.
    ```
    It prints the answer, the answer token inside the final JSON with its
    position, the `top_logprobs` at that token and the latency. If there is
-   reasoning before the JSON (gpt oss, `_think` entries) and a naive reader would have ended up there, it says so. On a
-   `_think` entry it also checks that there was reasoning and that the answer was not cut off. If the logprobs do not arrive, it says so plainly: then `supports_logprobs` in
+   reasoning before the JSON (gpt oss, K2 Horizon, `_think` entries) and a naive reader would have ended up there, it says so. On an
+   entry that reasons (`enable_thinking` true, or `is_reasoning` true where the entry does not set `enable_thinking`: the `_think` entries, K2 Horizon, gpt oss) it also checks that there was reasoning and that the answer was not cut off. If the logprobs do not arrive, it says so plainly: then `supports_logprobs` in
    `models.yaml` must be set to `false` and `p_logprob` will stay empty for that model.
    The exit code is zero only if the entry can be run: no reasoning or a cut-off answer
-   on a `_think` entry, and no logprobs on an entry with `supports_logprobs: true`, give
+   on an entry that reasons, and no logprobs on an entry with `supports_logprobs: true`, give
    another code, and a job stops on it.
 5. **Count the calls** before making them:
    `argfallacy run plan configs/pilot.yaml --model <entry>`. Without `--model`, the calls of

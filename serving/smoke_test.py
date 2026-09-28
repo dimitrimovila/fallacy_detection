@@ -13,15 +13,15 @@ Three checks matter more than the rest:
   before the object, and that text can contain ``yes`` or a whole draft object.
   The script says where a naive reader — first answer-looking token — would have
   landed, and warns if that is somewhere else;
-* on an entry that asks for thinking, whether thinking actually happened and
-  whether the answer survived it.  Zero reasoning tokens means the server is not
-  passing ``enable_thinking`` through, and a ``length`` finish means the object
-  was cut off before it closed.
+* on an entry that reasons, whether thinking actually happened and whether the
+  answer survived it.  Zero reasoning tokens means the server is not passing the
+  reasoning settings through, and a ``length`` finish means the object was cut
+  off before it closed.
 
 The exit code is zero only if the entry can be run: a job stops on anything else.
 Besides a refusal, an error or an answer token missing from the JSON, that means
-no reasoning or a cut-off answer on an entry that asks for thinking, and no
-logprobs on an entry whose ``supports_logprobs`` is true.
+no reasoning or a cut-off answer on an entry that reasons, and no logprobs on an
+entry whose ``supports_logprobs`` is true.
 
     python serving/smoke_test.py --model qwen3_8_27b        # a key of serving/models.yaml
     python serving/smoke_test.py --model qwen3_8_27b_think  # same weights, thinking on
@@ -85,9 +85,15 @@ def build_backend(model_name: str, fake_reasoning: bool):
 
 
 def thinking_on(spec) -> bool:
-    """Whether this entry asks the chat template for reasoning."""
+    """Whether this entry reasons before answering.
+
+    ``enable_thinking`` decides where the entry sets it.  Where it does not, as for
+    K2 Horizon and gpt oss, whose reasoning does not switch off, ``is_reasoning``
+    decides.  Not ``is_reasoning`` alone: the entries with ``enable_thinking: false``
+    are reasoning models too, and they must not reason.
+    """
     kwargs = (spec.get("reasoning") or {}).get("chat_template_kwargs") or {}
-    return bool(kwargs.get("enable_thinking"))
+    return bool(kwargs.get("enable_thinking", spec.get("is_reasoning", False)))
 
 
 def reasoning_tokens(response) -> tuple[int, str]:
@@ -190,9 +196,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Thinking  : {count} tokens ({source})")
         if count == 0:
             unusable = True
-            print("WARNING: this entry asks for reasoning and there was none. "
-                  "Check that the server passes `enable_thinking` to the template and that it "
-                  "was launched with the reasoning parser given in the model's notes.")
+            print("WARNING: this entry reasons and there was no reasoning. "
+                  "Check that the server passes the reasoning settings of the entry to the "
+                  "template and that it was launched with the `serve_args` of the entry.")
         if response.finish_reason == "length":
             unusable = True
             print(f"WARNING: response cut off at {max_tokens} tokens "

@@ -1,4 +1,4 @@
-# The models and how they are served. Version 3.3.
+# The models and how they are served. Version 3.4.
 #
 # Six models in three tiers (`tier`), in eight entries: Qwen3.8 and Gemma 4 have two
 # each, with reasoning off and on. The open models are served with vLLM 0.30.0, installed
@@ -26,8 +26,8 @@
 #             conditions as those of the other models. For K2 Horizon it does not switch
 #             off, and the level is still to be chosen.
 # `max_tokens` optional: applies instead of the one in the configuration. The `_think`
-#             entries need it: they write their reasoning before the JSON, and with the 512
-#             of the configuration they would be cut off.
+#             entries and K2 Horizon need it: they write their reasoning before the JSON,
+#             and with the 512 of the configuration they would be cut off.
 # `serve_args` the flags of `vllm serve` that depend on the entry. `serving/serve_command.py`
 #             prints `model_id --revision revision` followed by them, and `--max-model-len
 #             8192` when they do not set it; the job adds port, host, tensor parallelism and
@@ -41,7 +41,7 @@
 # cache key: changing one of them produces new calls, not old answers reused. serve_args goes
 # into the manifest only: the entry already determines it.
 
-version: "3.3"
+version: "3.4"
 
 models:
 
@@ -153,11 +153,15 @@ models:
     is_reasoning: true
     reasoning: {}
     max_concurrency: 4
-    serve_args: [--trust-remote-code, --reasoning-parser, k2_horizon, --tool-call-parser, k2_horizon]
+    max_tokens: 8192
+    serve_args: [--trust-remote-code, --reasoning-parser, k2_horizon, --tool-call-parser,
+                 k2_horizon, --max-model-len, "16384"]
     notes: >-
       Dense, 32B. The reasoning does not switch off: it is set with `reasoning_effort` in
       `chat_template_kwargs`, and the model card documents only `high`. While `reasoning`
-      stays empty the model reasons at the template's default level. The revision is the
+      stays empty the model reasons at the template's default level. Since it always
+      reasons before the JSON, it has the room of the `_think` entries: the context holds
+      the prompt and the 8192 tokens of `max_tokens`. The revision is the
       head of `main` on 28 September 2026, commit eff3d24a3a40 of 24 September ("delete the
       sentence final checkpoint to be released"), which removed from the model card the
       announcement of a final checkpoint; the history of the repository keeps the

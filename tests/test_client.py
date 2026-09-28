@@ -514,11 +514,11 @@ def test_the_command_line_lists_the_entries_of_the_configuration(capsys):
     assert "calls" not in capsys.readouterr().out, "nothing was planned"
 
 
-def _serve_command():
+def _serving_script(name: str):
     import importlib.util
 
-    path = REPO_ROOT / "serving" / "serve_command.py"
-    spec = importlib.util.spec_from_file_location("serve_command", path)
+    path = REPO_ROOT / "serving" / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -537,7 +537,7 @@ def _flag(args: list[str], name: str) -> str | None:
 def test_the_serve_command_of_each_pilot_entry(entry, parser, room):
     """Reasoning off without a parser; reasoning on with the model's parser and room."""
     spec = load_models()[entry]
-    args = _serve_command().command(entry)
+    args = _serving_script("serve_command").command(entry)
 
     assert args[:3] == [spec["model_id"], "--revision", spec["revision"]]
     assert _flag(args, "--reasoning-parser") == parser
@@ -546,7 +546,7 @@ def test_the_serve_command_of_each_pilot_entry(entry, parser, room):
 
 
 def test_the_serve_command_refuses_an_unpinned_revision(capsys, monkeypatch):
-    serve_command = _serve_command()
+    serve_command = _serving_script("serve_command")
     fakes = Path(__file__).parent / "fakes" / "models.yaml"
     monkeypatch.setattr(serve_command, "command",
                         partial(serve_command.command, models_file=fakes))
@@ -556,3 +556,18 @@ def test_the_serve_command_refuses_an_unpinned_revision(capsys, monkeypatch):
     printed = capsys.readouterr()
     assert printed.out == "", "a job reading the command must get nothing to launch"
     assert "no pinned revision" in printed.err
+
+
+def test_the_smoke_test_checks_the_reasoning_of_the_entries_that_reason():
+    """``enable_thinking`` where the entry sets it, ``is_reasoning`` where it does not.
+
+    Every entry is a reasoning model, the two main entries of the pilot included:
+    checking ``is_reasoning`` alone would fail them for not reasoning.
+    """
+    thinking_on = _serving_script("smoke_test").thinking_on
+    models = load_models()
+    for entry in ("qwen3_8_27b_think", "gemma4_31b_think", "k2_horizon_32b",
+                  "gpt_oss_20b", "gpt_oss_120b"):
+        assert thinking_on(models[entry]), entry
+    for entry in ("qwen3_8_27b", "gemma4_31b"):
+        assert models[entry]["is_reasoning"] and not thinking_on(models[entry]), entry
