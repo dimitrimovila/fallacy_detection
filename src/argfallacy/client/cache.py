@@ -114,7 +114,7 @@ class ResponseCache:
                     request.prompt_version,
                     request.sample_index,
                     dumps(request.generation_params()),
-                    json.dumps(response.to_dict(), ensure_ascii=False),
+                    json.dumps(response.to_stored(), ensure_ascii=False),
                 ),
             )
             self.connection.commit()

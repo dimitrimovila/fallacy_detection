@@ -184,6 +184,51 @@ def test_raw_jsonl_is_read_one_line_at_a_time(tmp_path):
         next(rows)
 
 
+def test_the_logprobs_are_stored_once_and_without_bytes(tmp_path, items, schemes, cache):
+    """``raw.jsonl`` and the cache drop the copy inside ``raw`` and every ``bytes``.
+
+    The response in memory stays whole, and the key and ``top_logprobs`` do not move.
+    """
+    whole = ask(request_for(), FakeBackend())
+    assert whole.raw["choices"][0]["logprobs"] == whole.logprobs
+    assert '"bytes"' in json.dumps(whole.logprobs)
+
+    config = config_for([STAGE1, STAGE2], samples=1)
+    execute(config, items[:2], run_id="s", runs_dir=tmp_path, backend=FakeBackend(),
+            cache=cache, models=FAKE_MODELS, schemes=schemes, sleep=lambda _: None)
+    lines = list(read_raw(tmp_path / "s"))
+    cached = [json.loads(row[0]) for row in
+              cache.connection.execute("SELECT response FROM responses").fetchall()]
+    assert len(cached) == len(lines) == len(plan(config, items[:2], FAKE_MODELS, schemes))
+    for stored in [line["raw_response"] for line in lines] + cached:
+        assert "logprobs" not in stored["raw"]["choices"][0]
+        assert '"bytes"' not in json.dumps(stored)
+        assert any(entry["top_logprobs"] for entry in stored["logprobs"]["content"])
+    assert {line["params"]["top_logprobs"] for line in lines} == {20}
+
+
+def test_a_response_stored_whole_still_reads_and_parses_the_same(cache, schemes):
+    """What was written before the reduction, copy and ``bytes`` included, stays usable."""
+    from argfallacy.parse import parse_row
+
+    request = request_for(json_schema=answer_schema(schemes["analogy"], "CQ1"))
+    whole = ask(request, FakeBackend(reasoning=True))
+    key = cache_key(request)
+    cache.connection.execute(
+        "INSERT INTO responses (cache_key, model_id, prompt_version, sample_index, params, "
+        "response) VALUES (?, ?, ?, ?, ?, ?)",
+        (key, request.model_id, request.prompt_version, request.sample_index, "{}",
+         json.dumps(whole.to_dict(), ensure_ascii=False)),
+    )
+    assert cache.get(key) == whole
+
+    line = _raw_line()
+    before = parse_row({**line, "raw_response": whole.to_dict()}, schemes)
+    after = parse_row({**line, "raw_response": whole.to_stored()}, schemes)
+    assert before == after
+    assert before["parse_ok"] and before["p_logprob_yes"] is not None
+
+
 def test_the_plan_counts_stage_one_plus_the_cqs_of_each_scheme(items, schemes):
     config = config_for([STAGE1, STAGE2], samples=5)
     models = FAKE_MODELS

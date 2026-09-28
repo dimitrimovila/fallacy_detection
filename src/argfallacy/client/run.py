@@ -592,7 +592,7 @@ def _raw_line(
         "params": call.request().generation_params(),
         "cache_key": call.key(),
         "from_cache": hit,
-        "raw_response": response.to_dict(),
+        "raw_response": response.to_stored(),
         "latency_s": response.latency_s,
         "error": response.error,
     }

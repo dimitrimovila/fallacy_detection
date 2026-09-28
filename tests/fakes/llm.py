@@ -6,7 +6,8 @@ get five that differ the way real ones do.
 
 The logprob block is shaped like vLLM's: one entry per generated token, whose
 text concatenates to exactly the content, with alternatives at the token where
-the answer value begins.  Two options reproduce what a real run will meet:
+the answer value begins, and ``bytes`` on every token and alternative, as the
+OpenAI client returns them.  Two options reproduce what a real run will meet:
 
 * ``partial_logprobs`` drops one admitted answer out of the alternatives, so the
   parser has to renormalise over what is left and mark the row;
@@ -62,7 +63,8 @@ def first_token(value: str) -> str:
 
 
 def _token(text: str, logprob: float = -0.001, alternatives: list | None = None) -> dict:
-    return {"token": text, "logprob": logprob, "top_logprobs": alternatives or []}
+    return {"token": text, "bytes": list(text.encode("utf-8")), "logprob": logprob,
+            "top_logprobs": alternatives or []}
 
 
 def _alternatives(options: tuple[str, ...], favourite: str, weight: float,
@@ -73,8 +75,10 @@ def _alternatives(options: tuple[str, ...], favourite: str, weight: float,
     rest = (1.0 - weight) / max(1, len(tokens) - 1)
     weights = {t: (weight if t == first_token(favourite) else rest) for t in tokens}
     total = sum(weights.values())
-    out = [{"token": t, "logprob": math.log(w / total)} for t, w in weights.items()]
-    out.append({"token": " the", "logprob": math.log(1e-6)})  # noise, not an answer
+    out = [{"token": t, "bytes": list(t.encode("utf-8")), "logprob": math.log(w / total)}
+           for t, w in weights.items()]
+    # noise, not an answer
+    out.append({"token": " the", "bytes": list(b" the"), "logprob": math.log(1e-6)})
     return out
 
 

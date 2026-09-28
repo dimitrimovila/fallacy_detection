@@ -1,6 +1,6 @@
 # Spec 04. Interviewer, serving, minimal parser and pilot
 
-Version 4.4, 28 September 2026. Components: `src/argfallacy/client/`, `src/argfallacy/parse/` (minimal version), `serving/` (with `serving/serve_command.py` and the jobs in `serving/slurm/`), `.gitattributes`.
+Version 4.5, 28 September 2026. Components: `src/argfallacy/client/`, `src/argfallacy/parse/` (minimal version), `serving/` (with `serving/serve_command.py` and the jobs in `serving/slurm/`), `.gitattributes`.
 Depends on: 01, 03 and the data (`docs/data.md`). Produces: `runs/<run_id>/`.
 
 ## 1. Serving on the cluster (`serving/`)
@@ -35,10 +35,10 @@ Environment variables: `LLM_BASE_URL` (for example `http://localhost:8000/v1`; i
 ## 2. The client (`argfallacy.client`)
 
 ### 2.1 Call
-A function `ask(request) -> RawResponse` built on the `openai` package (chat completions), with: `model_id`, messages, `temperature`, `seed`, `max_tokens`, `response_format` (JSON Schema), `logprobs` and `top_logprobs` when the model supports them. `RawResponse` keeps the full response exactly as it arrives (content, logprobs block, usage, `finish_reason`), plus latency and timestamp. Never summarised, never cleaned up.
+A function `ask(request) -> RawResponse` built on the `openai` package (chat completions), with: `model_id`, messages, `temperature`, `seed`, `max_tokens`, `response_format` (JSON Schema), `logprobs` and `top_logprobs` when the model supports them. `RawResponse` keeps the full response exactly as it arrives (content, logprobs block, usage, `finish_reason`), plus latency and timestamp. Never summarised, never cleaned up. What is written to disk is its stored form (section 2.5).
 
 ### 2.2 Cache
-SQLite in `runs/cache.sqlite`, a table with key = sha256 of (`model_id`, `prompt_version`, text of the rendered prompt, generation parameters, `sample_index`, `revision`, `tier`, `reasoning`) and value = the serialised `RawResponse`. The generation parameters are `temperature`, `max_tokens`, `seed`, `logprobs`, `top_logprobs` (only when logprobs are requested) and whether a JSON schema is sent, not the schema itself. `model_id` is the identifier the server serves, not the key or the `display_name` of `models.yaml`. The item and CQ identifiers are not in the key: the rendered prompt stands for them, so two items with the same text share their answers, and a template edit invalidates the entry even if the version string was not bumped. The cache is consulted before every call; a call already made is not repeated. The cache is never cleared automatically. Changing the prompt changes the key, so a new prompt version generates new calls only for that prompt.
+SQLite in `runs/cache.sqlite`, a table with key = sha256 of (`model_id`, `prompt_version`, text of the rendered prompt, generation parameters, `sample_index`, `revision`, `tier`, `reasoning`) and value = the serialised `RawResponse`, in the stored form of section 2.5. The generation parameters are `temperature`, `max_tokens`, `seed`, `logprobs`, `top_logprobs` (only when logprobs are requested) and whether a JSON schema is sent, not the schema itself. `model_id` is the identifier the server serves, not the key or the `display_name` of `models.yaml`. The item and CQ identifiers are not in the key: the rendered prompt stands for them, so two items with the same text share their answers, and a template edit invalidates the entry even if the version string was not bumped. The cache is consulted before every call; a call already made is not repeated. The cache is never cleared automatically. Changing the prompt changes the key, so a new prompt version generates new calls only for that prompt.
 
 ### 2.3 Plan and execution
 * `argfallacy run plan CONFIG` reads a YAML configuration file (items to include, stage, scheme condition `gold` or `predicted`, models, number of samples, prompt version) and prints how many calls are needed per model, how many are already in the cache, and an estimate of the duration given the concurrency. It calls nothing.
@@ -55,6 +55,7 @@ The manifest describes the whole configuration, whichever entries an invocation 
 
 ### 2.5 `raw.jsonl`
 One line per call: `run_id`, `item_id`, `stage`, `scheme_condition`, `scheme`, `cq_id` (empty for stage one), `sample_index`, `model`, `model_id`, `revision`, `tier`, `reasoning`, `prompt_version`, `json_schema` (the schema sent to the model with that call), `params`, `cache_key`, `from_cache`, `raw_response`, `latency_s`, `error`. The file is append-only. It is read one line at a time, never whole, by the resume, by the counts of the manifest and by the parser: the pilot left 13 GB of it. A line ends only at a newline, so a line separator that the JSON leaves inside a string (U+2028, U+0085) does not cut it.
+`raw_response`, like the value of the cache, is the stored form of the response: all of it, less two redundancies of the logprobs block, which was most of a line. The copy that the server's payload carries in `raw.choices[0].logprobs`, identical to `logprobs`, is left out, and so is every `bytes` field, the UTF-8 of a token or of an alternative written again as a list of integers. On the pilot, one line in twenty, the two copies were about half a line each and `bytes` 38 to 42 per cent of it: the stored form should be about 70 per cent smaller. The parser reads neither. The cache key and `top_logprobs` do not change. The lines and cache entries written before, the pilot's among them, keep both and stay as they are: they read and parse in the same way.
 
 ## 3. Minimal parser (`argfallacy.parse`, pilot version)
 
@@ -101,6 +102,7 @@ All of them with the fake backend in `tests/fakes/llm.py`, which returns determi
 11. `serve_command.py`: for `qwen3_8_27b` and `gemma4_31b` the command has no `--reasoning-parser`; for `qwen3_8_27b_think` and `gemma4_31b_think` it has the parser of the model and `--max-model-len 16384`; an entry whose revision is `PLACEHOLDER` (`fake_unpinned` of `tests/fakes/models.yaml`) is refused, with nothing on the standard output.
 12. `bash -n` on the scripts of `serving/slurm/`. They cannot be run outside the cluster, and no job is launched to test them. *Run by hand: no automatic test.* The exit codes of the smoke test are checked by hand against the fake backend.
 13. Reading `raw.jsonl`: `read_raw` returns the first row before decoding the second line, and a line with U+2028 and U+0085 inside a string comes back as one row.
+14. Stored form: with a fake backend that returns the copy and `bytes`, the lines of `raw.jsonl` and the cache entries of a run have neither, still have the alternatives and `top_logprobs` 20; a response stored whole in the cache reads back equal, and its whole and stored forms parse to the same row.
 
 ## 6. What not to do
 * No parsing inside the client: the client saves, and that is all.

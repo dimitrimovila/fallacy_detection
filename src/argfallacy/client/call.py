@@ -77,9 +77,39 @@ class RawResponse:
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
+    def to_stored(self) -> dict[str, Any]:
+        """What ``raw.jsonl`` and the cache keep: the response less two redundancies.
+
+        The logprobs block, most of a line, is kept once, in ``logprobs``: the copy
+        the server's payload carries in ``choices[0].logprobs`` is left out of
+        ``raw``, and so is every ``bytes`` field, the UTF-8 of a token written again
+        as a list of integers.  The parser reads neither, and a response stored
+        whole reads back all the same.
+        """
+        stored = {name: getattr(self, name) for name in self.__dataclass_fields__}
+        stored["logprobs"] = _without_bytes(self.logprobs)
+        stored["raw"] = _without_logprobs_copy(self.raw)
+        return stored
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> RawResponse:
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
+
+def _without_bytes(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: _without_bytes(item) for key, item in value.items() if key != "bytes"}
+    if isinstance(value, list):
+        return [_without_bytes(item) for item in value]
+    return value
+
+
+def _without_logprobs_copy(payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    choices = (payload or {}).get("choices")
+    if not choices:
+        return payload
+    first = {key: value for key, value in choices[0].items() if key != "logprobs"}
+    return {**payload, "choices": [first, *choices[1:]]}
 
 
 @dataclass
