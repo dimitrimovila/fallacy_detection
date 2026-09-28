@@ -1,5 +1,5 @@
 """Command line: ``argfallacy annotations update``, ``argfallacy run plan|execute CONFIG``,
-``argfallacy parse RUN_ID``, ``argfallacy score prior``."""
+``argfallacy parse RUN_ID``, ``argfallacy pilot report RUN_ID``, ``argfallacy score prior``."""
 
 from __future__ import annotations
 
@@ -96,6 +96,19 @@ def _cmd_parse(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_pilot_report(args: argparse.Namespace) -> int:
+    from .client.run import default_runs_dir
+    from .eval.pilot import write_report
+
+    run_dir = default_runs_dir() / args.run_id
+    try:
+        path = write_report(run_dir, read_raw=not args.no_raw)
+    except FileNotFoundError as error:
+        raise SystemExit(str(error)) from None
+    print(f"  pilot_report.md: {path}")
+    return 0
+
+
 def _cmd_score_prior(args: argparse.Namespace) -> int:
     import os
     from pathlib import Path
@@ -154,6 +167,19 @@ def build_parser() -> argparse.ArgumentParser:
     parse_cmd = sub.add_parser("parse", help="turn a run's raw.jsonl into tables")
     parse_cmd.add_argument("run_id")
     parse_cmd.set_defaults(func=_cmd_parse)
+
+    pilot = sub.add_parser("pilot", help="the report of a pilot run").add_subparsers(
+        dest="command", required=True
+    )
+    report_cmd = pilot.add_parser(
+        "report", help="write pilot_report.md from a parsed run (answers.csv, summary.csv)"
+    )
+    report_cmd.add_argument("run_id")
+    report_cmd.add_argument(
+        "--no-raw", action="store_true",
+        help="skip the token counts, which read raw.jsonl one line at a time",
+    )
+    report_cmd.set_defaults(func=_cmd_pilot_report)
 
     score = sub.add_parser("score", help="compute the metrics").add_subparsers(
         dest="command", required=True

@@ -123,7 +123,13 @@ gathers the four into one run:
 argfallacy run plan configs/pilot.yaml                     # counts the calls, makes none
 argfallacy run execute configs/pilot.yaml --run-id <run_id> --model <entry>
 argfallacy parse <run_id>                                  # answers.csv and summary.csv
+argfallacy pilot report <run_id>                           # pilot_report.md
 ```
+
+The report is computed from the files of the parser, the manifest, `data/` and `schemes/`.
+The token counts come from `raw.jsonl`, read one line at a time: without it (a copy of the
+run that has only the tables) the report says so and the rest is unchanged, and
+`--no-raw` skips the reading.
 
 On the cluster two Slurm jobs do this, launching and stopping the servers themselves
 (preparation in `serving/README.md`):
@@ -149,7 +155,7 @@ gives no number of the thesis. `report.md` lists the rows that stand for no item
 labels that the diagram of their gold scheme does not produce, and the predictions that are
 no class of the label space.
 
-Not implemented yet: the pilot report, the full runs, the aggregators, and the evaluation
+Not implemented yet: the full parser, the full runs, the aggregators, and the evaluation
 beyond the scorer (intervals, paired tests, abstention curves).
 
 ## License
