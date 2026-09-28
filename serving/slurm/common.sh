@@ -39,8 +39,9 @@ use_env "$CLIENT_ENV"
 export HF_HUB_OFFLINE=1
 export VLLM_NO_USAGE_STATS=1
 # FlashInfer compiles its sampling kernels on first use with the nvcc it finds in the
-# environment; a CUDA 13 compiler there gives kernels that a CUDA 12.9 driver cannot
-# run. The PyTorch sampler draws from the same top-k and top-p distribution.
+# environment, and the environment has none (a CUDA 13 compiler there gave kernels that
+# a CUDA 12.9 driver cannot run). The PyTorch sampler draws from the same top-k and
+# top-p distribution.
 export VLLM_USE_FLASHINFER_SAMPLER=0
 
 # 4. the node is shared: a port of this job, and a server that listens only on the node

@@ -45,6 +45,19 @@ interactive session.
    the environment, at 12.9: `flashinfer-python` and the `nvidia-cutlass-dsl-libs-*`
    packages need it, and the 13.x series clashes with `cuda-bindings` 12.9.
 
+   Do not mix wheels built for CUDA 12 and for CUDA 13 in the same environment. The
+   `-cu12` and `-cu13` packages of cuDNN, NCCL, NVSHMEM and cuSPARSELt write the same
+   files, and those files are registered under the package installed last. Removing the
+   `-cu13` ones then removes libraries of PyTorch too, which stops importing
+   (`libcudnn.so.9: cannot open shared object file`); neither `pip check` nor the
+   `RECORD` files of the packages show it, `ldd` on `libtorch_cuda.so` does, with
+   `not found`. If it happens, after removing the `-cu13` packages reinstall the `-cu12`
+   ones that share the files, at the versions of the installation (those of PyTorch
+   2.13.0+cu129 on the cluster), without touching anything else:
+   ```
+   python -m pip install --no-deps --force-reinstall nvidia-cudnn-cu12==9.20.0.48 nvidia-nccl-cu12==2.29.7 nvidia-nvshmem-cu12==3.4.5 nvidia-cusparselt-cu12==0.8.1
+   ```
+
    The check, whatever the variant (the versions shown are those of the CUDA 12.9 one):
    ```
    python -m pip show vllm     # Version: 0.30.0+cu129
@@ -189,9 +202,10 @@ What a job does, in order: it activates conda and exports the settings of the `.
 (a variable already set wins); it prints `nvidia-smi`, the versions of vLLM and
 PyTorch, the CUDA version PyTorch was built for and the GPUs it sees; it sets
 `HF_HUB_OFFLINE=1`, and `VLLM_USE_FLASHINFER_SAMPLER=0`, because FlashInfer compiles
-its sampling kernels on first use with the `nvcc` of the environment, and with a CUDA 13
-compiler there the kernels need a driver newer than that of `labdasan0` (the sampler of
-PyTorch draws from the same top-k and top-p distribution); it takes a port derived from
+its sampling kernels on first use with the `nvcc` of the environment, and the
+environment has none (a CUDA 13 compiler there gave kernels that need a driver newer
+than that of `labdasan0`; the sampler of PyTorch draws from the same top-k and top-p
+distribution); it takes a port derived from
 the job id, because the node is shared, and exports `LLM_BASE_URL=http://127.0.0.1:<port>/v1`, with the server
 listening only on that address. Then, for each entry, it launches `vllm serve` with the
 command of step 2 plus `--tensor-parallel-size` equal to the GPUs of the job, waits for
