@@ -1,4 +1,4 @@
-# The models and how they are served. Version 3.6.
+# The models and how they are served. Version 3.7.
 #
 # Six models in three tiers (`tier`), in eight entries: Qwen3.8 and Gemma 4 have two
 # each, with reasoning off and on. The open models are served with vLLM 0.30.0, installed
@@ -21,13 +21,13 @@
 #             with `enable_thinking: false`, the `_think` entry with `enable_thinking: true`
 #             and the template's default level. The two entries are served by two separate
 #             launches of the server, which differ in the reasoning parser: `serve_args` of
-#             each entry gives the flags. For gpt oss it does not switch off entirely
-#             and is kept at the minimum, so its answers are not produced under the same
-#             conditions as those of the other models. For K2 Horizon it does not switch
-#             off, and the level is still to be chosen.
+#             each entry gives the flags. For gpt oss it does not switch off: the effort
+#             takes only low, medium or high, and it is kept at low, so its answers are
+#             not produced under the same conditions as those of the other models. For
+#             K2 Horizon it does not switch off, and the level is still to be chosen.
 # `max_tokens` optional: applies instead of the one in the configuration. The `_think`
-#             entries and K2 Horizon need it: they write their reasoning before the JSON,
-#             and with the 512 of the configuration they would be cut off.
+#             entries, K2 Horizon and gpt oss need it: they write their reasoning before
+#             the JSON, and with the 512 of the configuration they would be cut off.
 # `serve_args` the flags of `vllm serve` that depend on the entry. `serving/serve_command.py`
 #             prints `model_id --revision revision` followed by them, and `--max-model-len
 #             8192` when they do not set it; the job adds port, host, tensor parallelism and
@@ -41,7 +41,7 @@
 # cache key: changing one of them produces new calls, not old answers reused. serve_args goes
 # into the manifest only: the entry already determines it.
 
-version: "3.6"
+version: "3.7"
 
 models:
 
@@ -126,8 +126,22 @@ models:
     is_reasoning: true
     reasoning: {reasoning_effort: low}
     max_concurrency: 8
-    serve_args: []
-    notes: "The reasoning does not switch off: effort at the minimum. The logprobs must be read on the answer token inside the JSON, not on the first generated token."
+    max_tokens: 8192
+    serve_args: [--max-model-len, "16384", --reasoning-parser, openai_gptoss]
+    notes: >-
+      The reasoning does not switch off: there is no supported way to turn it off, the
+      effort takes only low, medium or high, and it is kept at low. The reasoning comes
+      before the JSON, so the entry has the room of the `_think` entries: with the 512
+      tokens of the configuration the answer could be cut off, and with a context of
+      8192 a prompt of about 650 tokens plus the 8192 of `max_tokens` would be refused;
+      the context of 16384 holds both. `--reasoning-parser openai_gptoss`: vLLM moves
+      the JSON schema to the `final` channel of the harmony format, leaving the
+      `analysis` channel free for the reasoning, only when a parser is configured
+      (`_adjust_output_format` in `vllm/parser/harmony.py`, called from the branch
+      `parser is not None` of `vllm/renderers/online_renderer.py`); without it the
+      schema constrains the JSON from the first token and the model does not reason.
+      The logprobs must be read on the answer token inside the JSON, not on the first
+      generated token.
 
   # ------------------------------------------------------------------- tier 2
   gpt_oss_120b:
@@ -140,8 +154,12 @@ models:
     is_reasoning: true
     reasoning: {reasoning_effort: low}
     max_concurrency: 4
-    serve_args: []
-    notes: "Pairs with gpt_oss_20b: same family, only the size changes. Same caveat on the reasoning."
+    max_tokens: 8192
+    serve_args: [--max-model-len, "16384", --reasoning-parser, openai_gptoss]
+    notes: >-
+      Pairs with gpt_oss_20b: same family, only the size changes. Same reasoning, kept
+      at low, the same room for it (`max_tokens` 8192 and a context of 16384) and the
+      same reasoning parser, for the reasons given in the notes of gpt_oss_20b.
 
   k2_horizon_32b:
     tier: 2

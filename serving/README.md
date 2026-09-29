@@ -86,6 +86,12 @@ interactive session.
    JSON from the first token and the model does not reason. A call sent to the server of
    the other entry would be accepted, since the `model_id` is the same, and answered in
    the wrong condition: that is why the smoke test comes before every run of an entry.
+   gpt oss always reasons (the effort takes only low, medium or high) and is launched like
+   a `_think` entry: `max_tokens` 8192, `--max-model-len 16384` and `--reasoning-parser
+   openai_gptoss`. For this model vLLM moves the JSON schema to the `final` channel of
+   the harmony format, leaving the `analysis` channel free for the reasoning, only when
+   a parser is configured; without it the schema constrains the JSON from the first
+   token and the model does not reason.
 3. **Declare the endpoint** in the `.env` at the root of the repository, never in the code:
    ```
    LLM_BASE_URL=http://localhost:8000/v1
@@ -136,8 +142,8 @@ one of them, so every launch splits the model over the two.
    ```
    srun --partition=owner1 --gres=gpu:1 --mem=4G --time=00:05:00 nvidia-smi
    ```
-   The front-end closes idle SSH sessions: the installation and the downloads of point 5
-   run inside `tmux`. Jobs submitted with `sbatch` do not depend on the session.
+   The front-end closes idle SSH sessions: the installation and the downloads of points
+   5 and 6 run inside `tmux`. Jobs submitted with `sbatch` do not depend on the session.
 3. Create the environment of the client, `argfallacy`, from the root of the repository:
    ```
    conda create -n argfallacy -c conda-forge --override-channels python=3.12 -y
@@ -147,15 +153,19 @@ one of them, so every launch splits the model over the two.
    The names of the two environments are written in `serving/slurm/common.sh`; keeping
    them apart means the dependencies of the client cannot move those of vLLM.
 4. Write the `.env` of the cluster, at the root of the repository: `HF_HOME`, a folder
-   under `/extra` for the weights, and `LLM_API_KEY`, any string. `LLM_BASE_URL` is
+   under `/extra` for the weights, `TIKTOKEN_ENCODINGS_BASE`, the folder of the
+   vocabularies of gpt oss (point 6), and `LLM_API_KEY`, any string. `LLM_BASE_URL` is
    not needed: the job sets it.
    ```
    HF_HOME=/extra/<user>/huggingface
+   TIKTOKEN_ENCODINGS_BASE=/extra/<user>/tiktoken_encodings
    LLM_API_KEY=any-string
    ```
    The weights go under `/extra`, not `/storage`: `/storage` is shared by the whole
    department and was nearly full (98 per cent) when the weights of the pilot were
    downloaded, while `/extra` had 23 TB free. `labdasan0` mounts the same `/extra`.
+   The job exports every setting of this file before it launches the server, so
+   `vllm serve` sees them as the client does.
 5. Download the weights of the pinned revisions, with the Hugging Face command line
    of the vLLM environment and the same `HF_HOME`; `<model_id>` and `<revision>` are
    those of `serving/models.yaml`, and the pilot needs Qwen3.8 and Gemma 4, each for
@@ -172,6 +182,29 @@ one of them, so every launch splits the model over the two.
    reads its weights at about 110 MB/s (eight minutes for Qwen3.8) and compiles it; the
    compilation is cached in `~/.cache/vllm/torch_compile_cache`, so the later launches of
    the same model skip it.
+
+   The repositories of gpt oss hold the weights three times: at the root, the files
+   vLLM reads, and in `original/` and `metal/` the copies for the reference
+   implementation and for Apple Metal, which vLLM does not read. Those two folders are
+   left out:
+   ```
+   hf download openai/gpt-oss-20b --revision <revision> --exclude "original/*" --exclude "metal/*"
+   hf download openai/gpt-oss-120b --revision <revision> --exclude "original/*" --exclude "metal/*"
+   ```
+   13.8 GB for the 20b and 65.3 GB for the 120b, against 41.3 and 195.8 GB for the whole
+   repositories; neither is gated. With `hf` 1.33.0 each pattern takes its own
+   `--exclude`; `--dry-run` lists the files and the total without downloading anything.
+6. For gpt oss, the vocabularies of its tokenizer. vLLM reads the harmony format of gpt
+   oss through the `openai-harmony` library, which downloads `o200k_base` and
+   `cl100k_base` on first use unless `TIKTOKEN_ENCODINGS_BASE` names a folder that
+   holds them. They are downloaded once from the front-end, so that the server does not
+   depend on the network of the node:
+   ```
+   mkdir -p /extra/<user>/tiktoken_encodings
+   wget -O /extra/<user>/tiktoken_encodings/o200k_base.tiktoken https://openaipublic.blob.core.windows.net/encodings/o200k_base.tiktoken
+   wget -O /extra/<user>/tiktoken_encodings/cl100k_base.tiktoken https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken
+   ```
+   and the folder goes into the `.env` as `TIKTOKEN_ENCODINGS_BASE` (point 4).
 
 **Running.** From the root of the repository on the front-end, in the environment
 `argfallacy`:
