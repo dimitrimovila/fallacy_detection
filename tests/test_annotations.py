@@ -12,11 +12,12 @@ from argfallacy.schemes import SchemeError
 HEADER = ["item_id", "text", "scheme", "CQ1", "CQ1.1", "CQ2", "CQ3", "CQ4",
           "verdetto", "incertezza", "nota"]
 ROWS = [
-    ["a1", "First argument.", "YES", "yes", "no", "-", "-", "-", "Weak Analogy",
+    ["a1", "First argument.", "YES", "yes", "no", "na", "idk", "yes", "Weak Analogy",
      "CQ1.1:AMB", ""],
     ["ESCLUSO", "A duplicate.", "YES", "yes", "yes", "yes", "yes", "yes", "Good Argumentation",
      "", ""],
-    ["b2", "Second argument.", "NO", "-", "-", "-", "-", "-", "n.a. (schema assente)", "", ""],
+    ["b2", "Second argument.", "NO", "na", "na", "na", "na", "na", "n.a. (schema assente)", "",
+     ""],
 ]
 
 
@@ -50,7 +51,7 @@ def test_the_dumitru_rows_are_replaced_and_the_rest_stays(tmp_path, files):
 
     assert rows["a1", "scheme"] == "analogy"
     assert rows["a1", "verdict"] == "weak_analogy"
-    assert rows["a1", "CQ1.1"] == "no" and rows["a1", "CQ2"] == "na"
+    assert rows["a1", "CQ1.1"] == "no" and rows["a1", "CQ2"] == "na" and rows["a1", "CQ3"] == "idk"
     assert rows["a1", "uncertainty"] == "CQ1.1:AMB"
     assert rows["b2", "scheme"] == "none" and ("b2", "verdict") not in rows.index
     assert "old" not in set(frame["value"])
@@ -64,4 +65,17 @@ def test_an_id_column_pasted_one_row_off_stops_everything(tmp_path, files):
     shifted = [[ROWS[i - 1][0] if i else "", *row[1:]] for i, row in enumerate(ROWS)]
     with pytest.raises(SchemeError, match="the text is not that of item"):
         update(_workbook(tmp_path / "book.xlsx", shifted), table, items)
+    assert table.read_bytes() == before
+
+
+@pytest.mark.parametrize("column", ["scheme", "CQ1", "CQ4"])
+@pytest.mark.parametrize("value", ["-", "n.a.(C=A)"])
+def test_the_markers_of_the_annotation_along_the_path_stop_the_reader(tmp_path, files, column,
+                                                                       value):
+    items, table = files
+    before = table.read_bytes()
+    first = list(ROWS[0])
+    first[HEADER.index(column)] = value
+    with pytest.raises(SchemeError, match="unknown"):
+        update(_workbook(tmp_path / "book.xlsx", [first, *ROWS[1:]]), table, items)
     assert table.read_bytes() == before

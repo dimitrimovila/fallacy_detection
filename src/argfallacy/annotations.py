@@ -40,10 +40,10 @@ SHEET_PREFIX = "Annotazione Dumitru"
 ANNOTATOR = "dumitru"
 SKIP = "ESCLUSO"
 CQ_HEADER = re.compile(r"^CQ\d+(\.\d+)*$")
-# `-` and `na`: the diagram did not reach the CQ; `n.a.(C=A)`: the conclusion is the
-# assertion, so the CQ does not apply
-CQ_ANSWERS = {"yes": "yes", "no": "no", "-": "na", "na": "na", "n.a.(c=a)": "na",
-              "?": "idk", "idk": "idk", "positive": "positive", "negative": "negative"}
+# `na`: the question has no object on the item.  Every CQ is answered, so the `-` and
+# `n.a.(C=A)` of the annotation along the path are unknown values like any other
+CQ_ANSWERS = {"yes": "yes", "no": "no", "na": "na", "?": "idk", "idk": "idk",
+              "positive": "positive", "negative": "negative"}
 
 
 def load_annotations(path: str | Path = ANNOTATIONS_FILE) -> pd.DataFrame:
@@ -108,10 +108,13 @@ def read_sheet(sheet, texts: dict[str, str], schemes, vocab, scheme_vocab) -> li
 
         raw = cell(where["scheme"])
         key = light_normalize(raw)
-        if key and CQ_ANSWERS.get(key) != "na":
-            value = ("idk" if key in idk else scheme if key == "yes"
-                     else "none" if key == "no" else normalize_scheme_label(raw, scheme_vocab))
-            add("scheme", value, raw)
+        if key and key != "na":
+            try:
+                value = ("idk" if key in idk else scheme if key == "yes"
+                         else "none" if key == "no" else normalize_scheme_label(raw, scheme_vocab))
+                add("scheme", value, raw)
+            except SchemeError:
+                problems.append(f"row {number} scheme: unknown value {raw!r}")
         raw = cell(where["verdict"])
         if light_normalize(raw) in absent:
             if light_normalize(cell(where["scheme"])) != "no":
