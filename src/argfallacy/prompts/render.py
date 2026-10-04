@@ -97,8 +97,7 @@ def load_answer_meanings(version: str = DEFAULT_VERSION) -> dict[str, Any]:
         raise SchemeError(f"no answer definitions at {path}")
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     expected = prompt_version(STAGE2, version)
-    # the file name carries the version; a file that also declares one must agree
-    if "prompt_version" in data and data["prompt_version"] != expected:
+    if data.get("prompt_version") != expected:
         raise SchemeError(
             f"{path.name}: prompt_version {data.get('prompt_version')!r}, expected {expected!r}"
         )

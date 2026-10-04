@@ -1,3 +1,15 @@
+# What each admitted answer means, in the stage two prompt. Version v2.
+#
+# It is part of the prompt as much as stage2_v2.md, and shares its version: after the
+# first run on a real model, every change here creates a new version.
+# The keys yes and no must be quoted: in YAML 1.1 they are booleans.
+#
+# No reference to the fallacy labels: a definition says what the question asks,
+# never where the answer leads in the diagram. The notes of the scheme YAML files
+# stay out of the prompt for the same reason.
+
+prompt_version: stage2_v2
+
 # Meaning of yes and no for every CQ that has no entry under `per_cq`. The
 # instructions of the template apply to every CQ.
 default:
