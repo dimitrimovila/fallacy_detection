@@ -147,6 +147,7 @@ The `item_id` values to paste are in `item_id_per_foglio.xlsx`, in the `Thesis` 
 Updates since the freeze:
 
 * 4 October 2026: the same two sheets, 730 rows of `Annotazione Dumitru Analogy` and 1031 of `Annotazione Dumitru Expert Opin` before and after, 1761 in all. One cell changed: CQ4 of `5e50a8a9d8179380` (`Annotazione Dumitru Expert Opin`, row 7), from `na` to `no`. The rows with every CQ filled in and no `idk` are now 183, and all of them give, along the diagram, the verdict written in the sheet.
+* 4 October 2026, second update: four new sheets, `Annotazione Dumitru Slippery Sl` (42 rows), `Annotazione Dumitru ad hominem` (822), `Annotazione Dumitru ad_populum` (1195) and `Annotazione Dumitru example` (595), 2654 rows in all; the two earlier sheets are unchanged. `Annotazione Dumitru hasty_gener` and `Annotazione Dumitru cause_effec`, annotated so far for the scheme only, were skipped with `--skip`. The rows with every CQ filled in and no `idk` (scheme included) are now 449, and all of them give, along the diagram, the verdict written in the sheet.
 
 ## 7. Checks made at the freeze
 
