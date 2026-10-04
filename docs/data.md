@@ -143,6 +143,10 @@ A row with `item_id` equal to `ESCLUSO` [EXCLUDED] is skipped. The command stops
 
 The `item_id` values to paste are in `item_id_per_foglio.xlsx`, in the `Thesis` folder, outside the repository: one sheet for each of Dumitru's two sheets and of the eight base sheets, with the rows in the same order as in the workbook. Enrico's copies have the same order as their base sheet. The `nota` column flags the `ESCLUSO` rows, the repeated rows and the two copying errors. Whoever prepares a new Dumitru sheet starting from a base sheet pastes the ids right away, before reordering the rows.
 
+Updates since the freeze:
+
+* 4 October 2026: the same two sheets, 730 rows of `Annotazione Dumitru Analogy` and 1031 of `Annotazione Dumitru Expert Opin` before and after, 1761 in all. One cell changed: CQ4 of `5e50a8a9d8179380` (`Annotazione Dumitru Expert Opin`, row 7), from `na` to `no`. The rows with every CQ filled in and no `idk` are now 183, and all of them give, along the diagram, the verdict written in the sheet.
+
 ## 7. Checks made at the freeze
 
 * Every verdict, scheme and CQ answer of `annotations.csv` coincides with the tables produced by the previous extraction code. The only difference is row 5 of `Annotazione Dumitru Expert Opin`, corrected on 21 September 2026 from `Irrelevant Authority` to `Appeal to Authority`, in agreement with the answer `no` to CQ4.1 of the same row.
