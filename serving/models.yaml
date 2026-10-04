@@ -27,7 +27,8 @@
 #             K2 Horizon it does not switch off, and the level is still to be chosen.
 # `max_tokens` optional: applies instead of the one in the configuration. The `_think`
 #             entries, K2 Horizon and gpt oss need it: they write their reasoning before
-#             the JSON, and with the 512 of the configuration they would be cut off.
+#             the JSON, and with the 512 of the configuration they would be cut off. The
+#             entries with reasoning off have 1024, room for a justification that runs on.
 # `samples`, `temperature`, `top_p`, `top_k`  how many answers the entry gives to every
 #             question, and how each is drawn: the same parameters for every sample, with
 #             the seed equal to the sample index, at both stages. The client always sends
@@ -72,6 +73,7 @@ models:
     is_reasoning: true
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
     max_concurrency: 8
+    max_tokens: 1024
     samples: 1
     temperature: 0.0
     top_p: 1.0
@@ -84,6 +86,9 @@ models:
       stops enforcing the JSON schema constraint with no error or warning, and the
       answers out of format would become `invalid` with no visible cause. One sample at
       temperature 0: the hard answer is that sample, and its logprobs the soft one.
+      `max_tokens` 1024: in the first pilot the 99th percentile of the answers was 115
+      tokens, and the only two cut off at 512 were justifications that had turned into
+      reasoning.
 
   qwen3_8_27b_think:
     tier: 1
@@ -113,6 +118,7 @@ models:
     is_reasoning: true
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
     max_concurrency: 8
+    max_tokens: 1024
     samples: 1
     temperature: 0.0
     top_p: 1.0
@@ -125,6 +131,9 @@ models:
       stops enforcing the JSON schema constraint with no error or warning, and the
       answers out of format would become `invalid` with no visible cause. One sample at
       temperature 0: the hard answer is that sample, and its logprobs the soft one.
+      `max_tokens` 1024: in the first pilot the 99th percentile of the answers was 115
+      tokens, and the only two cut off at 512 were justifications that had turned into
+      reasoning.
 
   gemma4_31b_think:
     tier: 1

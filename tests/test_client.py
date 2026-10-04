@@ -497,7 +497,7 @@ def test_the_pilot_entries_differ_only_in_reasoning_and_room(schemes):
         assert models[off]["revision"] == models[on]["revision"]
         assert models[off]["reasoning"]["chat_template_kwargs"]["enable_thinking"] is False
         assert models[on]["reasoning"]["chat_template_kwargs"]["enable_thinking"] is True
-        assert "max_tokens" not in models[off]
+        assert models[off]["max_tokens"] == 1024
         assert models[on]["max_tokens"] == 8192
 
 
