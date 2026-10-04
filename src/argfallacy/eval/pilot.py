@@ -842,11 +842,12 @@ def render(data: PilotData) -> str:
     add("Share of each answer outside the arcs over all stage-two calls:\n")
     add(markdown_table(overall_shares(data), {CBD: "pct1", NA: "pct1", INVALID: "pct1"}) + "\n")
 
-    add(f"Hard answer of each entry where the hard answer of another entry was `{CBD}` on "
-        "the same item and question:\n")
-    across = answers_where_another_cannot_determine(data)
-    add(markdown_table(across, {**{c: "pct" for c in across.columns}, "questions": "int"})
-        + "\n")
+    if len(data.entries) > 1:
+        add(f"Hard answer of each entry where the hard answer of another entry was `{CBD}` "
+            "on the same item and question:\n")
+        across = answers_where_another_cannot_determine(data)
+        add(markdown_table(across, {**{c: "pct" for c in across.columns}, "questions": "int"})
+            + "\n")
 
     add("## 2. Integrity\n")
     add(markdown_table(integrity(data), {"logprob_partial": "pct1"}) + "\n")
@@ -981,8 +982,9 @@ def render(data: PilotData) -> str:
 
     add("## Appendix B. Per question: extreme logprobs and agreement between conditions\n")
     extreme = logprob_extreme_by_cq(data).add_prefix("extreme_")
-    agree = agreement_by_cq(data).add_prefix("on_off_agreement_")
-    add(markdown_table(extreme.join(agree), _pct_all(extreme.join(agree))) + "\n")
+    if reasoning_pairs(data.entries):
+        extreme = extreme.join(agreement_by_cq(data).add_prefix("on_off_agreement_"))
+    add(markdown_table(extreme, _pct_all(extreme)) + "\n")
 
     add("## Appendix C. Correlation of the three probabilities per question\n")
     corr = probability_correlations(data, by_cq=True)

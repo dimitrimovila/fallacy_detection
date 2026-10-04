@@ -195,3 +195,15 @@ def test_a_run_made_in_two_times_is_reported_on_the_entries_it_has(data):
     data.manifest["models"]["later"] = dict(data.manifest["models"]["m"])
     assert data.entries == ["m", "m_think"]
     assert "later" not in pilot.render(data)
+
+
+def test_a_run_with_one_sample_and_no_pair_of_conditions_is_reported(data, schemes):
+    """The first job of the second pilot: entries with one greedy sample, no `_think`."""
+    answers = data.answers
+    data.answers = answers[(answers["model"] == "m") & (answers["sample_index"] == 0)]
+    data.summary = summarise(data.answers, schemes)
+    data.manifest["config"]["models"] = ["m"]
+    data.manifest["models"]["m"].update(samples=1, temperature=0.0)
+    text = pilot.render(data)
+    assert "No model of this run is in both reasoning conditions." in text
+    assert "on_off_agreement" not in text
