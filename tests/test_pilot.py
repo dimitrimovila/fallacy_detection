@@ -187,3 +187,11 @@ def test_the_report_puts_the_flagged_questions_first(data):
     assert "| expert_opinion | CQ1 | m | cannot_be_determined 60% |" in first
     assert "| expert_opinion | CQ1 | m_think |" not in first
     assert "Tokens: no `raw.jsonl`" in rest
+
+
+def test_a_run_made_in_two_times_is_reported_on_the_entries_it_has(data):
+    """After the first job the configuration names entries with no answers yet."""
+    data.manifest["config"]["models"] = ["m", "later", "m_think"]
+    data.manifest["models"]["later"] = dict(data.manifest["models"]["m"])
+    assert data.entries == ["m", "m_think"]
+    assert "later" not in pilot.render(data)

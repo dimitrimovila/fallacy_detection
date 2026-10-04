@@ -95,8 +95,13 @@ class PilotData:
 
     @property
     def entries(self) -> list[str]:
-        """The model entries in the order of the configuration."""
-        return list(self.manifest["config"]["models"])
+        """The entries of the configuration that have answers, in its order.
+
+        A run made in two times has, after the first, the answers of some entries
+        only: the report covers those.
+        """
+        present = set(self.answers["model"])
+        return [e for e in self.manifest["config"]["models"] if e in present]
 
     @property
     def stage2(self) -> pd.DataFrame:
