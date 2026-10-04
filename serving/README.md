@@ -100,7 +100,8 @@ interactive session.
    so that the JSON always begins with `{"answer": "` and the context before the answer
    token does not change from call to call. With gpt oss the option does not reach the
    grammar, which vLLM builds as a structural tag of the harmony format with free
-   whitespace; the smoke test says whether its JSON comes out compact anyway. The line of
+   whitespace (vLLM issue 54497); for the entries with five samples, whose soft answer
+   is the frequency, the smoke test only warns about the layout. The line of
    `serve_command.py` is quoted for the shell: the JSON is one argument, and a script
    reads the line back with `eval`, not by splitting it on spaces.
 3. **Declare the endpoint** in the `.env` at the root of the repository, never in the code:
@@ -119,10 +120,11 @@ interactive session.
    entry that reasons (`enable_thinking` true, or `is_reasoning` true where the entry does not set `enable_thinking`: the `_think` entries, K2 Horizon, gpt oss) it also checks that there was reasoning and that the answer was not cut off. The reasoning is read from `usage` and from the reasoning field of the message (`reasoning_content` or `reasoning`), and the script prints its length and where it was found: `usage` can say zero while the field holds the thinking. It also checks that the prompt reached the model: `prompt_tokens` below a quarter of an estimate at four characters per token means the chat template dropped the content, as it did for K2 Horizon before `--chat-template-content-format string`. If the logprobs do not arrive, it says so plainly: then `supports_logprobs` in
    `models.yaml` must be set to `false` and `p_logprob` will stay empty for that model.
    Then it sends the same question three times at temperature 1 and checks that every
-   content (after the reasoning parser) begins with `{"answer": "`.
+   content (after the reasoning parser) begins with `{"answer": "`: a stop for an entry
+   with one sample, a warning with the prefixes seen for an entry with several.
    The exit code is zero only if the entry can be run: a prompt not read, no reasoning or
    a cut-off answer on an entry that reasons, a JSON that does not begin with
-   `{"answer": "`, and no logprobs on an entry with `supports_logprobs: true`, give
+   `{"answer": "` on an entry with one sample, and no logprobs on an entry with `supports_logprobs: true`, give
    another code, and a job stops on it.
 5. **Count the calls** before making them:
    `argfallacy run plan configs/pilot2.yaml --model <entry>`. Without `--model`, the calls of

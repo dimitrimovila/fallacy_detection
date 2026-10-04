@@ -802,3 +802,18 @@ def test_the_smoke_test_fails_when_the_json_is_not_compact(monkeypatch, capsys):
     monkeypatch.setattr(smoke_test, "build_backend",
                         lambda *_: _spaced(FakeBackend().create))
     assert smoke_test.main(["--model", "fake"]) != 0
+
+
+def test_the_layout_only_warns_for_an_entry_with_several_samples(monkeypatch, capsys):
+    """Its soft answer is the frequency, and gpt oss cannot be compacted by vLLM 0.30.0."""
+    smoke_test = _serving_script("smoke_test")
+    monkeypatch.setitem(smoke_test.FAKE_SPEC, "samples", 5)
+    monkeypatch.setattr(smoke_test, "build_backend",
+                        lambda *_: _spaced(FakeBackend().create))
+    assert smoke_test.main(["--model", "fake"]) == 0
+    assert "WARNING, not blocking" in capsys.readouterr().out
+
+
+def test_the_fake_reasons_in_the_message_as_a_server_with_a_parser():
+    """With ``--fake-reasoning`` the content is the JSON alone, and the smoke test passes."""
+    assert _serving_script("smoke_test").main(["--model", "fake", "--fake-reasoning"]) == 0

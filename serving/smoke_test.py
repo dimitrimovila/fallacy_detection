@@ -23,15 +23,20 @@ Five checks matter more than the rest:
   through, and a ``length`` finish means the object was cut off before it closed;
 * whether the JSON has the one layout the server should impose.  The same
   question goes out three more times at temperature 1, and every content (after
-  the reasoning parser, on an entry that reasons) must begin with
+  the reasoning parser, on an entry that reasons) should begin with
   ``{"answer": "``.  Any other spacing means the server is not compacting the
-  JSON, and the context before the answer token changes from call to call.
+  JSON, and the context before the answer token changes from call to call.  That
+  matters where the soft answer is the logprobs, an entry with one sample, and
+  there it stops the entry.  An entry with several samples has the frequency as
+  its soft answer, and with gpt oss vLLM 0.30.0 hands the schema to xgrammar as a
+  structural tag that ``disable_any_whitespace`` does not reach: there a
+  different layout is a warning, with the prefixes seen.
 
 The exit code is zero only if the entry can be run: a job stops on anything else.
 Besides a refusal, an error or an answer token missing from the JSON, that means
 a prompt the server did not read, no reasoning or a cut-off answer on an entry
-that reasons, a JSON that does not begin with ``{"answer": "``, and no logprobs on
-an entry whose ``supports_logprobs`` is true.
+that reasons, a JSON that does not begin with ``{"answer": "`` on an entry with one
+sample, and no logprobs on an entry whose ``supports_logprobs`` is true.
 
     python serving/smoke_test.py --model qwen3_8_27b        # a key of serving/models.yaml
     python serving/smoke_test.py --model qwen3_8_27b_think  # same weights, thinking on
@@ -146,10 +151,11 @@ def reasoning_length(response) -> tuple[int, str]:
     return 0, "no reasoning in usage, in the message or in the content"
 
 
-def layout_holds(request: Request, backend) -> bool:
+def layout_holds(request: Request, backend, blocking: bool) -> bool:
     """The same question at temperature 1, three times: does every content begin the same way?
 
     Seeds 1 to 3, so that the three calls can differ.  An error counts as a failure.
+    Not ``blocking``, a different layout is reported and the answer is True.
     """
     holds = True
     for seed in range(1, LAYOUT_CALLS + 1):
@@ -159,10 +165,13 @@ def layout_holds(request: Request, backend) -> bool:
         ok = not response.error and (response.content or "").startswith(LAYOUT)
         holds = holds and ok
         print(f"Layout {seed}  : {'ok' if ok else 'NO'}  {response.error or repr(head)}")
-    if not holds:
+    if not holds and blocking:
         print(f"WARNING: not every content begins with {LAYOUT!r}. The server must be launched "
               f"with the `--structured-outputs-config` of the entry's `serve_args`.")
-    return holds
+    elif not holds:
+        print(f"WARNING, not blocking: not every content begins with {LAYOUT!r}. This entry "
+              f"takes several samples, and its soft answer is their frequency, not the logprobs.")
+    return holds or not blocking
 
 
 def naive_position(logprobs, options) -> int | None:
@@ -267,7 +276,7 @@ def main(argv: list[str] | None = None) -> int:
                   f"(finish_reason = length): the reasoning used up the room for the "
                   f"JSON. Raise the entry's `max_tokens` in serving/models.yaml.")
     print()
-    if not layout_holds(request, backend):
+    if not layout_holds(request, backend, blocking=sampling["samples"] == 1):
         unusable = True
     print()
 

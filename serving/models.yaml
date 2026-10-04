@@ -48,7 +48,7 @@
 #             `disable_any_whitespace`, so that the JSON has one layout, `{"answer": "`, and
 #             the context before the answer token is the same in every call. With gpt oss
 #             vLLM turns the schema into a structural tag of the harmony format, which xgrammar
-#             compiles with free whitespace whatever the option says.
+#             compiles with free whitespace whatever the option says (vLLM issue 54497).
 # `enabled`   a disabled model enters no plan.
 # `supports_logprobs`  the server returns the token logprobs.
 # `is_reasoning`       the model can reason before answering.
@@ -186,8 +186,9 @@ models:
       schema constrains the JSON from the first token and the model does not reason.
       The logprobs must be read on the answer token inside the JSON, not on the first
       generated token. The schema reaches xgrammar as a structural tag of the harmony
-      format, compiled with free whitespace: `disable_any_whitespace` does not reach it,
-      and the layout check of the smoke test says whether the JSON comes out compact.
+      format, compiled with free whitespace: `disable_any_whitespace` does not reach it
+      (vLLM issue 54497). With five samples the soft answer is their frequency, so the
+      layout check of the smoke test only warns.
 
   # ------------------------------------------------------------------- tier 2
   gpt_oss_120b:

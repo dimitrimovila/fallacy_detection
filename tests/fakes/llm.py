@@ -5,16 +5,20 @@ the same question twice and get the same thing, and can ask for five samples and
 get five that differ the way real ones do.
 
 The logprob block is shaped like vLLM's: one entry per generated token, whose
-text concatenates to exactly the content, with alternatives at the token where
-the answer value begins, and ``bytes`` on every token and alternative, as the
-OpenAI client returns them.  Two options reproduce what a real run will meet:
+text concatenates to exactly the reasoning, if any, and the content, with
+alternatives at the token where the answer value begins, and ``bytes`` on every
+token and alternative, as the OpenAI client returns them.  Two options reproduce
+what a real run will meet:
 
 * ``partial_logprobs`` drops one admitted answer out of the alternatives, so the
   parser has to renormalise over what is left and mark the row;
-* ``reasoning`` puts thinking text before the JSON, with a *decoy*: a draft
-  object whose answer token carries its own, different alternatives.  A client
-  that reads the first answer-looking token instead of the one inside the final
-  JSON gets the decoy's probabilities, and the test catches it.
+* ``reasoning`` thinks before the JSON, as a server with a reasoning parser
+  answers: the thinking goes in the ``reasoning`` field of the message and the
+  content is the JSON alone, while the logprob block keeps the tokens of both.
+  The thinking holds a *decoy*: a draft object whose answer token carries its
+  own, different alternatives.  A client that reads the first answer-looking
+  token instead of the one inside the final JSON gets the decoy's probabilities,
+  and the test catches it.
 
 The counter is the reason this exists.  Several acceptance tests are about *not*
 calling the model — the cache, the resume — and the only way to check that is to
@@ -131,21 +135,25 @@ class FakeBackend:
         answer = options[seed_value % len(options)]
         confidence = 50 + (seed_value % 50)
 
+        thinking = self._reasoning_tokens(options, key, answer) if self.reasoning else []
         if any(marker in prompt for marker in self.invalid_on):
-            tokens = [_token("I am not going to answer that.", -0.1)]
+            answer_tokens = [_token("I am not going to answer that.", -0.1)]
         else:
             body = json.dumps({key: answer, "confidence": confidence,
                                "justification": "Because the text says so."})
-            tokens = self._reasoning_tokens(options, key, answer) if self.reasoning else []
-            tokens += self._json_tokens(body, key, answer, options)
+            answer_tokens = self._json_tokens(body, key, answer, options)
+        tokens = thinking + answer_tokens
 
-        content = "".join(t["token"] for t in tokens)
+        message = {"role": "assistant",
+                   "content": "".join(t["token"] for t in answer_tokens)}
+        if thinking:
+            message["reasoning"] = "".join(t["token"] for t in thinking)
         return {
             "id": f"fake-{seed_value:08x}",
             "model": model,
             "choices": [{
                 "index": 0,
-                "message": {"role": "assistant", "content": content},
+                "message": message,
                 "finish_reason": "stop",
                 "logprobs": {"content": tokens} if logprobs else None,
             }],
