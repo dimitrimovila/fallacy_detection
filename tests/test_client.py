@@ -69,7 +69,7 @@ def items(schemes):
 def config_for(stages, samples=5, condition="gold", name="test") -> RunConfig:
     data = {
         "name": name, "models": [MODEL], "stages": list(stages),
-        "scheme_condition": condition, "samples": samples, "prompt_version": "v1",
+        "scheme_condition": condition, "samples": samples, "prompt_version": "v2",
         "items": {}, "generation": {"temperature_sample0": 0.0, "temperature_rest": 0.7},
     }
     return RunConfig(raw=data, **{k: v for k, v in data.items()})
@@ -414,15 +414,15 @@ def test_the_manifest_declares_the_max_tokens_actually_used(items, schemes):
 
 
 def test_the_pilot_plans_the_calls_the_spec_declares(schemes):
-    """50 items over four entries: 6960 calls, 250 of stage one and 1490 of stage two."""
+    """50 items over two entries: 3480 calls, 250 of stage one and 1490 of stage two."""
     from argfallacy.client import load_items
 
     config = RunConfig.load(REPO_ROOT / "configs" / "pilot.yaml")
     chosen = select_items(config, load_items())
     calls = plan(config, chosen, load_models(), schemes)
 
-    assert len(config.models) == 4
-    assert len(calls) == 6960
+    assert len(config.models) == 2
+    assert len(calls) == 3480
     for model in config.models:
         mine = [c for c in calls if c.model == model]
         assert len([c for c in mine if c.stage == STAGE1]) == 250, model
@@ -555,7 +555,7 @@ def test_the_command_line_lists_the_entries_of_the_configuration(capsys):
         main(["run", "plan", str(REPO_ROOT / "configs" / "pilot.yaml"), "--model", "nope"])
     message = str(stop.value)
     assert "nope" in message
-    for entry in ("qwen3_8_27b", "qwen3_8_27b_think", "gemma4_31b", "gemma4_31b_think"):
+    for entry in ("qwen3_8_27b", "gemma4_31b"):
         assert entry in message
     assert "calls" not in capsys.readouterr().out, "nothing was planned"
 

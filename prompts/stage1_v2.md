@@ -19,8 +19,6 @@ None of the eight schemes above is present in the text.
 ## What to do
 
 Choose exactly one option: one of the eight scheme identifiers, or `none`.
-Judge from the text alone. Do not use outside knowledge about the topic, the
-speaker, or whether the conclusion happens to be true.
 
 A scheme is present when the text argues in that form, whether it does so well
 or badly. You are not judging the quality of the argument here, only its shape.
@@ -37,4 +35,4 @@ Reply with a single JSON object and nothing else:
 0 to 100. `justification` is at most two sentences saying what in the text made
 you choose it.
 
-<!-- prompt_version: {{prompt_version}} -->
+

@@ -117,9 +117,9 @@ and K2 Horizon, whose reasoning does not switch off, are served in the same way 
 `_think` entries, with their own reasoning parser. The flags of each entry are its
 `serve_args`. See `serving/README.md`.
 
-Pilot (50 items, two models, each with reasoning off and on, five samples). A server
+Pilot (50 items, Qwen and Gemma with reasoning off, five samples, prompts v2). A server
 serves one entry at a time, so each entry is run after its own launch, and `--run-id`
-gathers the four into one run:
+gathers the two into one run:
 
 ```bash
 argfallacy run plan configs/pilot.yaml                     # counts the calls, makes none
@@ -138,7 +138,7 @@ On the cluster two Slurm jobs do this, launching and stopping the servers themse
 
 ```bash
 sbatch serving/slurm/smoke.sbatch <entry>      # the smoke test of one entry
-sbatch serving/slurm/pilot.sbatch <run_id>     # the four entries of the pilot, in order
+sbatch serving/slurm/pilot.sbatch <run_id>     # the entries of the pilot, in order
 ```
 
 Scoring the earlier runs (the folder at `PRIOR_RUNS_DIR`) in both modes of the scorer:

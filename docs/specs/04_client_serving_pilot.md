@@ -1,6 +1,6 @@
 # Spec 04. Interviewer, serving, minimal parser and pilot
 
-Version 4.10, 29 September 2026. Components: `src/argfallacy/client/`, `src/argfallacy/parse/` (minimal version), `src/argfallacy/eval/pilot.py` (the pilot report), `serving/` (with `serving/serve_command.py` and the jobs in `serving/slurm/`), `.gitattributes`.
+Version 4.11, 4 October 2026. Components: `src/argfallacy/client/`, `src/argfallacy/parse/` (minimal version), `src/argfallacy/eval/pilot.py` (the pilot report), `serving/` (with `serving/serve_command.py` and the jobs in `serving/slurm/`), `.gitattributes`.
 Depends on: 01, 03 and the data (`docs/data.md`). Produces: `runs/<run_id>/`.
 
 ## 1. Serving on the cluster (`serving/`)
@@ -63,7 +63,7 @@ One line per call: `run_id`, `item_id`, `stage`, `scheme_condition`, `scheme`, `
 
 ## 4. The pilot
 
-`configs/pilot.yaml`: 50 items chosen from `items.csv` with a gold scheme other than `none`, stratified by scheme in proportion with at least 4 per scheme, fixed seed; stage one and stage two in the `gold` condition; two models, Qwen3.8 27B and Gemma 4 31B, each in the two reasoning conditions, so four entries (`qwen3_8_27b`, `qwen3_8_27b_think`, `gemma4_31b`, `gemma4_31b_think`); five samples. Calls: 6960, per entry 250 of stage one and 1490 of stage two.
+`configs/pilot.yaml`: 50 items chosen from `items.csv` with a gold scheme other than `none`, stratified by scheme in proportion with at least 4 per scheme, fixed seed; stage one and stage two in the `gold` condition; two models, Qwen3.8 27B and Gemma 4 31B, each in the two reasoning conditions, so four entries (`qwen3_8_27b`, `qwen3_8_27b_think`, `gemma4_31b`, `gemma4_31b_think`); five samples. Calls: 6960, per entry 250 of stage one and 1490 of stage two. That was the first pilot, on the prompts v1. The configuration now describes the second, `pilot_v2`: the prompts v2 (spec 03), the same items, stages, samples and temperatures, and only the two entries with reasoning off, `qwen3_8_27b` and `gemma4_31b`. Calls: 3480, per entry the same 250 and 1490.
 
 `items.csv` contains neither the near duplicates nor the removed items (`docs/data.md`, section 5), so the pilot draws from all the items with a gold scheme, that is, the test set of the experiments. The seeded draw runs within each stratum (same scheme).
 

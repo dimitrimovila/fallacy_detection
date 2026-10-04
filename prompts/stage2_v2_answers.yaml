@@ -1,0 +1,103 @@
+# Meaning of yes and no for every CQ that has no entry under `per_cq`. The
+# instructions of the template apply to every CQ.
+default:
+  "yes": for the argument in this text, the answer to the question is yes
+  "no": for the argument in this text, the answer to the question is no
+
+# The third option, a choice of this project. {options} becomes the real alternatives
+# of the question, in the order in which the prompt lists them. No other braces here:
+# the text goes through str.format.
+cannot_be_determined: >-
+  use this only if you have no basis at all for answering {options}, even after
+  using everything listed in the section "What to do". The text not
+  stating the answer explicitly is not, by itself, a reason to use it.
+  If you lean towards one answer, however slightly, give it and lower your confidence.
+
+# The fourth option, added by the code exactly like cannot_be_determined: never in
+# the answer_space of a scheme. It marks something the question takes for granted
+# that the argument does not contain, not a missing mention of what the question asks about.
+na: >-
+  use this answer only if the question takes for granted something that this argument
+  does not contain, not even implicitly, so that none of the other answers makes sense.
+  If the question itself asks whether something exists, answer it normally.
+  If what the question takes for granted is present, answer the question, even if you are unsure how it stands.
+
+# A CQ gets an entry of its own only for one of three reasons: the question cannot be
+# understood when it is asked alone; the entry carries a reading already used in the
+# per CQ annotation; the entry separates the question from a sibling question that
+# the model does not see. No entry sets the standard of judgement or a default answer.
+# The options are listed in the order written here, and the set must match the
+# answer_space of the diagram, otherwise rendering fails.
+per_cq:
+  ad_hominem:
+    CQ1:
+      negative: >-
+        the opinion expressed about the other person is negative and intended to
+        undermine their credibility
+      positive: >-
+        the opinion expressed about the other person is positive and intended to
+        enhance their credibility
+    CQ3:
+      "yes": >-
+        the attack discredits the person through a commitment or personal tie of
+        theirs, or through their belonging to a group, movement or category that is
+        viewed negatively, rather than through what they argue
+      "no": >-
+        the attack does not rest on a commitment, tie or belonging of that kind
+
+  cause_to_effect:
+    CQ1:
+      "yes": >-
+        A can plausibly lead to B, whatever one thinks of A or B; certainty is not required
+      "no": >-
+        A cannot plausibly lead to B
+    CQ4:
+      "yes": >-
+        another factor, which you can name, is clearly the real reason for the effect rather than A;
+        or the text explicitly presents A as the only cause of an effect that clearly has several
+      "no": >-
+        the text presents A as one cause among others, or no other factor clearly stands out as the real reason
+  correlation_to_cause:
+    CQ2.1:
+      "yes": >-
+        the text's reasoning from the two events to the claim that one causes the
+        other (whether or not that claim is right) rests only on the fact that one
+        event comes before the other
+      "no": >-
+        the text's reasoning rests on something more than which event comes first,
+        or does not rely on the order of the events at all
+    CQ2.2:
+      "yes": >-
+        the text's reasoning from the two events to the claim that one causes the
+        other (whether or not that claim is right) rests only on the fact that the
+        two events regularly go together
+      "no": >-
+        the text's reasoning rests on something more than the two events going
+        together
+
+  expert_opinion:
+    CQ1:
+      "yes": >-
+        S is in a position to know whether A is true, or is a genuine expert recognised in D;
+        either is enough
+      "no": S is neither
+    CQ3.1:
+      "yes": >-
+        S has expressed a position of their own on the issue being discussed, either
+        within the exchange or elsewhere (for example in a statement, an interview or a
+        publication the text refers to)
+      "no": >-
+        S has not expressed any position of their own on the issue being discussed:
+        the claim is ascribed to S without S having spoken on it
+    CQ4.1:
+      "yes": C follows from A, including when the text's conclusion is A itself
+      "no": A, even if true, does not support C
+
+  slippery_slope:
+    CQ4.1:
+      "yes": >-
+        "these steps" are the intermediate steps the sequence needs in order to be
+        plausible; once they are filled in, the sequence would plausibly lead
+        somewhere other than the outcome Cn
+      "no": >-
+        with those steps filled in, the sequence still leads to Cn

@@ -49,7 +49,7 @@ removes the ambiguity to such an extent as to halt the decline?" (correction 6).
 
 **A project choice in the prompt, not a correction.** Expert opinion CQ3.1, "Is S taking part in
 the discussion?", keeps the text of the thesis, but the prompt defines its two answers
-(`prompts/stage2_v1_answers.yaml`, `per_cq`): `yes` if S has expressed a position of their own on
+(`prompts/stage2_v2_answers.yaml`, `per_cq`): `yes` if S has expressed a position of their own on
 the issue, within the exchange or elsewhere (a statement, an interview, a publication the text
 refers to), without needing to be present in the exchange; `no` if the claim is ascribed to S
 without S having spoken on it. Read literally, the question almost never gets `yes` on these texts,

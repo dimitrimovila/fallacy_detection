@@ -32,7 +32,7 @@ SCHEMAS_DIR = PROMPTS_DIR / "schemas"
 
 STAGE1 = "stage1"
 STAGE2 = "stage2"
-DEFAULT_VERSION = "v1"
+DEFAULT_VERSION = "v2"
 
 CANNOT_BE_DETERMINED = "cannot_be_determined"
 """The third option, a choice of this project: the diagrams and the prompts described in
@@ -97,7 +97,8 @@ def load_answer_meanings(version: str = DEFAULT_VERSION) -> dict[str, Any]:
         raise SchemeError(f"no answer definitions at {path}")
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     expected = prompt_version(STAGE2, version)
-    if data.get("prompt_version") != expected:
+    # the file name carries the version; a file that also declares one must agree
+    if "prompt_version" in data and data["prompt_version"] != expected:
         raise SchemeError(
             f"{path.name}: prompt_version {data.get('prompt_version')!r}, expected {expected!r}"
         )
@@ -127,6 +128,14 @@ def fill(template: str, values: Mapping[str, str], where: str = "template") -> s
             raise SchemeError(f"{where}: {name!r} is None")
         template = template.replace("{{" + name + "}}", str(value))
     return template
+
+
+def _fill_versioned(template: str, values: dict[str, str], version_name: str,
+                    where: str) -> str:
+    """``fill``, with the version passed only to a template that has a place for it."""
+    if "prompt_version" in _PLACEHOLDER.findall(template):
+        values = {**values, "prompt_version": version_name}
+    return fill(template, values, where=where)
 
 
 def answer_options(scheme: Scheme, cq_id: str) -> tuple[str, ...]:
@@ -237,13 +246,13 @@ def render_stage1(
     if not text:
         raise SchemeError(f"item {item.get('item_id')!r} has no text")
 
-    filled = fill(
+    filled = _fill_versioned(
         load_template(STAGE1, version),
         {
             "text": text,
             "scheme_catalogue": _scheme_catalogue(schemes),
-            "prompt_version": prompt_version(STAGE1, version),
         },
+        prompt_version(STAGE1, version),
         where=f"{STAGE1}_{version}.md",
     )
     return RenderedPrompt(
@@ -271,7 +280,7 @@ def render_stage2(
         raise SchemeError(f"item {item.get('item_id')!r} has no text")
 
     options = answer_options(scheme, cq_id)
-    filled = fill(
+    filled = _fill_versioned(
         load_template(STAGE2, version),
         {
             "scheme_name": scheme.name,
@@ -283,8 +292,8 @@ def render_stage2(
             "answer_options": _answer_options_block(
                 scheme, cq_id, load_answer_meanings(version)
             ),
-            "prompt_version": prompt_version(STAGE2, version),
         },
+        prompt_version(STAGE2, version),
         where=f"{STAGE2}_{version}.md",
     )
     return RenderedPrompt(

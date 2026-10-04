@@ -44,8 +44,7 @@ critical_questions:
     note: >-
       The guard is now its own node. `no` covers the case C = A, where the arguer
       only reports the assertion: the check is not applicable and the path exits
-      to good_argumentation without passing through CQ4.1. The `na` answer space
-      of the previous version is therefore no longer needed.
+      to good_argumentation without passing through CQ4.1.
   - id: CQ4.1
     text: Is conclusion C actually implied by A?
     note: >-

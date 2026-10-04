@@ -1,7 +1,7 @@
-# The pilot: 50 items, two models in two reasoning conditions, five samples.
+# The pilot: 50 items, two models with reasoning off, five samples.
 # `argfallacy run plan configs/pilot.yaml` counts the calls without making any.
 
-name: pilot
+name: pilot_v2
 
 items:
   n: 50
@@ -13,12 +13,10 @@ items:
 
 stages: [stage1, stage2]
 scheme_condition: gold
-# four entries: Qwen3.8 and Gemma 4, each with reasoning off and on.
-# The `_think` entries have their own `max_tokens` in serving/models.yaml, which applies
-# instead of the one below: the reasoning comes before the JSON and 512 would cut it off.
-models: [qwen3_8_27b, qwen3_8_27b_think, gemma4_31b, gemma4_31b_think]
+# two entries: Qwen3.8 and Gemma 4, both with reasoning off
+models: [qwen3_8_27b, gemma4_31b]
 samples: 5
-prompt_version: v1
+prompt_version: v2
 
 generation:
   temperature_sample0: 0.0

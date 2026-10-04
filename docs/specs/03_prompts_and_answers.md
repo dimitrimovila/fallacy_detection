@@ -1,6 +1,6 @@
 # Spec 03. Prompts and answer format
 
-Version 1.1, 26 September 2026 (version 1, 11 September 2026; 1.1 adds the definitions of expert opinion CQ3.1, section 4). Component: `src/argfallacy/prompts/`. Data: `prompts/`.
+Version 2, 4 October 2026 (version 1, 11 September 2026; 1.1, 26 September 2026, added the definitions of expert opinion CQ3.1; 2 describes the prompts v2 and makes the version placeholder optional, sections 2 to 4). Component: `src/argfallacy/prompts/`. Data: `prompts/`.
 Depends on: 01 and the data (`docs/data.md`). Used by: 04.
 
 ## 1. Principles
@@ -8,36 +8,50 @@ Depends on: 01 and the data (`docs/data.md`). Used by: 04.
 * The text of every critical question comes from the scheme YAML, word for word. The code inserts it into the template; nobody rewrites it. A test compares the text in the generated prompt with the `text` field of the YAML.
 * Everything around the question (instructions, format, definition of the answers) is ours and versioned. The version number is in the file name and ends up in the manifest of every run.
 * One question per call. The model always sees the whole text of the argument and the scheme.
-* Tolerance lives in the aggregation, not in the prompt: the model is never told what to do when it is uncertain. Only what each answer means is defined.
+* Tolerance lives in the aggregation, not in the prompt: the prompt defines what each answer means and how to state the confidence, and never gives a question a default answer or tells the model where its answer leads.
 
 ## 2. Files in `prompts/`
 
-* `stage1_v1.md`: recognition of the scheme.
-* `stage2_v1.md`: one critical question.
-* `schemas/stage1_v1.json`, `schemas/stage2_v1.json`: JSON Schema of the answer, used for vLLM's structured output and for validation in the parser.
+* `stage1_v2.md`: recognition of the scheme.
+* `stage2_v2.md`: one critical question.
+* `stage2_v2_answers.yaml`: what each stage-two answer means (section 4).
+* `schemas/stage1_v2.json`, `schemas/stage2_v2.json`: JSON Schema of the answer, used for vLLM's structured output and for validation in the parser.
+
+The v1 files were replaced by the v2 files, not kept next to them: the runs made with v1 keep their prompts in `raw.jsonl` and their version in the manifest.
 * A test checks that every template declared in `prompts/` compiles for every scheme and every CQ with no missing field.
 
-The templates use double-brace placeholders (`{{text}}`, `{{scheme_name}}`, `{{schema}}`, `{{variables}}`, `{{cq_text}}`, `{{answer_options}}`), filled by `render_stage1(item)` and `render_stage2(item, scheme, cq)`. No template library: plain substitution, with an error if a placeholder stays empty.
+The templates use double-brace placeholders (`{{text}}`, `{{scheme_name}}`, `{{schema}}`, `{{variables}}`, `{{cq_text}}`, `{{answer_options}}`), filled by `render_stage1(item)` and `render_stage2(item, scheme, cq)`. No template library: plain substitution, with an error if a placeholder stays empty or a value has no placeholder. `{{prompt_version}}` is optional: the renderer passes the version only to a template that contains it. The v2 templates do not; the version is in the file name, in the manifest of every run and in the cache key of every call. The answers file carries its version in the file name too; if it also declares a `prompt_version`, the two must agree.
 
-## 3. Stage one, `stage1_v1.md`
+## 3. Stage one, `stage1_v2.md`
 
-Content, in English: role (argumentation analyst), the text, the list of the eight schemes with `name`, `schema` (the form of the argument) and `identification_question` taken from the YAML files, plus the option `none` defined as "none of these eight schemes is present". Instruction: choose only one, based on the text alone. Answer in the format of section 5, with `scheme` among the nine canonical ids of `labels/schemes.yaml`.
+Content, in English: role (argumentation analyst), the text, the list of the eight schemes with `name`, `schema` (the form of the argument) and `identification_question` taken from the YAML files, plus the option `none` defined as "none of these eight schemes is present". Instruction: choose only one; a scheme is present when the text argues in that form, well or badly. Since v2 the template no longer says to judge from the text alone without outside knowledge. Answer in the format of section 5, with `scheme` among the nine canonical ids of `labels/schemes.yaml`.
 
-## 4. Stage two, `stage2_v1.md`
+## 4. Stage two, `stage2_v2.md`
 
 Content, in English:
-1. Role and task: answer a single critical question about an argument that follows the given scheme.
+1. Role and task: answer a single critical question about an argument identified as following the given scheme, the way a careful and fair reader with a good general education would.
 2. The scheme: `name`, `schema` (form of the argument) and `variables` from the YAML, as a legend of the letters used in the question (S, A, D, C, and so on).
 3. The text of the argument.
 4. The critical question, verbatim, preceded by its id.
 5. The admitted answers, with a definition:
-   * `yes` and `no` (or `negative` and `positive` for ad hominem CQ1, in the order in which the question names them). The definitions are in `prompts/stage2_v1_answers.yaml`, versioned with the template; the notes of the scheme YAML files do not enter the prompt (accepted exception). Every question gets the `default` definitions of `yes` and `no`, except those with an entry of their own under `per_cq`: the questions whose answers are not `yes` and `no` (ad hominem CQ1), and the `yes`/`no` questions whose answers need a definition of their own because the literal reading is narrower than the sense used in the annotation. Today that is expert opinion CQ3.1, "Is S taking part in the discussion?": `yes` if S has expressed a position of their own on the issue, within the exchange or elsewhere (a statement, an interview, a publication the text refers to), without needing to be present in the exchange; `no` if the claim is ascribed to S without S having spoken on it. It is a project choice, not a correction of the thesis: read literally, the question almost never gets `yes` on these texts (none from gpt-5 in the prior runs), while the annotation of the `Annotazione Dumitru` sheets uses the broader sense; the text of the question does not change. An entry under `per_cq` must list exactly the answers of the diagram's `answer_space`, in the order the prompt shows them, otherwise rendering fails; no definition names a fallacy label.
-   * `cannot_be_determined`: "use this answer only if the text contains no information at all on the point asked about; if the text contains partial information, answer yes or no and lower your confidence". It is a project choice, not an inheritance from Enrico's thesis: the definitive PDF asks for a binary answer, `Yes` or `No` (§4.3.2), and names an answer that cannot be determined from the text only among the future developments of the conclusions (`docs/cq_proposals.md` §7.1, `docs/schemes_and_diagrams.md` §0.5).
-   * `na`: "use this answer only if the question has no object in this text, that is, the thing it talks about does not exist in the argument; if it exists but you cannot establish how it stands, answer cannot_be_determined and lower your confidence". Fourth option, added outside the diagram exactly like `cannot_be_determined`: never in the `answer_space` of a scheme. It tells the absence of the question's object apart from uncertainty about how that object stands.
-6. Instruction to answer based on the text alone, without outside knowledge, unless the question explicitly requires it.
-7. The answer format.
+   * `yes` and `no` (or `negative` and `positive` for ad hominem CQ1, in the order in which the question names them). The definitions are in `prompts/stage2_v2_answers.yaml`, versioned with the template; the notes of the scheme YAML files do not enter the prompt (accepted exception). Every question gets the `default` definitions, "for the argument in this text, the answer to the question is yes" (or no), except those with an entry of their own under `per_cq`. A question gets an entry only for one of three reasons: it cannot be understood when asked alone; the entry carries a reading already used in the per-CQ annotation; the entry separates it from a sibling question the model does not see. No entry sets the standard of judgement or a default answer. The ten entries of v2:
+     * ad hominem CQ1: `negative` and `positive`, the opinion about the other person and its intent on their credibility;
+     * ad hominem CQ3: `yes` if the attack discredits the person through a commitment or personal tie of theirs, or through their belonging to a group, movement or category viewed negatively, rather than through what they argue;
+     * cause to effect CQ1: `yes` if A can plausibly lead to B, whatever one thinks of A or B, with no certainty required;
+     * cause to effect CQ4: `yes` if another factor, which the model can name, is clearly the real reason for the effect, or the text presents A as the only cause of an effect that clearly has several; `no` if A is presented as one cause among others or no other factor clearly stands out;
+     * correlation to cause CQ2.1 and CQ2.2: `yes` if the text's reasoning to the causal claim, whether or not that claim is right, rests only on the order of the two events (CQ2.1) or only on their going together (CQ2.2);
+     * expert opinion CQ1: `yes` if S is in a position to know whether A is true or is a genuine expert recognised in D, either being enough;
+     * expert opinion CQ3.1, "Is S taking part in the discussion?": `yes` if S has expressed a position of their own on the issue, within the exchange or elsewhere (a statement, an interview, a publication the text refers to); `no` if the claim is ascribed to S without S having spoken on it. A project choice, not a correction of the thesis: read literally, the question almost never gets `yes` on these texts (none from gpt-5 in the prior runs), while the annotation of the `Annotazione Dumitru` sheets uses the broader sense; the text of the question does not change;
+     * expert opinion CQ4.1: `yes` if C follows from A, including when the text's conclusion is A itself;
+     * slippery slope CQ4.1: `yes` if, once the intermediate steps the sequence needs are filled in, it would plausibly lead somewhere other than Cn.
 
-`na` is the fourth answer, not `not_applicable`. It is added by the code (section 5), not by the diagram: no YAML in `schemes/` gains an `na` arc, and the guard cases stay encoded as nodes (for example expert opinion CQ4). A traversal that meets `na` finds no drawn arc and stops incomplete, like any other answer outside the `answer_space`: what that outcome means for an aggregator is a decision of phase 3, not of this spec.
+     An entry under `per_cq` must list exactly the answers of the diagram's `answer_space`, in the order the prompt shows them, otherwise rendering fails; no definition names a fallacy label.
+   * `cannot_be_determined`: only if the model has no basis at all for answering the real alternatives, even after using everything the section "What to do" admits (the text, what it makes clear without saying it, general knowledge, its own judgement). The text not stating the answer explicitly is not, by itself, a reason to use it; if the model leans towards one answer, however slightly, it gives it and lowers its confidence. In v1 it meant "the text contains no information at all on the point", and the models of the first pilot read it as "the text does not say it". It is a project choice, not an inheritance from Enrico's thesis: the definitive PDF asks for a binary answer, `Yes` or `No` (§4.3.2), and names an answer that cannot be determined from the text only among the future developments of the conclusions (`docs/cq_proposals.md` §7.1, `docs/schemes_and_diagrams.md` §0.5).
+   * `na`: only if the question takes for granted something that this argument does not contain, not even implicitly, so that none of the other answers makes sense. A question that itself asks whether something exists is answered normally, and if what the question takes for granted is present the model answers it, even if unsure how it stands. Fourth option, added outside the diagram exactly like `cannot_be_determined`: never in the `answer_space` of a scheme. It marks a missing presupposition of the question, not a missing mention of what the question asks about.
+6. What to do: answer as a careful reader, with one's own judgement, also on points the arguer does not write down; use what the text says, what it makes clear without saying it (evident purpose, tone, intended conclusion) and general knowledge widely shared by educated people, but nothing about where the text comes from or how it has been classified; judge assessments by the standards of everyday argument, not of proof; evaluate the argument that follows the scheme when the text contains other speakers or a question to the reader; do not let one's view on the truth of the conclusion decide, unless the question asks about truth; answer this question only, without deciding whether the argument is fallacious overall.
+7. The answer format, with the justification naming what decided the answer: the fact used, if general knowledge decided it; what exists, if the answer says something is present; what could not be established, for `cannot_be_determined`; what the question takes for granted, for `na`.
+
+`na` is the fourth answer, not `not_applicable`. It is added by the code (section 5), not by the diagram: no YAML in `schemes/` gains an `na` arc, and the guard cases stay encoded as nodes (for example expert opinion CQ4). A traversal that meets `na` finds no drawn arc: the model does not choose one, and which arc to take is up to the aggregator (phase 3), not to this spec.
 
 ## 5. Answer format (JSON, structured output)
 
@@ -70,4 +84,4 @@ Since 20 September 2026 `tests/` keeps only the tests that defend a result, chec
 2. For ad hominem CQ1 the options are `positive`, `negative`, `cannot_be_determined`, `na`; for all the other CQs `yes`, `no`, `cannot_be_determined`, `na`.
 3. The stage-two JSON Schema rejects an `answer` outside the enumeration and a `confidence` outside the range; the stage-one schema rejects a non-canonical `scheme`. *Today only the stage-two part has an automatic test, checked through the parser (spec 04, point 5).*
 4. Rendering is deterministic: same item, same prompt, byte for byte. *Today without an automatic test.*
-5. The version of the template appears in the text of the rendered prompt as a final comment, so the manifest and the prompt cannot diverge. *Today without an automatic test.*
+5. A template with the `{{prompt_version}}` placeholder gets the version in the rendered prompt; one without it renders without error. The v2 templates have none. *Today without an automatic test.*

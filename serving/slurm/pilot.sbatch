@@ -12,12 +12,12 @@
 # RUN_ID, stop the server. Submitted from the root of the repository, where
 # runs/slurm/ must already exist for the log:
 #
-#   sbatch serving/slurm/pilot.sbatch 20260928T090000Z_pilot
+#   sbatch serving/slurm/pilot.sbatch 20261005T090000Z_pilot_v2
 #
 # A failed smoke test stops the job before any call of that entry. Failed calls do
 # not stop it: they are listed at the end, and resubmitting the job with the same
-# RUN_ID makes only the calls still missing. Ten hours: the four entries of the pilot
-# took about 7 h 50 min in all.
+# RUN_ID makes only the calls still missing. Ten hours: four entries, two of them
+# with reasoning on, took about 7 h 50 min in all.
 
 set -euo pipefail
 RUN_ID=${1:?usage: sbatch serving/slurm/pilot.sbatch RUN_ID}
