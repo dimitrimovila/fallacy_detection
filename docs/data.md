@@ -137,9 +137,10 @@ What it expects from a sheet:
 * an `item_id` column, in text format;
 * the `text` column;
 * the CQ columns, with the same names as in the YAML of the scheme (`CQ1`, `CQ1.1`, ...). The scheme of the sheet is recognised from these: it is the only scheme with exactly those CQs;
-* the columns `scheme` (if there are two, the last one counts), `verdetto` [verdict], and if needed `incertezza` [uncertainty] and `nota` [note].
+* the `scheme` column immediately before the first CQ column (the header may be written `Scheme`); another `scheme` column, such as the original one kept from the base sheet, is ignored;
+* the columns `verdetto` [verdict], and if needed `incertezza` [uncertainty] and `nota` [note].
 
-A row with `item_id` equal to `ESCLUSO` [EXCLUDED] is skipped. The command stops without writing anything if it finds an id that is not in `items.csv`, a text without an id, an answer it does not know, or a text different from that of the item. The last check tolerates a copying slip, not a column pasted one row too high or too low.
+A row with `item_id` equal to `ESCLUSO` [EXCLUDED] is skipped. The command stops without writing anything if a sheet has no CQ columns or no `scheme` column just before them, or if it finds an id that is not in `items.csv`, a text without an id, an answer it does not know, or a text different from that of the item. The last check tolerates a copying slip, not a column pasted one row too high or too low.
 
 The `item_id` values to paste are in `item_id_per_foglio.xlsx`, in the `Thesis` folder, outside the repository: one sheet for each of Dumitru's two sheets and of the eight base sheets, with the rows in the same order as in the workbook. Enrico's copies have the same order as their base sheet. The `nota` column flags the `ESCLUSO` rows, the repeated rows and the two copying errors. Whoever prepares a new Dumitru sheet starting from a base sheet pastes the ids right away, before reordering the rows.
 

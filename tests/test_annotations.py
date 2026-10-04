@@ -59,6 +59,22 @@ def test_the_dumitru_rows_are_replaced_and_the_rest_stays(tmp_path, files):
     assert (frame["annotator"] == "enrico").sum() == 1
 
 
+def test_the_scheme_column_is_the_one_just_before_the_cqs(tmp_path, files):
+    items, table = files
+    header = ["item_id", "text", "scheme", "Scheme", *HEADER[3:]]
+    rows = [[row[0], row[1], "NO", *row[2:]] for row in ROWS]
+    book = Workbook()
+    book.active.title = "Annotazione Dumitru Analogy"
+    for row in [header, *rows]:
+        book.active.append(row)
+    book.save(tmp_path / "book.xlsx")
+    update(tmp_path / "book.xlsx", table, items)
+    frame = load_annotations(table)
+    rows = frame[frame["annotator"] == "dumitru"].set_index(["item_id", "field"])
+    assert rows.loc[("a1", "scheme"), "value"] == "analogy"
+    assert rows.loc[("a1", "scheme"), "raw"] == "YES"
+
+
 def test_an_id_column_pasted_one_row_off_stops_everything(tmp_path, files):
     items, table = files
     before = table.read_bytes()

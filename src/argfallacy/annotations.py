@@ -65,17 +65,21 @@ def read_sheet(sheet, texts: dict[str, str], schemes, vocab, scheme_vocab) -> li
              for row in sheet.iter_rows(values_only=True)]
     header, name = table[0], sheet.title
 
-    def column(label: str, last: bool = False) -> int | None:
+    def column(label: str) -> int | None:
         found = [i for i, h in enumerate(header) if h == label]
-        return (found[-1] if last else found[0]) if found else None
+        return found[0] if found else None
 
     cqs = {h: i for i, h in enumerate(header) if CQ_HEADER.match(h)}
     matching = [k for k, s in schemes.items() if set(s.cqs) == set(cqs)]
     if len(matching) != 1:
         raise SchemeError(f"{name}: the CQ columns {sorted(cqs)} are not those of one scheme")
     scheme = matching[0]
+    # a sheet may keep the original scheme column too; the annotated one is just before the CQs
+    before_cqs = min(cqs.values()) - 1
     where = {"item_id": column("item_id"), "text": column("text"),
-             "scheme": column("scheme", last=True), "verdict": column("verdetto"),
+             "scheme": before_cqs if before_cqs >= 0 and header[before_cqs].lower() == "scheme"
+             else None,
+             "verdict": column("verdetto"),
              "uncertainty": column("incertezza"), "note": column("nota")}
     missing = [k for k in ("item_id", "text", "scheme", "verdict") if where[k] is None]
     if missing:
