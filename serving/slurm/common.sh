@@ -59,7 +59,9 @@ start_server() {
     local -a serve
     # an entry whose revision is still a placeholder stops the job here
     line=$(python serving/serve_command.py "$entry")
-    read -r -a serve <<< "$line"
+    # the line is quoted for the shell (shlex): a flag whose value is JSON, with spaces and
+    # quotes, must come back as one argument, which `read -a` would split
+    eval "serve=(${line})"
     log="runs/slurm/${SLURM_JOB_ID}-${entry}-vllm.log"
     echo "== ${entry}: vllm serve ${line} (log: ${log})"
     use_env "$SERVER_ENV"

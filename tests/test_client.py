@@ -7,11 +7,14 @@ that are about *not* calling: the cache and the resume.
 
 from __future__ import annotations
 
+import copy
 import json
+import shlex
 from functools import partial
 from pathlib import Path
 from types import SimpleNamespace
 
+import pandas as pd
 import pytest
 
 from argfallacy.client import (
@@ -66,13 +69,20 @@ def items(schemes):
     ]
 
 
-def config_for(stages, samples=5, condition="gold", name="test") -> RunConfig:
+def config_for(stages, condition="gold", name="test") -> RunConfig:
     data = {
         "name": name, "models": [MODEL], "stages": list(stages),
-        "scheme_condition": condition, "samples": samples, "prompt_version": "v2",
-        "items": {}, "generation": {"temperature_sample0": 0.0, "temperature_rest": 0.7},
+        "scheme_condition": condition, "prompt_version": "v2",
+        "items": {}, "generation": {},
     }
     return RunConfig(raw=data, **{k: v for k, v in data.items()})
+
+
+def with_samples(samples: int) -> dict:
+    """The fake models, with the entry ``fake`` taking ``samples`` samples."""
+    models = copy.deepcopy(FAKE_MODELS)
+    models[MODEL]["samples"] = samples
+    return models
 
 
 def request_for(prompt="ask me", **overrides) -> Request:
@@ -101,15 +111,26 @@ def test_the_same_question_is_asked_once(backend, cache):
     ("prompt_version", "stage2_v2"),
     ("sample_index", 1),
     ("temperature", 0.7),
+    ("top_p", 0.95),
+    ("top_k", 20),
     ("max_tokens", 128),
     ("model_id", "other-model"),
     ("prompt", "a different question"),
     ("revision", "another-commit"),
     ("tier", 2),
     ("reasoning", {"reasoning_effort": "low"}),
+    ("serve_args", ("--generation-config", "vllm")),
 ])
 def test_changing_anything_that_decides_the_answer_changes_the_key(field, value):
     assert cache_key(request_for()) != cache_key(request_for(**{field: value}))
+
+
+def test_the_three_sampling_parameters_always_go_out(backend):
+    """Nothing is left to the defaults of the server, which a model can change."""
+    ask(request_for(temperature=1.0, top_p=0.95, top_k=0), backend)
+    sent = backend.last_kwargs
+    assert sent["temperature"] == 1.0 and sent["top_p"] == 0.95
+    assert sent["extra_body"]["top_k"] == 0
 
 
 def test_the_key_is_stable_across_processes():
@@ -132,8 +153,8 @@ def test_a_new_prompt_version_leaves_the_old_answers_alone(backend, cache):
 
 
 def test_an_interrupted_run_resumes_without_duplicates(tmp_path, items, schemes, cache):
-    config = config_for([STAGE1], samples=2)
-    models = FAKE_MODELS
+    config = config_for([STAGE1])
+    models = with_samples(2)
     expected = len(plan(config, items[:3], models, schemes))
 
     crashing = FakeBackend(fail_after=4)
@@ -155,8 +176,8 @@ def test_an_interrupted_run_resumes_without_duplicates(tmp_path, items, schemes,
 
 
 def test_a_failed_call_is_retried_on_the_next_run(tmp_path, items, schemes, cache):
-    config = config_for([STAGE1], samples=1)
-    models = FAKE_MODELS
+    config = config_for([STAGE1])
+    models = with_samples(1)
     execute(config, items[:2], run_id="r", runs_dir=tmp_path, backend=FakeBackend(fail_after=0),
             cache=cache, models=models, schemes=schemes, max_attempts=1, sleep=lambda _: None)
     assert cache.count() == 0
@@ -194,13 +215,14 @@ def test_the_logprobs_are_stored_once_and_without_bytes(tmp_path, items, schemes
     assert whole.raw["choices"][0]["logprobs"] == whole.logprobs
     assert '"bytes"' in json.dumps(whole.logprobs)
 
-    config = config_for([STAGE1, STAGE2], samples=1)
+    config = config_for([STAGE1, STAGE2])
+    models = with_samples(1)
     execute(config, items[:2], run_id="s", runs_dir=tmp_path, backend=FakeBackend(),
-            cache=cache, models=FAKE_MODELS, schemes=schemes, sleep=lambda _: None)
+            cache=cache, models=models, schemes=schemes, sleep=lambda _: None)
     lines = list(read_raw(tmp_path / "s"))
     cached = [json.loads(row[0]) for row in
               cache.connection.execute("SELECT response FROM responses").fetchall()]
-    assert len(cached) == len(lines) == len(plan(config, items[:2], FAKE_MODELS, schemes))
+    assert len(cached) == len(lines) == len(plan(config, items[:2], models, schemes))
     for stored in [line["raw_response"] for line in lines] + cached:
         assert "logprobs" not in stored["raw"]["choices"][0]
         assert '"bytes"' not in json.dumps(stored)
@@ -231,7 +253,7 @@ def test_a_response_stored_whole_still_reads_and_parses_the_same(cache, schemes)
 
 
 def test_the_plan_counts_stage_one_plus_the_cqs_of_each_scheme(items, schemes):
-    config = config_for([STAGE1, STAGE2], samples=5)
+    config = config_for([STAGE1, STAGE2])
     models = FAKE_MODELS
     calls = plan(config, items, models, schemes)
 
@@ -242,8 +264,8 @@ def test_the_plan_counts_stage_one_plus_the_cqs_of_each_scheme(items, schemes):
 
 
 def test_the_plan_is_in_a_deterministic_order(items, schemes):
-    config = config_for([STAGE1, STAGE2], samples=2)
-    models = FAKE_MODELS
+    config = config_for([STAGE1, STAGE2])
+    models = with_samples(2)
     def shape(calls):
         return [(c.model, c.item_id, c.cq_id, c.sample_index) for c in calls]
 
@@ -258,20 +280,49 @@ def test_the_plan_makes_no_call(items, schemes, backend):
     assert backend.calls == 0
 
 
-def test_sample_zero_is_greedy_and_the_others_are_not(items, schemes):
-    config = config_for([STAGE1], samples=3)
+def test_each_entry_takes_its_own_samples_drawn_the_same_way(items, schemes):
+    """One greedy sample for one entry, five at temperature 1 for the other, seed = index."""
+    config = config_for([STAGE1, STAGE2])
+    config.models = ["fake_single", "fake"]
     calls = plan(config, items[:1], FAKE_MODELS, schemes)
-    assert calls[0].temperature == 0.0
-    assert all(c.temperature == 0.7 for c in calls[1:])
+    questions = 1 + len(schemes[items[0]["gold_scheme"]].cqs)
+
+    single = [c.request() for c in calls if c.model == "fake_single"]
+    assert len(single) == questions
+    assert {(r.sample_index, r.seed, r.temperature, r.top_p, r.top_k) for r in single} == {
+        (0, 0, 0.0, 1.0, 0)}
+    assert single[0].serve_args == ("--generation-config", "vllm")
+
+    five = [c.request() for c in calls if c.model == "fake"]
+    assert len(five) == 5 * questions
+    assert {r.temperature for r in five} == {1.0}
+    assert [r.seed for r in five[:5]] == [r.sample_index for r in five[:5]] == [0, 1, 2, 3, 4]
+
+
+def test_an_entry_without_its_sampling_cannot_be_planned(items, schemes):
+    config = config_for([STAGE1])
+    models = with_samples(1)
+    del models[MODEL]["top_k"]
+    with pytest.raises(SchemeError, match=r"'fake' has no \['top_k'\]"):
+        plan(config, items[:1], models, schemes)
+
+
+def test_the_flags_of_the_server_reach_the_cache_key(items, schemes):
+    """Two servers launched with different flags do not share an answer."""
+    config = config_for([STAGE1])
+    models = with_samples(1)
+    before = plan(config, items[:1], models, schemes)[0].key()
+    models[MODEL]["serve_args"] = ["--generation-config", "vllm"]
+    assert plan(config, items[:1], models, schemes)[0].key() != before
 
 
 def test_the_manifest_has_every_declared_field(items, schemes):
-    config = config_for([STAGE1, STAGE2], samples=2)
+    config = config_for([STAGE1, STAGE2])
     models = FAKE_MODELS
     manifest = build_manifest("run-1", config, plan(config, items, models, schemes), models)
 
     for field in ("run_id", "config", "models", "prompt_versions", "schemes_version",
-                  "generation", "n_samples", "scheme_condition",
+                  "generation", "scheme_condition",
                   "started_at", "finished_at", "calls_planned", "calls_executed",
                   "calls_from_cache", "calls_failed", "calls_per_model"):
         assert field in manifest, field
@@ -279,13 +330,14 @@ def test_the_manifest_has_every_declared_field(items, schemes):
     entry = manifest["models"][MODEL]
     assert entry["model_id"] and entry["display_name"]
     assert "logprobs_available" in entry
-    assert "serve_args" in entry
+    for field in ("serve_args", "samples", "temperature", "top_p", "top_k"):
+        assert field in entry, field
 
 
 def test_the_manifest_is_written_and_updated(tmp_path, items, schemes, cache):
-    config = config_for([STAGE1], samples=1)
+    config = config_for([STAGE1])
     execute(config, items[:2], run_id="m", runs_dir=tmp_path, backend=FakeBackend(),
-            cache=cache, models=FAKE_MODELS, schemes=schemes, sleep=lambda _: None)
+            cache=cache, models=with_samples(1), schemes=schemes, sleep=lambda _: None)
     manifest = json.loads((tmp_path / "m" / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["calls_planned"] == 2
     assert manifest["calls_executed"] == 2
@@ -372,7 +424,7 @@ def test_the_summary_carries_the_three_probabilities(schemes):
 
 
 def _one_request(model_name: str, items, schemes) -> Request:
-    config = config_for([STAGE1], samples=1)
+    config = config_for([STAGE1])
     config.models = [model_name]
     return plan(config, items[:1], FAKE_MODELS, schemes)[0].request()
 
@@ -388,7 +440,7 @@ def test_an_unpinned_revision_refuses_to_run(items, schemes, backend):
 
 def test_the_max_tokens_of_an_entry_wins_over_the_configuration(items, schemes):
     """Acceptance 8 of spec 04: `max_tokens` of a models.yaml entry, and its key."""
-    config = config_for([STAGE1], samples=1)
+    config = config_for([STAGE1])
     assert config.max_tokens() == 512
 
     config.models = ["fake"]
@@ -403,7 +455,7 @@ def test_the_max_tokens_of_an_entry_wins_over_the_configuration(items, schemes):
 
 
 def test_the_manifest_declares_the_max_tokens_actually_used(items, schemes):
-    config = config_for([STAGE1], samples=1)
+    config = config_for([STAGE1])
     config.models = ["fake", "fake_long"]
     calls = plan(config, items[:1], FAKE_MODELS, schemes)
     manifest = build_manifest("run-mt", config, calls, FAKE_MODELS)
@@ -413,20 +465,27 @@ def test_the_manifest_declares_the_max_tokens_actually_used(items, schemes):
     assert manifest["models"]["fake_long"]["max_tokens"] == 8192
 
 
+PILOT = REPO_ROOT / "configs" / "pilot2.yaml"
+
+
 def test_the_pilot_plans_the_calls_the_spec_declares(schemes):
-    """50 items over two entries: 3480 calls, 250 of stage one and 1490 of stage two."""
+    """50 items: 50 questions of stage one and 298 of stage two, times the samples.
+
+    One sample for the two entries with reasoning off, five for the two that reason.
+    """
     from argfallacy.client import load_items
 
-    config = RunConfig.load(REPO_ROOT / "configs" / "pilot.yaml")
+    config = RunConfig.load(PILOT)
     chosen = select_items(config, load_items())
     calls = plan(config, chosen, load_models(), schemes)
 
-    assert len(config.models) == 2
-    assert len(calls) == 3480
+    assert config.models == ["qwen3_8_27b", "gemma4_31b", "gpt_oss_20b", "k2_horizon_32b"]
+    assert len(calls) == 2 * 348 + 2 * 1740
     for model in config.models:
+        samples = 1 if model in ("qwen3_8_27b", "gemma4_31b") else 5
         mine = [c for c in calls if c.model == model]
-        assert len([c for c in mine if c.stage == STAGE1]) == 250, model
-        assert len([c for c in mine if c.stage == STAGE2]) == 1490, model
+        assert len([c for c in mine if c.stage == STAGE1]) == 50 * samples, model
+        assert len([c for c in mine if c.stage == STAGE2]) == 298 * samples, model
 
 
 def test_the_pilot_entries_differ_only_in_reasoning_and_room(schemes):
@@ -445,7 +504,7 @@ def test_the_pilot_entries_differ_only_in_reasoning_and_room(schemes):
 def test_item_selection_is_reproducible(schemes):
     from argfallacy.client import load_items
 
-    config = RunConfig.load(REPO_ROOT / "configs" / "pilot.yaml")
+    config = RunConfig.load(PILOT)
     frame = load_items()
     first = [r["item_id"] for r in select_items(config, frame)]
     second = [r["item_id"] for r in select_items(config, frame)]
@@ -494,7 +553,7 @@ def test_one_entry_at_a_time_writes_the_run_of_the_whole_configuration(tmp_path,
     """
     from argfallacy.client import load_items
 
-    config = RunConfig.load(REPO_ROOT / "configs" / "pilot.yaml")
+    config = RunConfig.load(PILOT)
     chosen = select_items(config, load_items())[:2]
     models = load_models()
 
@@ -535,7 +594,7 @@ def test_one_entry_at_a_time_writes_the_run_of_the_whole_configuration(tmp_path,
 
 def test_an_entry_not_in_the_configuration_stops_plan_and_execute(tmp_path, items, schemes,
                                                                     backend, cache):
-    config = config_for([STAGE1], samples=1)
+    config = config_for([STAGE1])
     # in the models file, but not among the models of the configuration
     unknown = ["fake_long"]
 
@@ -552,10 +611,10 @@ def test_the_command_line_lists_the_entries_of_the_configuration(capsys):
     from argfallacy.cli import main
 
     with pytest.raises(SystemExit) as stop:
-        main(["run", "plan", str(REPO_ROOT / "configs" / "pilot.yaml"), "--model", "nope"])
+        main(["run", "plan", str(PILOT), "--model", "nope"])
     message = str(stop.value)
     assert "nope" in message
-    for entry in ("qwen3_8_27b", "gemma4_31b"):
+    for entry in ("qwen3_8_27b", "gemma4_31b", "gpt_oss_20b", "k2_horizon_32b"):
         assert entry in message
     assert "calls" not in capsys.readouterr().out, "nothing was planned"
 
@@ -659,3 +718,87 @@ def test_the_smoke_test_fails_on_a_prompt_the_server_did_not_read(monkeypatch):
 
     monkeypatch.setattr(smoke_test, "build_backend", lambda *_: _server_like())
     assert smoke_test.main(["--model", "fake"]) == 0
+
+
+@pytest.mark.parametrize("entry", ["qwen3_8_27b", "gemma4_31b", "gpt_oss_20b", "k2_horizon_32b"])
+def test_the_servers_of_the_pilot_compact_the_json_with_their_own_sampling(entry):
+    """xgrammar without free whitespace, vLLM's neutral defaults, and the JSON intact.
+
+    The job reads the line of ``serve_command.py`` back as shell words, so the
+    JSON of ``--structured-outputs-config`` must come back as one argument.
+    """
+    args = _serving_script("serve_command").command(entry)
+    assert shlex.split(shlex.join(args)) == args
+    assert json.loads(_flag(args, "--structured-outputs-config")) == {
+        "backend": "xgrammar", "disable_any_whitespace": True}
+    assert _flag(args, "--generation-config") == "vllm"
+    spec = load_models()[entry]
+    if spec.get("max_tokens", 512) > 512:
+        room = int(_flag(args, "--max-model-len"))
+        assert room % 1024 == 0 and room > spec["max_tokens"]
+
+
+def _summary_of(schemes, answers):
+    """The summary row of one question, from (answer, confidence, finish_reason) per sample."""
+    from argfallacy.parse import parse_answers, summarise
+
+    lines = []
+    for index, (answer, confidence, finish) in enumerate(answers):
+        content = json.dumps({"answer": answer, "confidence": confidence, "justification": "x"})
+        lines.append(_raw_line(sample_index=index, content=content, finish_reason=finish))
+    return summarise(parse_answers(lines, schemes), schemes).iloc[0]
+
+
+def test_one_sample_is_the_hard_answer_and_has_no_frequency(schemes):
+    summary = _summary_of(schemes, [("no", 70, "stop")])
+    assert summary["answer"] == "no"
+    assert summary["p_verbal"] == pytest.approx(0.3)
+    assert summary["p_logprob"] == pytest.approx(0.8, abs=1e-6)
+    assert pd.isna(summary["p_sample"])
+
+
+def test_the_majority_counts_only_the_valid_samples(schemes):
+    """Two cut-off yes do not outvote two no: they are not valid samples."""
+    summary = _summary_of(schemes, [("yes", 90, "length"), ("yes", 90, "length"),
+                                    ("no", 60, "stop"), ("no", 60, "stop"),
+                                    ("yes", 90, "stop")])
+    assert summary["answer"] == "no"
+    assert summary["n_samples_ok"] == 3
+    assert summary["p_sample"] == pytest.approx(1 / 3)
+
+
+def test_a_tie_goes_to_the_higher_confidence_then_to_the_lower_index(schemes):
+    by_confidence = _summary_of(schemes, [("yes", 60, "stop"), ("no", 90, "stop"),
+                                          ("yes", 70, "stop"), ("no", 80, "stop")])
+    assert by_confidence["answer"] == "no"
+    by_index = _summary_of(schemes, [("no", 80, "stop"), ("yes", 70, "stop"),
+                                     ("yes", 90, "stop"), ("no", 80, "stop")])
+    assert by_index["answer"] == "no"
+    nothing = _summary_of(schemes, [("yes", 80, "length"), ("no", 80, "length")])
+    assert nothing["answer"] == "invalid"
+
+
+def _spaced(fake_create):
+    """A server that lays the JSON out with a newline and an indent."""
+    def create(**kwargs):
+        payload = fake_create(**kwargs)
+        choice = payload["choices"][0]
+        choice["message"]["content"] = choice["message"]["content"].replace("{", "{\n  ", 1)
+        first = (choice["logprobs"] or {}).get("content") or []
+        if first:
+            first[0]["token"] = first[0]["token"].replace("{", "{\n  ", 1)
+        return payload
+
+    return SimpleNamespace(create=create)
+
+
+def test_the_smoke_test_fails_when_the_json_is_not_compact(monkeypatch, capsys):
+    """Three calls at temperature 1 must all begin with ``{"answer": "``."""
+    smoke_test = _serving_script("smoke_test")
+    monkeypatch.setattr(smoke_test, "build_backend", lambda *_: FakeBackend())
+    assert smoke_test.main(["--model", "fake"]) == 0
+    assert capsys.readouterr().out.count("Layout") == 3
+
+    monkeypatch.setattr(smoke_test, "build_backend",
+                        lambda *_: _spaced(FakeBackend().create))
+    assert smoke_test.main(["--model", "fake"]) != 0

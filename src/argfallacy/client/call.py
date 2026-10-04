@@ -32,6 +32,8 @@ class Request:
     prompt_version: str
     sample_index: int
     temperature: float = 0.0
+    top_p: float = 1.0
+    top_k: int = 0
     max_tokens: int = 512
     seed: int | None = None
     json_schema: dict[str, Any] | None = None
@@ -41,6 +43,7 @@ class Request:
     revision: str | None = None
     tier: int | None = None
     reasoning: dict[str, Any] | None = None
+    serve_args: tuple[str, ...] = ()
 
     def messages(self) -> list[dict[str, str]]:
         messages = []
@@ -53,6 +56,8 @@ class Request:
         """The parameters that go into the cache key, in a stable order."""
         return {
             "temperature": self.temperature,
+            "top_p": self.top_p,
+            "top_k": self.top_k,
             "max_tokens": self.max_tokens,
             "seed": self.seed,
             "logprobs": self.logprobs,
@@ -164,9 +169,11 @@ def ask(request: Request, backend: Any | None = None) -> RawResponse:
     Hugging Face commit the weights behind a model id can change between the
     pilot and the full run, and nothing downstream would notice.
 
-    The reasoning settings of the model travel with the request: template
-    arguments go in ``extra_body``, which is how vLLM receives them through the
-    OpenAI client, and ``reasoning_effort`` is a parameter of the call itself.
+    The three sampling parameters always go out, so that nothing is left to the
+    defaults of the server.  ``top_k`` is not a parameter of the OpenAI API: it
+    goes in ``extra_body``, which is how vLLM receives it through the OpenAI
+    client, and so do the template arguments of the reasoning settings;
+    ``reasoning_effort`` is a parameter of the call itself.
     """
     if request.revision is not None and PLACEHOLDER in request.revision:
         raise SchemeError(
@@ -181,8 +188,10 @@ def ask(request: Request, backend: Any | None = None) -> RawResponse:
         "model": request.model_id,
         "messages": request.messages(),
         "temperature": request.temperature,
+        "top_p": request.top_p,
         "max_tokens": request.max_tokens,
     }
+    extra_body: dict[str, Any] = {"top_k": request.top_k}
     if request.seed is not None:
         kwargs["seed"] = request.seed
     fmt = response_format(request)
@@ -193,9 +202,8 @@ def ask(request: Request, backend: Any | None = None) -> RawResponse:
         kwargs["top_logprobs"] = request.top_logprobs
     reasoning = request.reasoning or {}
     if reasoning.get("chat_template_kwargs"):
-        kwargs["extra_body"] = {
-            "chat_template_kwargs": dict(reasoning["chat_template_kwargs"])
-        }
+        extra_body["chat_template_kwargs"] = dict(reasoning["chat_template_kwargs"])
+    kwargs["extra_body"] = extra_body
     if reasoning.get("reasoning_effort"):
         kwargs["reasoning_effort"] = reasoning["reasoning_effort"]
 

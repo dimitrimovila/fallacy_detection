@@ -5,7 +5,7 @@ Sends one stage-two call with structured output and logprobs and prints what
 came back: the answer, the token where the answer value starts *inside the final
 JSON* and its position, the alternatives at that token, and the latency.
 
-Four checks matter more than the rest:
+Five checks matter more than the rest:
 
 * whether the prompt reached the model.  A chat template that drops the content
   of the message leaves the model a prompt of a few tokens, and it answers
@@ -20,12 +20,18 @@ Four checks matter more than the rest:
 * on an entry that reasons, whether thinking actually happened and whether the
   answer survived it.  No reasoning, neither in ``usage`` nor in the reasoning
   field of the message, means the server is not passing the reasoning settings
-  through, and a ``length`` finish means the object was cut off before it closed.
+  through, and a ``length`` finish means the object was cut off before it closed;
+* whether the JSON has the one layout the server should impose.  The same
+  question goes out three more times at temperature 1, and every content (after
+  the reasoning parser, on an entry that reasons) must begin with
+  ``{"answer": "``.  Any other spacing means the server is not compacting the
+  JSON, and the context before the answer token changes from call to call.
 
 The exit code is zero only if the entry can be run: a job stops on anything else.
 Besides a refusal, an error or an answer token missing from the JSON, that means
 a prompt the server did not read, no reasoning or a cut-off answer on an entry
-that reasons, and no logprobs on an entry whose ``supports_logprobs`` is true.
+that reasons, a JSON that does not begin with ``{"answer": "``, and no logprobs on
+an entry whose ``supports_logprobs`` is true.
 
     python serving/smoke_test.py --model qwen3_8_27b        # a key of serving/models.yaml
     python serving/smoke_test.py --model qwen3_8_27b_think  # same weights, thinking on
@@ -41,11 +47,12 @@ import argparse
 import json
 import math
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from argfallacy.client import Request, ask, model_spec  # noqa: E402
+from argfallacy.client import Request, ask, model_spec, sampling_for  # noqa: E402
 from argfallacy.client.call import endpoint  # noqa: E402
 from argfallacy.env import load_env  # noqa: E402
 from argfallacy.parse import answer_position, logprob_masses, parse_content  # noqa: E402
@@ -66,7 +73,7 @@ ANSWER_KEY = "answer"
 FAKE = "fake"
 FAKE_SPEC = {
     "model_id": "fake-model", "display_name": "Fake backend", "revision": "fake",
-    "tier": 0, "reasoning": {},
+    "tier": 0, "reasoning": {}, "samples": 1, "temperature": 0.0, "top_p": 1.0, "top_k": 0,
 }
 THINK_END = "</think>"
 DEFAULT_MAX_TOKENS = 256
@@ -74,6 +81,10 @@ CHARS_PER_TOKEN = 4
 """A rough size of a token: enough to tell a prompt read whole from one that was dropped."""
 PROMPT_FLOOR = 0.25
 """The share of the expected prompt tokens below which the prompt was not read."""
+LAYOUT = '{"answer": "'
+"""How every stage-two content must begin once the server compacts the JSON."""
+LAYOUT_CALLS = 3
+LAYOUT_TEMPERATURE = 1.0
 
 
 def build_backend(model_name: str, fake_reasoning: bool):
@@ -135,6 +146,25 @@ def reasoning_length(response) -> tuple[int, str]:
     return 0, "no reasoning in usage, in the message or in the content"
 
 
+def layout_holds(request: Request, backend) -> bool:
+    """The same question at temperature 1, three times: does every content begin the same way?
+
+    Seeds 1 to 3, so that the three calls can differ.  An error counts as a failure.
+    """
+    holds = True
+    for seed in range(1, LAYOUT_CALLS + 1):
+        response = ask(replace(request, temperature=LAYOUT_TEMPERATURE, seed=seed,
+                               sample_index=seed), backend=backend)
+        head = (response.content or "")[:len(LAYOUT) + 8]
+        ok = not response.error and (response.content or "").startswith(LAYOUT)
+        holds = holds and ok
+        print(f"Layout {seed}  : {'ok' if ok else 'NO'}  {response.error or repr(head)}")
+    if not holds:
+        print(f"WARNING: not every content begins with {LAYOUT!r}. The server must be launched "
+              f"with the `--structured-outputs-config` of the entry's `serve_args`.")
+    return holds
+
+
 def naive_position(logprobs, options) -> int | None:
     """Where a reader that takes the first answer-looking token would land."""
     for index, entry in enumerate(logprobs.get("content") or []):
@@ -159,6 +189,11 @@ def main(argv: list[str] | None = None) -> int:
     spec = dict(FAKE_SPEC) if args.model == FAKE else model_spec(args.model)
     if args.model == FAKE and args.fake_reasoning:
         spec["reasoning"] = {"chat_template_kwargs": {"enable_thinking": True}}
+    try:
+        sampling = sampling_for(args.model, spec)
+    except SchemeError as refusal:
+        print(f"REFUSED: {refusal}")
+        return 2
     # an entry with its own max_tokens knows better than a default meant for the
     # entries that answer without thinking first
     max_tokens = args.max_tokens or spec.get("max_tokens") or DEFAULT_MAX_TOKENS
@@ -166,6 +201,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Model     : {spec.get('display_name', args.model)}  ({spec['model_id']})")
     print(f"Revision  : {spec.get('revision')}   tier: {spec.get('tier')}")
     print(f"Reasoning : {json.dumps(spec.get('reasoning') or {})}")
+    print(f"Sampling  : temperature {sampling['temperature']}, top_p {sampling['top_p']}, "
+          f"top_k {sampling['top_k']}")
     print(f"Question  : {PROBE_SCHEME} {PROBE_CQ}")
     print(f"Options   : {', '.join(rendered.answer_options)}")
     print("-" * 72)
@@ -175,7 +212,9 @@ def main(argv: list[str] | None = None) -> int:
         prompt=rendered.text,
         prompt_version=rendered.prompt_version,
         sample_index=0,
-        temperature=0.0,
+        temperature=sampling["temperature"],
+        top_p=sampling["top_p"],
+        top_k=sampling["top_k"],
         max_tokens=max_tokens,
         seed=0,
         json_schema=rendered.json_schema,
@@ -227,6 +266,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"WARNING: response cut off at {max_tokens} tokens "
                   f"(finish_reason = length): the reasoning used up the room for the "
                   f"JSON. Raise the entry's `max_tokens` in serving/models.yaml.")
+    print()
+    if not layout_holds(request, backend):
+        unusable = True
     print()
 
     if not response.logprobs:

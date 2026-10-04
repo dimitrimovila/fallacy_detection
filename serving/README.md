@@ -87,11 +87,22 @@ interactive session.
    the other entry would be accepted, since the `model_id` is the same, and answered in
    the wrong condition: that is why the smoke test comes before every run of an entry.
    gpt oss always reasons (the effort takes only low, medium or high) and is launched like
-   a `_think` entry: `max_tokens` 8192, `--max-model-len 16384` and `--reasoning-parser
-   openai_gptoss`. For this model vLLM moves the JSON schema to the `final` channel of
-   the harmony format, leaving the `analysis` channel free for the reasoning, only when
-   a parser is configured; without it the schema constrains the JSON from the first
-   token and the model does not reason.
+   a `_think` entry, with `--reasoning-parser openai_gptoss`, `max_tokens` 32768 and
+   `--max-model-len 34816`, the longest prompt of the v2 templates plus 32768 rounded up to
+   a multiple of 1024; K2 Horizon has the same room. For gpt oss vLLM moves the JSON
+   schema to the `final` channel of the harmony format, leaving the `analysis` channel
+   free for the reasoning, only when a parser is configured; without it the schema
+   constrains the JSON from the first token and the model does not reason.
+   Every entry of the runs (all but the `_think` ones) is also launched with
+   `--generation-config vllm`, so that the `generation_config.json` of the model does not
+   replace the sampling of the request with its own, and with
+   `--structured-outputs-config '{"backend": "xgrammar", "disable_any_whitespace": true}'`,
+   so that the JSON always begins with `{"answer": "` and the context before the answer
+   token does not change from call to call. With gpt oss the option does not reach the
+   grammar, which vLLM builds as a structural tag of the harmony format with free
+   whitespace; the smoke test says whether its JSON comes out compact anyway. The line of
+   `serve_command.py` is quoted for the shell: the JSON is one argument, and a script
+   reads the line back with `eval`, not by splitting it on spaces.
 3. **Declare the endpoint** in the `.env` at the root of the repository, never in the code:
    ```
    LLM_BASE_URL=http://localhost:8000/v1
@@ -107,15 +118,18 @@ interactive session.
    reasoning before the JSON (gpt oss, K2 Horizon, `_think` entries) and a naive reader would have ended up there, it says so. On an
    entry that reasons (`enable_thinking` true, or `is_reasoning` true where the entry does not set `enable_thinking`: the `_think` entries, K2 Horizon, gpt oss) it also checks that there was reasoning and that the answer was not cut off. The reasoning is read from `usage` and from the reasoning field of the message (`reasoning_content` or `reasoning`), and the script prints its length and where it was found: `usage` can say zero while the field holds the thinking. It also checks that the prompt reached the model: `prompt_tokens` below a quarter of an estimate at four characters per token means the chat template dropped the content, as it did for K2 Horizon before `--chat-template-content-format string`. If the logprobs do not arrive, it says so plainly: then `supports_logprobs` in
    `models.yaml` must be set to `false` and `p_logprob` will stay empty for that model.
+   Then it sends the same question three times at temperature 1 and checks that every
+   content (after the reasoning parser) begins with `{"answer": "`.
    The exit code is zero only if the entry can be run: a prompt not read, no reasoning or
-   a cut-off answer on an entry that reasons, and no logprobs on an entry with
-   `supports_logprobs: true`, give another code, and a job stops on it.
+   a cut-off answer on an entry that reasons, a JSON that does not begin with
+   `{"answer": "`, and no logprobs on an entry with `supports_logprobs: true`, give
+   another code, and a job stops on it.
 5. **Count the calls** before making them:
-   `argfallacy run plan configs/pilot.yaml --model <entry>`. Without `--model`, the calls of
+   `argfallacy run plan configs/pilot2.yaml --model <entry>`. Without `--model`, the calls of
    every entry of the configuration.
 6. **Run** the entry the server is serving:
    ```
-   argfallacy run execute configs/pilot.yaml --run-id <run_id> --model <entry>
+   argfallacy run execute configs/pilot2.yaml --run-id <run_id> --model <entry>
    ```
    The invocations for the other entries, each after its own launch of the server, take
    the same `--run-id` and write into the same run: one `raw.jsonl`, one manifest that
@@ -210,12 +224,23 @@ one of them, so every launch splits the model over the two.
 `argfallacy`:
 
 ```
-argfallacy run plan configs/pilot.yaml                 # counts the calls, makes none
-RUN_ID=$(date -u +%Y%m%dT%H%M%SZ)_pilot
-echo $RUN_ID | tee -a ~/run_ids.txt                    # kept for a resubmission
-sbatch serving/slurm/pilot.sbatch $RUN_ID
+argfallacy run plan configs/pilot2.yaml                # counts the calls, makes none
+RUN_ID=$(date -u +%Y%m%dT%H%M%SZ)_pilot2
+echo $RUN_ID | tee -a ~/run_ids.txt                    # kept for the second job and a resubmission
+sbatch serving/slurm/pilot.sbatch configs/pilot2.yaml $RUN_ID qwen3_8_27b gemma4_31b
 squeue -u $USER                                        # the job and its node
 ```
+
+The second pilot is one run made in two jobs. The first runs the two entries with
+reasoning off; then `argfallacy parse $RUN_ID` and `argfallacy pilot report $RUN_ID`, and
+only if the report holds, the second job adds the two entries that reason to the same run:
+
+```
+sbatch serving/slurm/pilot.sbatch configs/pilot2.yaml $RUN_ID gpt_oss_20b k2_horizon_32b
+```
+
+The job has ten hours. One that runs out of time is resubmitted with the same arguments,
+and resumes from the calls still missing.
 
 The pilot job runs the smoke test on every entry before its calls, so no separate smoke
 test is needed first: a failed one stops the job before any call of that entry, the
@@ -244,8 +269,8 @@ listening only on that address. Then, for each entry, it launches `vllm serve` w
 command of step 2 plus `--tensor-parallel-size` equal to the GPUs of the job, waits for
 `/health` (and stops if the server exits), runs the smoke test, and stops the server,
 waiting until the GPUs are free. `smoke.sbatch` stops there; `pilot.sbatch` runs step 6
-between the smoke test and the stop, for the entries of `configs/pilot.yaml` in their
-order. A failed smoke test stops the job before any call of that entry; calls that
+between the smoke test and the stop, for the entries named after `RUN_ID` (all those of
+the configuration when none is named), in the order of the configuration. A failed smoke test stops the job before any call of that entry; calls that
 fail do not stop it, and the job ends listing the entries that have some.
 
 After the pilot job, `argfallacy parse <run_id>` gives the tables (see the README).

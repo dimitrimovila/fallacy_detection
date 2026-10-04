@@ -45,7 +45,9 @@ def cache_key(request: Request) -> str:
     same text are the same question, and a template edit that changes one word
     has to invalidate the entry even if the version string was not bumped.
     Revision, tier and reasoning are in it too: the same model id at another
-    commit, or with thinking switched on, is a different model.
+    commit, or with thinking switched on, is a different model.  So are the
+    flags the server was launched with: the same request to a server that
+    constrains the output differently is a different call.
     """
     material = dumps({
         "model_id": request.model_id,
@@ -56,6 +58,7 @@ def cache_key(request: Request) -> str:
         "revision": request.revision,
         "tier": request.tier,
         "reasoning": request.reasoning or {},
+        "serve_args": list(request.serve_args),
     })
     return hashlib.sha256(material.encode("utf-8")).hexdigest()
 

@@ -1,0 +1,24 @@
+# The second pilot: the 50 items of the first, prompts v2, two entries with reasoning off and
+# two that always reason. How many samples each entry takes, and how they are drawn, is in
+# serving/models.yaml. `argfallacy run plan configs/pilot2.yaml` counts the calls without
+# making any.
+
+name: pilot2
+
+items:
+  n: 50
+  seed: 20260911
+  # stratified by gold scheme, proportionally, with at least 4 items per scheme
+  min_per_scheme: 4
+  # `none` has no CQs to ask: left out of the pilot
+  exclude_none_scheme: true
+
+stages: [stage1, stage2]
+scheme_condition: gold
+# run in two times into one run: first the two entries with reasoning off, then the other two
+models: [qwen3_8_27b, gemma4_31b, gpt_oss_20b, k2_horizon_32b]
+prompt_version: v2
+
+generation:
+  # for the entries without a max_tokens of their own
+  max_tokens: 512

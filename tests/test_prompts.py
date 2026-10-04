@@ -90,7 +90,7 @@ def test_no_prompt_built_from_items_csv_says_nan(schemes):
         frame = load_items()
     except SchemeError:
         pytest.skip("no data/items.csv")
-    config = RunConfig.load(REPO_ROOT / "configs" / "pilot.yaml")
+    config = RunConfig.load(REPO_ROOT / "configs" / "pilot2.yaml")
     for item in select_items(config, frame):
         scheme = schemes[item["gold_scheme"]]
         for prompt in (render_stage1(item, schemes).text,

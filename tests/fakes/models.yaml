@@ -15,8 +15,12 @@ models:
     supports_logprobs: true
     is_reasoning: false
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
+    samples: 5
+    temperature: 1.0
+    top_p: 1.0
+    top_k: 0
     max_concurrency: 4
-    notes: "The model of every client test."
+    notes: "The model of every client test: five samples, like gpt oss and K2 Horizon."
 
   fake_long:
     tier: 1
@@ -27,9 +31,30 @@ models:
     supports_logprobs: true
     is_reasoning: false
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
+    samples: 5
+    temperature: 1.0
+    top_p: 1.0
+    top_k: 0
     max_concurrency: 4
     max_tokens: 8192
     notes: "Identical to `fake` except for `max_tokens`: like the `_think` entries of the real models."
+
+  fake_single:
+    tier: 1
+    model_id: "fake-model"
+    revision: "fake-revision-0001"
+    display_name: "Fake backend with one greedy sample"
+    enabled: true
+    supports_logprobs: true
+    is_reasoning: false
+    reasoning: {chat_template_kwargs: {enable_thinking: false}}
+    samples: 1
+    temperature: 0.0
+    top_p: 1.0
+    top_k: 0
+    max_concurrency: 4
+    serve_args: [--generation-config, vllm]
+    notes: "One sample at temperature 0, like the entries of Qwen and Gemma with reasoning off."
 
   fake_unpinned:
     tier: 1
@@ -40,6 +65,10 @@ models:
     supports_logprobs: true
     is_reasoning: false
     reasoning: {}
+    samples: 1
+    temperature: 0.0
+    top_p: 1.0
+    top_k: 0
     max_concurrency: 4
     notes: "Revision still a placeholder: ask() must refuse."
 
@@ -52,6 +81,10 @@ models:
     supports_logprobs: true
     is_reasoning: true
     reasoning: {reasoning_effort: low}
+    samples: 5
+    temperature: 1.0
+    top_p: 1.0
+    top_k: 0
     max_concurrency: 4
     notes: "Like gpt oss: the reasoning does not switch off, it is turned down."
 

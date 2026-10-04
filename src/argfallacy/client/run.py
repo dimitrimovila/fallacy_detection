@@ -91,7 +91,6 @@ class RunConfig:
     models: list[str]
     stages: list[str] = field(default_factory=lambda: [STAGE1, STAGE2])
     scheme_condition: str = GOLD
-    samples: int = 5
     prompt_version: str = DEFAULT_VERSION
     items: dict[str, Any] = field(default_factory=dict)
     generation: dict[str, Any] = field(default_factory=dict)
@@ -106,11 +105,6 @@ class RunConfig:
         if unknown:
             raise SchemeError(f"{Path(path).name}: unknown configuration keys {unknown}")
         return cls(raw=data, **{k: v for k, v in data.items() if k in known})
-
-    def temperature(self, sample_index: int) -> float:
-        if sample_index == 0:
-            return float(self.generation.get("temperature_sample0", 0.0))
-        return float(self.generation.get("temperature_rest", 0.7))
 
     def max_tokens(self) -> int:
         return int(self.generation.get("max_tokens", 512))
@@ -128,6 +122,32 @@ def max_tokens_for(spec: Mapping[str, Any], config: RunConfig) -> int:
     return config.max_tokens() if value is None else int(value)
 
 
+SAMPLING = ("samples", "temperature", "top_p", "top_k")
+
+
+def sampling_for(name: str, spec: Mapping[str, Any]) -> dict[str, Any]:
+    """How many samples an entry takes and how they are drawn, from its own fields.
+
+    Every entry that is planned states all four: nothing falls back to a default
+    of the configuration or of the server.  Every sample of an entry is drawn
+    the same way; only the seed, equal to the sample index, changes.
+    """
+    missing = [key for key in SAMPLING if spec.get(key) is None]
+    if missing:
+        raise SchemeError(f"model {name!r} has no {missing} in serving/models.yaml")
+    sampling = {
+        "samples": int(spec["samples"]),
+        "temperature": float(spec["temperature"]),
+        "top_p": float(spec["top_p"]),
+        "top_k": int(spec["top_k"]),
+    }
+    if (sampling["samples"] < 1 or sampling["temperature"] < 0
+            or not 0 < sampling["top_p"] <= 1 or sampling["top_k"] < 0):
+        raise SchemeError(f"model {name!r}: sampling out of range in serving/models.yaml: "
+                          f"{sampling}")
+    return sampling
+
+
 # ----------------------------------------------------------------------- plan
 @dataclass(frozen=True)
 class PlannedCall:
@@ -142,11 +162,14 @@ class PlannedCall:
     prompt_version: str
     json_schema: dict[str, Any] | None
     temperature: float
+    top_p: float
+    top_k: int
     max_tokens: int
     logprobs: bool
     revision: str | None = None
     tier: int | None = None
     reasoning: dict[str, Any] | None = None
+    serve_args: tuple[str, ...] = ()
 
     def request(self) -> Request:
         return Request(
@@ -155,6 +178,8 @@ class PlannedCall:
             prompt_version=self.prompt_version,
             sample_index=self.sample_index,
             temperature=self.temperature,
+            top_p=self.top_p,
+            top_k=self.top_k,
             max_tokens=self.max_tokens,
             seed=self.sample_index,
             json_schema=self.json_schema,
@@ -162,6 +187,7 @@ class PlannedCall:
             revision=self.revision,
             tier=self.tier,
             reasoning=self.reasoning,
+            serve_args=self.serve_args,
         )
 
     def key(self) -> str:
@@ -199,10 +225,14 @@ def plan(
                 f"model {model_name!r} is disabled in serving/models.yaml; "
                 f"set `enabled: true` there to plan calls for it"
             )
+        sampling = sampling_for(model_name, spec)
+        samples = sampling.pop("samples")
         identity = {
             "revision": spec.get("revision"),
             "tier": spec.get("tier"),
             "reasoning": spec.get("reasoning") or {},
+            "serve_args": tuple(str(arg) for arg in spec.get("serve_args") or ()),
+            **sampling,
         }
         logprobs = bool(spec.get("supports_logprobs", True))
         max_tokens = max_tokens_for(spec, config)
@@ -210,13 +240,12 @@ def plan(
             item_id = str(item["item_id"])
             if STAGE1 in config.stages:
                 rendered = render_stage1(item, schemes, config.prompt_version)
-                for sample in range(config.samples):
+                for sample in range(samples):
                     calls.append(PlannedCall(
                         model=model_name, model_id=spec["model_id"], item_id=item_id,
                         stage=STAGE1, scheme=None, cq_id=None, sample_index=sample,
                         prompt=rendered.text, prompt_version=rendered.prompt_version,
                         json_schema=rendered.json_schema,
-                        temperature=config.temperature(sample),
                         max_tokens=max_tokens, logprobs=logprobs,
                         **identity,
                     ))
@@ -229,13 +258,12 @@ def plan(
             scheme = schemes[scheme_id]
             for cq_id in scheme.cq_order:
                 rendered = render_stage2(item, scheme, cq_id, config.prompt_version)
-                for sample in range(config.samples):
+                for sample in range(samples):
                     calls.append(PlannedCall(
                         model=model_name, model_id=spec["model_id"], item_id=item_id,
                         stage=STAGE2, scheme=scheme_id, cq_id=cq_id, sample_index=sample,
                         prompt=rendered.text, prompt_version=rendered.prompt_version,
                         json_schema=rendered.json_schema,
-                        temperature=config.temperature(sample),
                         max_tokens=max_tokens, logprobs=logprobs,
                         **identity,
                     ))
@@ -334,7 +362,7 @@ def build_manifest(
         "run_id": run_id,
         "config": config.raw or {
             "name": config.name, "models": config.models, "stages": config.stages,
-            "scheme_condition": config.scheme_condition, "samples": config.samples,
+            "scheme_condition": config.scheme_condition,
         },
         "models": {
             name: {
@@ -345,6 +373,7 @@ def build_manifest(
                 ),
                 "max_concurrency": int(model_spec(name, models).get("max_concurrency", 1)),
                 "max_tokens": max_tokens_for(model_spec(name, models), config),
+                **sampling_for(name, model_spec(name, models)),
                 "revision": model_spec(name, models).get("revision"),
                 "tier": model_spec(name, models).get("tier"),
                 "reasoning": model_spec(name, models).get("reasoning") or {},
@@ -361,12 +390,7 @@ def build_manifest(
             "files": sorted(p.name for p in SCHEMES_DIR.glob("*.yaml")),
             "content_sha256": schemes_hash(),
         },
-        "generation": {
-            "temperature_sample0": config.temperature(0),
-            "temperature_rest": config.temperature(1),
-            "max_tokens": config.max_tokens(),
-        },
-        "n_samples": config.samples,
+        "generation": {"max_tokens": config.max_tokens()},
         "scheme_condition": config.scheme_condition,
         "started_at": None,
         "finished_at": None,

@@ -1,4 +1,4 @@
-# The models and how they are served. Version 3.7.
+# The models and how they are served. Version 3.8.
 #
 # Six models in three tiers (`tier`), in eight entries: Qwen3.8 and Gemma 4 have two
 # each, with reasoning off and on. The open models are served with vLLM 0.30.0, installed
@@ -28,20 +28,36 @@
 # `max_tokens` optional: applies instead of the one in the configuration. The `_think`
 #             entries, K2 Horizon and gpt oss need it: they write their reasoning before
 #             the JSON, and with the 512 of the configuration they would be cut off.
+# `samples`, `temperature`, `top_p`, `top_k`  how many answers the entry gives to every
+#             question, and how each is drawn: the same parameters for every sample, with
+#             the seed equal to the sample index, at both stages. The client always sends
+#             the three sampling parameters. `top_k: 0` is the value that switches top-k off
+#             in vLLM 0.30.0 (`SamplingParams`). An entry without the four fields cannot be
+#             planned. One sample at temperature 0 for the entries that answer without
+#             reasoning: the hard answer is that sample, the soft one its logprobs. Five at
+#             the temperature recommended by the producer for the entries that always
+#             reason: the hard answer is the majority, the soft one the frequency.
 # `serve_args` the flags of `vllm serve` that depend on the entry. `serving/serve_command.py`
 #             prints `model_id --revision revision` followed by them, and `--max-model-len
 #             8192` when they do not set it; the job adds port, host, tensor parallelism and
-#             dtype. The commercial model has none: it is not served with vLLM.
+#             dtype. The commercial model has none: it is not served with vLLM. Every entry
+#             of the runs has `--generation-config vllm`, so that the `generation_config.json`
+#             of the model does not put its sampling values in place of those of the
+#             request, and `--structured-outputs-config` with the xgrammar backend and
+#             `disable_any_whitespace`, so that the JSON has one layout, `{"answer": "`, and
+#             the context before the answer token is the same in every call. With gpt oss
+#             vLLM turns the schema into a structural tag of the harmony format, which xgrammar
+#             compiles with free whitespace whatever the option says.
 # `enabled`   a disabled model enters no plan.
 # `supports_logprobs`  the server returns the token logprobs.
 # `is_reasoning`       the model can reason before answering.
 # `max_concurrency`    the maximum number of simultaneous calls.
 #
-# revision, tier, reasoning and max_tokens go into the manifest of every run and into the
-# cache key: changing one of them produces new calls, not old answers reused. serve_args goes
-# into the manifest only: the entry already determines it.
+# revision, tier, reasoning, max_tokens, the sampling parameters and serve_args go into the
+# manifest of every run and into the cache key: changing one of them produces new calls, not
+# old answers reused.
 
-version: "3.7"
+version: "3.8"
 
 models:
 
@@ -56,12 +72,18 @@ models:
     is_reasoning: true
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
     max_concurrency: 8
-    serve_args: []
+    samples: 1
+    temperature: 0.0
+    top_p: 1.0
+    top_k: 0
+    serve_args: [--generation-config, vllm, --structured-outputs-config,
+                 '{"backend": "xgrammar", "disable_any_whitespace": true}']
     notes: >-
       Pilot, main condition. Reasoning switched off by the chat template. The server
       starts without `--reasoning-parser`: with the parser on and no reasoning, vLLM
       stops enforcing the JSON schema constraint with no error or warning, and the
-      answers out of format would become `invalid` with no visible cause.
+      answers out of format would become `invalid` with no visible cause. One sample at
+      temperature 0: the hard answer is that sample, and its logprobs the soft one.
 
   qwen3_8_27b_think:
     tier: 1
@@ -91,12 +113,18 @@ models:
     is_reasoning: true
     reasoning: {chat_template_kwargs: {enable_thinking: false}}
     max_concurrency: 8
-    serve_args: []
+    samples: 1
+    temperature: 0.0
+    top_p: 1.0
+    top_k: 0
+    serve_args: [--generation-config, vllm, --structured-outputs-config,
+                 '{"backend": "xgrammar", "disable_any_whitespace": true}']
     notes: >-
       Pilot, main condition. Reasoning switched off by the chat template. The server
       starts without `--reasoning-parser`: with the parser on and no reasoning, vLLM
       stops enforcing the JSON schema constraint with no error or warning, and the
-      answers out of format would become `invalid` with no visible cause.
+      answers out of format would become `invalid` with no visible cause. One sample at
+      temperature 0: the hard answer is that sample, and its logprobs the soft one.
 
   gemma4_31b_think:
     tier: 1
@@ -126,22 +154,31 @@ models:
     is_reasoning: true
     reasoning: {reasoning_effort: low}
     max_concurrency: 8
-    max_tokens: 8192
-    serve_args: [--max-model-len, "16384", --reasoning-parser, openai_gptoss]
+    max_tokens: 32768
+    samples: 5
+    temperature: 1.0
+    top_p: 1.0
+    top_k: 0
+    serve_args: [--max-model-len, "34816", --reasoning-parser, openai_gptoss,
+                 --generation-config, vllm, --structured-outputs-config,
+                 '{"backend": "xgrammar", "disable_any_whitespace": true}']
     notes: >-
       The reasoning does not switch off: there is no supported way to turn it off, the
-      effort takes only low, medium or high, and it is kept at low. The reasoning comes
-      before the JSON, so the entry has the room of the `_think` entries: with the 512
-      tokens of the configuration the answer could be cut off, and with a context of
-      8192 a prompt of about 650 tokens plus the 8192 of `max_tokens` would be refused;
-      the context of 16384 holds both. `--reasoning-parser openai_gptoss`: vLLM moves
+      effort takes only low, medium or high, and it is kept at low. Five samples at
+      temperature 1 and top_p 1, the sampling OpenAI recommends for gpt oss. The
+      reasoning comes before the JSON, so the answer needs room: `max_tokens` 32768, and
+      a context of 34816, the longest prompt of the v2 templates (1238 tokens with this
+      tokenizer, stage one, over every item and every scheme and CQ) plus 32768,
+      rounded up to a multiple of 1024. `--reasoning-parser openai_gptoss`: vLLM moves
       the JSON schema to the `final` channel of the harmony format, leaving the
       `analysis` channel free for the reasoning, only when a parser is configured
       (`_adjust_output_format` in `vllm/parser/harmony.py`, called from the branch
       `parser is not None` of `vllm/renderers/online_renderer.py`); without it the
       schema constrains the JSON from the first token and the model does not reason.
       The logprobs must be read on the answer token inside the JSON, not on the first
-      generated token.
+      generated token. The schema reaches xgrammar as a structural tag of the harmony
+      format, compiled with free whitespace: `disable_any_whitespace` does not reach it,
+      and the layout check of the smoke test says whether the JSON comes out compact.
 
   # ------------------------------------------------------------------- tier 2
   gpt_oss_120b:
@@ -154,12 +191,19 @@ models:
     is_reasoning: true
     reasoning: {reasoning_effort: low}
     max_concurrency: 4
-    max_tokens: 8192
-    serve_args: [--max-model-len, "16384", --reasoning-parser, openai_gptoss]
+    max_tokens: 32768
+    samples: 5
+    temperature: 1.0
+    top_p: 1.0
+    top_k: 0
+    serve_args: [--max-model-len, "34816", --reasoning-parser, openai_gptoss,
+                 --generation-config, vllm, --structured-outputs-config,
+                 '{"backend": "xgrammar", "disable_any_whitespace": true}']
     notes: >-
       Pairs with gpt_oss_20b: same family, only the size changes. Same reasoning, kept
-      at low, the same room for it (`max_tokens` 8192 and a context of 16384) and the
-      same reasoning parser, for the reasons given in the notes of gpt_oss_20b.
+      at low, the same sampling, the same room for it (`max_tokens` 32768 and a context
+      of 34816: the tokenizer is the same) and the same reasoning parser, for the
+      reasons given in the notes of gpt_oss_20b.
 
   k2_horizon_32b:
     tier: 2
@@ -169,17 +213,25 @@ models:
     enabled: true
     supports_logprobs: true
     is_reasoning: true
-    reasoning: {}
+    reasoning: {chat_template_kwargs: {reasoning_effort: high}}
     max_concurrency: 4
-    max_tokens: 8192
+    max_tokens: 32768
+    samples: 5
+    temperature: 1.0
+    top_p: 0.95
+    top_k: 0
     serve_args: [--trust-remote-code, --reasoning-parser, k2_horizon, --tool-call-parser,
-                 k2_horizon, --max-model-len, "16384", --chat-template-content-format, string]
+                 k2_horizon, --max-model-len, "34816", --chat-template-content-format, string,
+                 --generation-config, vllm, --structured-outputs-config,
+                 '{"backend": "xgrammar", "disable_any_whitespace": true}']
     notes: >-
       Dense, 32B. The reasoning does not switch off: it is set with `reasoning_effort` in
-      `chat_template_kwargs`, and the model card documents only `high`. While `reasoning`
-      stays empty the model reasons at the template's default level. Since it always
-      reasons before the JSON, it has the room of the `_think` entries: the context holds
-      the prompt and the 8192 tokens of `max_tokens`. The revision is the
+      `chat_template_kwargs`, at `high`, the only level the model card documents and the
+      default of the template. Five samples at temperature 1 and top_p 0.95, the sampling
+      of the model card. Since it always reasons before the JSON, the answer needs room:
+      `max_tokens` 32768, and a context of 34816, the longest prompt of the v2 templates
+      (1161 tokens with this tokenizer, stage one) plus 32768, rounded up to a multiple
+      of 1024. The revision is the
       head of `main` on 28 September 2026, commit eff3d24a3a40 of 24 September ("delete the
       sentence final checkpoint to be released"), which removed from the model card the
       announcement of a final checkpoint; the history of the repository keeps the

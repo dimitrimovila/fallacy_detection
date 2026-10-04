@@ -21,8 +21,8 @@ of Padova, academic year 2025/2026). A first stage asks which of the eight schem
 follows, or none. A second stage puts each critical question of that scheme to several
 large language models, one question per call; every answer comes both as a plain
 answer (yes, no, cannot be determined from the text) and as a probability, from the
-token log-probabilities, from the stated confidence and from the frequency over five
-samples. Six aggregators, from the fixed diagram to learned models, combine these
+token log-probabilities, from the stated confidence and, for the models asked several
+times, from the frequency over the samples. Six aggregators, from the fixed diagram to learned models, combine these
 uncertain answers into a fallacy verdict, or an abstention, together with an
 explanation: the path through the diagram, or the weights of the model that decided.
 
@@ -114,31 +114,35 @@ Calls refuse to start while a revision is a placeholder. Qwen and Gemma each hav
 with reasoning on (`_think`), served by a separate launch with the reasoning parser and
 `--max-model-len 16384`; the entry with reasoning off is served without the parser. gpt oss
 and K2 Horizon, whose reasoning does not switch off, are served in the same way as the
-`_think` entries, with their own reasoning parser. The flags of each entry are its
-`serve_args`. See `serving/README.md`.
+`_think` entries, with their own reasoning parser and a context of 34816. The flags of each
+entry are its `serve_args`; the servers of the runs compact the JSON
+(`--structured-outputs-config`) and ignore the sampling defaults of the model
+(`--generation-config vllm`). Each entry also states how many samples it takes and how they
+are drawn: one at temperature 0 for Qwen and Gemma with reasoning off, five at the
+producer's temperature for gpt oss and K2 Horizon. See `serving/README.md`.
 
-Pilot (50 items, Qwen and Gemma with reasoning off, five samples, prompts v2). A server
-serves one entry at a time, so each entry is run after its own launch, and `--run-id`
-gathers the two into one run:
+Pilot (50 items, prompts v2; Qwen and Gemma with reasoning off, gpt oss 20b and K2 Horizon,
+each with its own samples). A server serves one entry at a time, so each entry is run
+after its own launch, and `--run-id` gathers the four into one run:
 
 ```bash
-argfallacy run plan configs/pilot.yaml                     # counts the calls, makes none
-argfallacy run execute configs/pilot.yaml --run-id <run_id> --model <entry>
+argfallacy run plan configs/pilot2.yaml                    # counts the calls, makes none
+argfallacy run execute configs/pilot2.yaml --run-id <run_id> --model <entry>
 argfallacy parse <run_id>                                  # answers.csv and summary.csv
 argfallacy pilot report <run_id>                           # pilot_report.md
 ```
 
 The report is computed from the files of the parser, the manifest, `data/` and `schemes/`.
-The token counts come from `raw.jsonl`, read one line at a time: without it (a copy of the
-run that has only the tables) the report says so and the rest is unchanged, and
-`--no-raw` skips the reading.
+The token counts and the layout of the JSON come from `raw.jsonl`, read one line at a
+time: without it (a copy of the run that has only the tables) the report says so and the
+rest is unchanged, and `--no-raw` skips the reading.
 
 On the cluster two Slurm jobs do this, launching and stopping the servers themselves
 (preparation in `serving/README.md`):
 
 ```bash
 sbatch serving/slurm/smoke.sbatch <entry>      # the smoke test of one entry
-sbatch serving/slurm/pilot.sbatch <run_id>     # the entries of the pilot, in order
+sbatch serving/slurm/pilot.sbatch configs/pilot2.yaml <run_id> [<entry> ...]   # in order
 ```
 
 Scoring the earlier runs (the folder at `PRIOR_RUNS_DIR`) in both modes of the scorer:
