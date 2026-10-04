@@ -139,15 +139,21 @@ def read_sheet(sheet, texts: dict[str, str], schemes, vocab, scheme_vocab) -> li
 
 
 def update(workbook: str | Path, path: str | Path = ANNOTATIONS_FILE,
-           items: str | Path = ITEMS_FILE) -> dict[str, tuple[int, int]]:
-    """Replace the ``dumitru`` rows of every sheet read.  Returns sheet -> (rows before, after)."""
+           items: str | Path = ITEMS_FILE, skip=()) -> dict[str, tuple[int, int]]:
+    """Replace the ``dumitru`` rows of every sheet read.  Returns sheet -> (rows before, after).
+
+    The sheets in ``skip`` are not read, and their rows in the table stay as they are.
+    """
     texts = dict(pd.read_csv(items, dtype=str, keep_default_na=False)[["item_id", "text"]].values)
     schemes, vocab = load_all(), load_vocabulary(check_schemes=False)
     scheme_vocab = load_scheme_vocabulary()
     book = load_workbook(workbook, read_only=True, data_only=True)
     try:
+        if unknown := sorted(set(skip) - set(book.sheetnames)):
+            raise SchemeError(f"no sheet named {unknown} to skip")
         new = {s.title: read_sheet(s, texts, schemes, vocab, scheme_vocab)
-               for s in book.worksheets if s.title.startswith(SHEET_PREFIX)}
+               for s in book.worksheets
+               if s.title.startswith(SHEET_PREFIX) and s.title not in skip}
     finally:
         book.close()
     table = load_annotations(path)

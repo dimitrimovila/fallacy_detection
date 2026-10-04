@@ -130,7 +130,7 @@ The workflow:
 2. When a sheet is finished, it is copied into the local `Dati_da_annotare.xlsx`, the one given by `WORKBOOK_PATH`.
 3. `argfallacy annotations update` is run.
 
-The command reads every sheet whose name starts with `Annotazione Dumitru` and replaces in `annotations.csv` the `dumitru` rows of that sheet. The rows of the other annotators and of the other sheets stay as they are.
+The command reads every sheet whose name starts with `Annotazione Dumitru` and replaces in `annotations.csv` the `dumitru` rows of that sheet. The rows of the other annotators and of the other sheets stay as they are. A sheet named with `--skip` (repeatable) is not read, and its rows stay as they are too: it serves for a sheet whose annotation is not ready to be read yet.
 
 What it expects from a sheet:
 

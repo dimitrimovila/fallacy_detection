@@ -19,7 +19,7 @@ def _cmd_annotations_update(args: argparse.Namespace) -> int:
     if not workbook:
         raise SystemExit("no workbook: set WORKBOOK_PATH in .env or pass --workbook")
     try:
-        counts = update(workbook)
+        counts = update(workbook, skip=args.skip)
     except SchemeError as error:
         raise SystemExit(f"{error}\nannotations.csv was not touched.") from None
     for sheet, (before, after) in counts.items():
@@ -141,6 +141,8 @@ def build_parser() -> argparse.ArgumentParser:
         "update", help="replace the rows of the 'Annotazione Dumitru' sheets with the workbook's"
     )
     update_cmd.add_argument("--workbook", default=None, help="default: WORKBOOK_PATH")
+    update_cmd.add_argument("--skip", action="append", default=[], metavar="SHEET",
+                            help="a sheet not to read, its rows stay; repeatable")
     update_cmd.set_defaults(func=_cmd_annotations_update)
     run = sub.add_parser("run", help="ask the models").add_subparsers(
         dest="command", required=True

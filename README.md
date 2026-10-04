@@ -95,6 +95,7 @@ workbook at `WORKBOOK_PATH` (each of those sheets carries an `item_id` column):
 
 ```bash
 argfallacy annotations update
+argfallacy annotations update --skip "Annotazione Dumitru hasty_gener"   # leaves that sheet's rows as they are
 ```
 
 Serving one entry of `serving/models.yaml`, then checking it answers with

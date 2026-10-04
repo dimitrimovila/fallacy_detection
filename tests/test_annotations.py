@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import io
+
 import pandas as pd
 import pytest
 from openpyxl import Workbook
@@ -73,6 +75,21 @@ def test_the_scheme_column_is_the_one_just_before_the_cqs(tmp_path, files):
     rows = frame[frame["annotator"] == "dumitru"].set_index(["item_id", "field"])
     assert rows.loc[("a1", "scheme"), "value"] == "analogy"
     assert rows.loc[("a1", "scheme"), "raw"] == "YES"
+
+
+def test_a_skipped_sheet_is_not_read_and_its_rows_stay(tmp_path, files):
+    items, table = files
+    book = Workbook()
+    book.active.title = "Annotazione Dumitru Analogy"
+    book.active.append(["item_id", "text", "scheme"])
+    book.active.append(["a1", "First argument.", "NO"])
+    book.save(tmp_path / "book.xlsx")
+    with pytest.raises(SchemeError, match="no sheet"):
+        update(tmp_path / "book.xlsx", table, items, skip=["Annotazione Dumitru Analog"])
+    before = table.read_bytes()
+    assert update(tmp_path / "book.xlsx", table, items,
+                  skip=["Annotazione Dumitru Analogy"]) == {}
+    assert load_annotations(table).equals(load_annotations(io.BytesIO(before)))
 
 
 def test_an_id_column_pasted_one_row_off_stops_everything(tmp_path, files):
