@@ -3,18 +3,21 @@
 Everything here is computed from the files a run leaves behind, never by hand:
 ``answers.csv`` and ``summary.csv`` of the parser, ``manifest.json`` of the
 client, ``data/items.csv``, ``data/annotations.csv`` and the diagrams in
-``schemes/``.  ``raw.jsonl`` is read, one line at a time, only for the token
-counts, which ``answers.csv`` does not carry; where it is absent (a local copy of
-the run) that section says so and the rest of the report is unchanged.
+``schemes/``.  ``raw.jsonl`` is read, one line at a time, only for the tokens and
+the layout of the JSON, which ``answers.csv`` does not carry; where it is absent (a
+local copy of the run) those sections say so and the rest of the report is
+unchanged.
 
 The report measures; it decides nothing.  The stopping rule lists the questions
 above threshold at the top, and the choices it informs (what to do with
 ``cannot_be_determined``, whether the reasoning-on condition enters phase 2) are
 taken by reading it.
 
-Three ways of turning the answers of sample 0 into a verdict are reported side by
-side.  Only the first is the diagram; the other two are exploratory readings of an
-answer the diagram does not draw, not the aggregators of phase 3:
+Three ways of turning the hard answers into a verdict are reported side by side.
+The hard answer is the one of ``summary.csv``: sample 0 for an entry that answers
+once, the majority of the valid samples for an entry that answers several times.
+Only the first is the diagram; the other two are exploratory readings of an answer
+the diagram does not draw, not the aggregators of phase 3:
 
 ``diagram``      the hard answers, as they are: ``cannot_be_determined``, ``na`` or
                  ``invalid`` leave the traversal incomplete, with no verdict;
@@ -41,7 +44,7 @@ import pandas as pd
 from ..annotations import ANNOTATIONS_FILE, ANNOTATOR, ITEMS_FILE, load_annotations
 from ..client.run import RAW_NAME, read_raw
 from ..labels import label_space, load_vocabulary
-from ..parse import ALL_OPTIONS, INVALID
+from ..parse import ALL_OPTIONS, INVALID, valid_samples
 from ..prompts import CANNOT_BE_DETERMINED as CBD
 from ..prompts import NOT_APPLICABLE as NA
 from ..schemes import Scheme, load_all, traverse
@@ -61,6 +64,9 @@ EXTREME = 0.01
 """A ``p_logprob`` above ``1 - EXTREME`` or below ``EXTREME`` counts as extreme."""
 
 RULES = ("diagram", "logprob", "toward_good")
+
+LAYOUT = {"stage1": '{"scheme": "', "stage2": '{"answer": "'}
+"""How the content of every call begins when the server compacts the JSON."""
 
 
 @cache
@@ -100,6 +106,19 @@ class PilotData:
     def sample0(self) -> pd.DataFrame:
         frame = self.stage2
         return frame[frame["sample_index"] == 0]
+
+    @property
+    def hard(self) -> pd.DataFrame:
+        """Stage-two rows of sample 0, with the hard answer of ``summary.csv`` as ``answer``.
+
+        The logprob columns stay those of sample 0, where the parser reads them.
+        """
+        keys = ["model", "item_id", "scheme", "cq_id"]
+        summary = self.summary[self.summary["stage"] == "stage2"][[*keys, "answer"]]
+        return self.sample0.drop(columns="answer").merge(summary, on=keys, how="left")
+
+    def samples(self, entry: str) -> int:
+        return int(self.manifest["models"][entry]["samples"])
 
 
 def load_pilot(
@@ -152,26 +171,31 @@ def integrity(data: PilotData) -> pd.DataFrame:
 # ------------------------------------------------------------------ stage one
 
 
-def stage_one(data: PilotData) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Accuracy on the gold scheme per entry, and the errors of sample 0.
+def _unanimous(frame: pd.DataFrame, keys: list[str]) -> float:
+    """Share of the questions whose valid samples all gave the same answer."""
+    valid = valid_samples(frame)
+    return (valid.groupby(keys)["answer"].nunique() == 1).mean()
 
-    Sample 0 is scored with the canonical scorer; the majority of the five samples
-    and the share of items where the five agree are reported beside it.
+
+def stage_one(data: PilotData) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Accuracy of the hard answer on the gold scheme per entry, and its errors.
+
+    The hard answer is scored with the canonical scorer.  Beside it, for an entry
+    that answers several times, the share of items where the valid samples agree.
     """
     frame = data.answers[data.answers["stage"] == "stage1"]
+    summary = data.summary[data.summary["stage"] == "stage1"]
     gold = data.items[["item_id", "gold_scheme"]]
     rows, errors = [], []
     for entry in data.entries:
+        hard = summary[summary["model"] == entry][["item_id", "answer"]]
+        score = score_schemes(hard.rename(columns={"answer": "predicted"}), gold)
         own = frame[frame["model"] == entry]
-        zero = own[own["sample_index"] == 0][["item_id", "answer"]]
-        score = score_schemes(zero.rename(columns={"answer": "predicted"}), gold)
-        majority = (own.groupby("item_id")["answer"]
-                    .agg(lambda s: s.value_counts().index[0]).reset_index())
-        score_majority = score_schemes(majority.rename(columns={"answer": "predicted"}), gold)
-        unanimous = (own.groupby("item_id")["answer"].nunique() == 1).mean()
-        rows.append({"entry": entry, "items": score.n_items, "accuracy_sample0": score.accuracy,
-                     "accuracy_majority5": score_majority.accuracy, "unanimous": unanimous})
-        merged = zero.merge(gold, on="item_id")
+        several = data.samples(entry) > 1
+        rows.append({"entry": entry, "samples": data.samples(entry), "items": score.n_items,
+                     "accuracy": score.accuracy,
+                     "unanimous": _unanimous(own, ["item_id"]) if several else math.nan})
+        merged = hard.merge(gold, on="item_id")
         wrong = merged[merged["answer"] != merged["gold_scheme"]]
         for (g, p), n in wrong.groupby(["gold_scheme", "answer"]).size().items():
             errors.append({"entry": entry, "gold": g, "predicted": p, "n": int(n)})
@@ -179,8 +203,8 @@ def stage_one(data: PilotData) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 def stage_one_by_scheme(data: PilotData) -> pd.DataFrame:
-    """Accuracy of sample 0 per gold scheme (rows) and entry (columns)."""
-    frame = data.answers[(data.answers["stage"] == "stage1") & (data.answers["sample_index"] == 0)]
+    """Accuracy of the hard answer per gold scheme (rows) and entry (columns)."""
+    frame = data.summary[data.summary["stage"] == "stage1"]
     merged = frame.merge(data.items[["item_id", "gold_scheme"]], on="item_id")
     merged["correct"] = merged["answer"] == merged["gold_scheme"]
     table = merged.pivot_table(index="gold_scheme", columns="model", values="correct",
@@ -192,7 +216,7 @@ def stage_one_by_scheme(data: PilotData) -> pd.DataFrame:
 
 
 def cq_shares(data: PilotData) -> pd.DataFrame:
-    """Share of every answer per (scheme, CQ, entry), over all five samples."""
+    """Share of every answer per (scheme, CQ, entry), over all the samples."""
     frame = data.stage2
     counts = (frame.groupby(["scheme", "cq_id", "model"])["answer"]
               .value_counts(normalize=True).unstack(fill_value=0.0))
@@ -233,14 +257,14 @@ def overall_shares(data: PilotData) -> pd.DataFrame:
 
 
 def answers_where_another_cannot_determine(data: PilotData) -> pd.DataFrame:
-    """What each entry answered, at sample 0, where another entry answered
+    """What each entry answered, as hard answer, where another entry's hard answer was
     ``cannot_be_determined`` on the same item and question.
 
     One row per (entry answering, entry that could not determine): the number of
     such questions and the share of each answer given there.
     """
-    zero = data.sample0.pivot_table(index=["item_id", "cq_id"], columns="model",
-                                    values="answer", aggfunc="first")
+    zero = data.hard.pivot_table(index=["item_id", "cq_id"], columns="model",
+                                 values="answer", aggfunc="first")
     rows = []
     for other in data.entries:
         where = zero[zero[other] == CBD]
@@ -258,17 +282,19 @@ def answers_where_another_cannot_determine(data: PilotData) -> pd.DataFrame:
 
 
 def stability(data: PilotData) -> pd.DataFrame:
-    """Per entry: sample 0 equal to the majority of the five, and the five unanimous."""
-    frame = data.stage2
-    keys = ["model", "item_id", "cq_id"]
-    majority = frame.groupby(keys)["answer"].agg(lambda s: s.value_counts().index[0])
-    zero = frame[frame["sample_index"] == 0].set_index(keys)["answer"].reindex(majority.index)
-    unanimous = frame.groupby(keys)["answer"].nunique() == 1
-    table = pd.DataFrame({
-        "sample0_is_majority": (zero == majority).groupby(level="model").mean(),
-        "unanimous": unanimous.groupby(level="model").mean(),
-    })
-    return table.reindex(data.entries)
+    """Per entry: samples per question and, with several, the share of unanimous questions.
+
+    Unanimous over the valid samples; the hard answer of such a question is the
+    answer of every sample.
+    """
+    rows = []
+    for entry in data.entries:
+        own = data.stage2[data.stage2["model"] == entry]
+        several = data.samples(entry) > 1
+        rows.append({"entry": entry, "samples": data.samples(entry),
+                     "unanimous": _unanimous(own, ["item_id", "cq_id"]) if several
+                     else math.nan})
+    return pd.DataFrame(rows).set_index("entry")
 
 
 # ------------------------------------------------------------ probabilities
@@ -281,16 +307,18 @@ def _stage2_summary(data: PilotData) -> pd.DataFrame:
 def probability_correlations(data: PilotData, by_cq: bool = False) -> pd.DataFrame:
     """Spearman correlation between ``p_logprob``, ``p_verbal`` and ``p_sample``.
 
-    Only the rows with all three: a hard answer of ``cannot_be_determined`` or
-    ``na`` has no ``p_verbal``.
+    Each pair on the rows that have both: an answer of ``cannot_be_determined`` or
+    ``na`` at sample 0 has no ``p_verbal``, and an entry that answers once has no
+    ``p_sample``.  ``n`` counts the rows with ``p_logprob`` and ``p_verbal``.
     """
-    frame = _stage2_summary(data).dropna(subset=["p_logprob", "p_verbal", "p_sample"])
+    frame = _stage2_summary(data)
     keys = ["model", "scheme", "cq_id"] if by_cq else ["model"]
     rows = []
     for key, group in frame.groupby(keys):
         key = key if isinstance(key, tuple) else (key,)
         corr = group[["p_logprob", "p_verbal", "p_sample"]].corr(method="spearman")
-        rows.append({**dict(zip(keys, key, strict=True)), "n": len(group),
+        n = len(group.dropna(subset=["p_logprob", "p_verbal"]))
+        rows.append({**dict(zip(keys, key, strict=True)), "n": n,
                      "logprob_verbal": corr.loc["p_logprob", "p_verbal"],
                      "logprob_sample": corr.loc["p_logprob", "p_sample"],
                      "verbal_sample": corr.loc["p_verbal", "p_sample"]})
@@ -305,7 +333,8 @@ def probability_shape(data: PilotData) -> pd.DataFrame:
     ``logprob_median_max``: median, over the calls of sample 0, of the highest
     ``p_logprob`` among the admitted answers.  ``verbal_extreme``: share of
     ``p_verbal`` at or beyond 0.95 and 0.05.  ``sample_between``: share of
-    ``p_sample`` strictly between 0 and 1, where the five samples disagree.
+    ``p_sample`` strictly between 0 and 1, where the samples disagree; empty for an
+    entry that answers once.
     """
     summary = _stage2_summary(data)
     zero = data.sample0
@@ -316,12 +345,13 @@ def probability_shape(data: PilotData) -> pd.DataFrame:
         own = summary[summary["model"] == entry]
         lp = own["p_logprob"].dropna()
         verbal = own["p_verbal"].dropna()
+        frequency = own["p_sample"].dropna()
         rows.append({
             "entry": entry,
             "logprob_extreme": ((lp > 1 - EXTREME) | (lp < EXTREME)).mean(),
             "logprob_median_max": top[zero["model"] == entry].median(),
             "verbal_extreme": ((verbal >= 0.95) | (verbal <= 0.05)).mean(),
-            "sample_between": ((own["p_sample"] > 0) & (own["p_sample"] < 1)).mean(),
+            "sample_between": ((frequency > 0) & (frequency < 1)).mean(),
         })
     return pd.DataFrame(rows).set_index("entry")
 
@@ -403,7 +433,7 @@ def _answers_for_rule(scheme: Scheme, rows: pd.DataFrame, rule: str) -> dict[str
 def traversals(data: PilotData, rule: str = "diagram") -> pd.DataFrame:
     """One row per (entry, item): verdict or none, and where an incomplete one stopped."""
     rows = []
-    for (entry, item_id), group in data.sample0.groupby(["model", "item_id"]):
+    for (entry, item_id), group in data.hard.groupby(["model", "item_id"]):
         scheme = data.schemes[group["scheme"].iloc[0]]
         hard = dict(zip(group["cq_id"], group["answer"], strict=True))
         result = traverse(scheme, _answers_for_rule(scheme, group, rule))
@@ -463,7 +493,7 @@ def verdict_scores(data: PilotData) -> pd.DataFrame:
                 "accuracy_binary": _binary([gold_map[i] for i in own["item_id"]],
                                            list(own["verdict"])),
             })
-    item_ids = data.sample0["item_id"].unique()
+    item_ids = data.hard["item_id"].unique()
     baseline = majority_baseline(data, item_ids)
     score = score_fallacies(baseline, gold, "fine")
     rows.append({
@@ -479,7 +509,8 @@ def verdict_scores(data: PilotData) -> pd.DataFrame:
 
 
 def human_cq_agreement(data: PilotData) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Agreement of sample 0 with the per-CQ annotation of the ``Annotazione Dumitru`` sheets.
+    """Agreement of the hard answer with the per-CQ annotation of the ``Annotazione Dumitru``
+    sheets.
 
     Only the items annotated under the same scheme the run used; ``idk`` in the
     annotation is compared with ``cannot_be_determined``.
@@ -493,7 +524,7 @@ def human_cq_agreement(data: PilotData) -> tuple[pd.DataFrame, pd.DataFrame]:
         columns={"field": "cq_id", "value": "human"})
     answers["human"] = (answers["human"].str.strip().str.lower()
                         .replace({"idk": CBD}))
-    model = data.sample0[["item_id", "scheme", "cq_id", "model", "answer"]]
+    model = data.hard[["item_id", "scheme", "cq_id", "model", "answer"]]
     merged = answers.merge(model, on=["item_id", "cq_id"])
     merged = merged[merged["annotated_scheme"] == merged["scheme"]]
     merged["agree"] = merged["human"] == merged["answer"]
@@ -517,15 +548,14 @@ def latency(data: PilotData) -> pd.DataFrame:
     return table.reindex(data.entries)
 
 
-def full_run_calls(data: PilotData) -> dict[str, int]:
-    """Calls per entry of the full run: every item at stage one, every CQ of the items
-    with a gold scheme at stage two (gold condition), as many samples as the pilot."""
-    samples = int(data.manifest["n_samples"])
+def full_run_questions(data: PilotData) -> dict[str, int]:
+    """Questions of the full run: every item at stage one, every CQ of the items with a
+    gold scheme at stage two (gold condition).  Each takes the samples of its entry."""
     per_scheme = {sid: len(s.nodes) for sid, s in data.schemes.items()}
     with_scheme = data.items["gold_scheme"].dropna()
     return {"items": len(data.items),
-            "stage1": len(data.items) * samples,
-            "stage2": int(with_scheme.map(per_scheme).sum()) * samples}
+            "stage1": len(data.items),
+            "stage2": int(with_scheme.map(per_scheme).sum())}
 
 
 def projection(data: PilotData) -> pd.DataFrame:
@@ -535,17 +565,19 @@ def projection(data: PilotData) -> pd.DataFrame:
     minutes per entry and per job.  For comparison, the same estimate is given for
     the pilot itself.
     """
-    calls = full_run_calls(data)
+    questions = full_run_questions(data)
     rows = []
     for entry in data.entries:
         concurrency = int(data.manifest["models"][entry]["max_concurrency"])
+        samples = data.samples(entry)
         own = data.answers[data.answers["model"] == entry]
         mean = own.groupby("stage")["latency_s"].mean()
         rows.append({
-            "entry": entry, "concurrency": concurrency,
+            "entry": entry, "concurrency": concurrency, "samples": samples,
             "pilot_hours_estimated": own["latency_s"].sum() / concurrency / 3600,
-            "full_run_hours": (calls["stage1"] * mean.get("stage1", 0.0)
-                               + calls["stage2"] * mean.get("stage2", 0.0)) / concurrency / 3600,
+            "full_run_hours": samples * (questions["stage1"] * mean.get("stage1", 0.0)
+                                         + questions["stage2"] * mean.get("stage2", 0.0))
+            / concurrency / 3600,
         })
     return pd.DataFrame(rows).set_index("entry")
 
@@ -557,14 +589,19 @@ def _reasoning_text(raw_response: Mapping[str, Any]) -> str:
     return message.get("reasoning_content") or message.get("reasoning") or ""
 
 
-def token_counts(raw_path: Path | None) -> pd.DataFrame | None:
-    """Mean tokens per call and entry from ``raw.jsonl``, one line at a time.
+TOKEN_COLUMNS = ["prompt_tokens", "completion_tokens", "reasoning_tokens", "answer_tokens",
+                 "reasoning_chars"]
+
+
+def raw_records(raw_path: Path | None) -> pd.DataFrame | None:
+    """One row per answered call of ``raw.jsonl``, read one line at a time.
 
     ``reasoning_tokens`` comes from ``usage``; ``reasoning_chars`` is the length
     of the reasoning field of the message, the measure that holds where vLLM
     leaves ``usage.reasoning_tokens`` at zero.  ``answer_tokens`` is the completion
-    less the reasoning tokens.  A line with ``error`` set is no answer and is left
-    out.  None when there is no ``raw.jsonl``.
+    less the reasoning tokens.  ``compact``: the content, after the reasoning
+    parser, begins with the layout of :data:`LAYOUT` for its stage.  A line with
+    ``error`` set is no answer and is left out.  None when there is no ``raw.jsonl``.
     """
     if raw_path is None:
         return None
@@ -577,15 +614,49 @@ def token_counts(raw_path: Path | None) -> pd.DataFrame | None:
         details = usage.get("completion_tokens_details") or {}
         reasoning = details.get("reasoning_tokens") or usage.get("reasoning_tokens") or 0
         completion = usage.get("completion_tokens") or 0
+        layout = LAYOUT.get(str(row.get("stage")), "")
         records.append({
             "model": row.get("model"),
+            "stage": row.get("stage"),
             "prompt_tokens": usage.get("prompt_tokens") or 0,
             "completion_tokens": completion,
             "reasoning_tokens": reasoning,
             "answer_tokens": completion - reasoning,
             "reasoning_chars": len(_reasoning_text(response)),
+            "finish_reason": response.get("finish_reason"),
+            "compact": bool(layout) and (response.get("content") or "").startswith(layout),
         })
-    return pd.DataFrame(records).groupby("model").mean()
+    return pd.DataFrame(records)
+
+
+def token_counts(raw_path: Path | None) -> pd.DataFrame | None:
+    """Mean tokens per call and entry, from :func:`raw_records`."""
+    records = raw_records(raw_path)
+    return None if records is None else _token_means(records)
+
+
+def _token_means(records: pd.DataFrame) -> pd.DataFrame:
+    return records.groupby("model")[TOKEN_COLUMNS].mean()
+
+
+def output_tokens(records: pd.DataFrame) -> pd.DataFrame:
+    """Per entry: distribution of the completion tokens, and the calls cut off by the limit."""
+    grouped = records.groupby("model")
+    tokens = grouped["completion_tokens"]
+    return pd.DataFrame({
+        "calls": grouped.size(),
+        "median": tokens.median(),
+        "p95": tokens.quantile(0.95),
+        "p99": tokens.quantile(0.99),
+        "max": tokens.max(),
+        "length": grouped["finish_reason"].apply(lambda f: int((f == "length").sum())),
+    })
+
+
+def layout_share(records: pd.DataFrame) -> pd.DataFrame:
+    """Share of the calls whose content begins with the compact layout, per entry and stage."""
+    return records.pivot_table(index="model", columns="stage", values="compact",
+                               aggfunc="mean")
 
 
 # -------------------------------------------------------- reasoning on/off
@@ -602,8 +673,8 @@ def reasoning_comparison(data: PilotData, tokens: pd.DataFrame | None = None) ->
     shares = overall_shares(data)
     lat = data.answers.groupby("model")["latency_s"].mean()
     hours = projection(data)["full_run_hours"]
-    zero = data.sample0.pivot_table(index=["item_id", "cq_id"], columns="model",
-                                    values="answer", aggfunc="first")
+    zero = data.hard.pivot_table(index=["item_id", "cq_id"], columns="model",
+                                 values="answer", aggfunc="first")
     decided = set(ALL_OPTIONS) - set(OUTSIDE_ARCS)
     rows = []
     for off, on in reasoning_pairs(data.entries):
@@ -612,10 +683,10 @@ def reasoning_comparison(data: PilotData, tokens: pd.DataFrame | None = None) ->
             tokens.loc[on, "completion_tokens"] / tokens.loc[off, "completion_tokens"])}
         rows.append({
             "model": off,
-            "agreement_sample0": (zero[off] == zero[on]).mean(),
+            "agreement_hard": (zero[off] == zero[on]).mean(),
             "agreement_both_decided": (zero.loc[both, off] == zero.loc[both, on]).mean(),
-            "stage1_off": stage1.loc[off, "accuracy_sample0"],
-            "stage1_on": stage1.loc[on, "accuracy_sample0"],
+            "stage1_off": stage1.loc[off, "accuracy"],
+            "stage1_on": stage1.loc[on, "accuracy"],
             "cbd_off": shares.loc[off, CBD], "cbd_on": shares.loc[on, CBD],
             "logprob_extreme_off": shape.loc[off, "logprob_extreme"],
             "logprob_extreme_on": shape.loc[on, "logprob_extreme"],
@@ -626,9 +697,9 @@ def reasoning_comparison(data: PilotData, tokens: pd.DataFrame | None = None) ->
 
 
 def agreement_by_cq(data: PilotData) -> pd.DataFrame:
-    """Agreement of sample 0 between the two conditions of a model, per CQ."""
-    zero = data.sample0.pivot_table(index=["scheme", "cq_id", "item_id"], columns="model",
-                                    values="answer", aggfunc="first")
+    """Agreement of the hard answers of the two conditions of a model, per CQ."""
+    zero = data.hard.pivot_table(index=["scheme", "cq_id", "item_id"], columns="model",
+                                 values="answer", aggfunc="first")
     table = pd.DataFrame({off: (zero[off] == zero[on]).groupby(level=["scheme", "cq_id"]).mean()
                           for off, on in reasoning_pairs(data.entries)})
     return table
@@ -640,12 +711,14 @@ def agreement_by_cq(data: PilotData) -> pd.DataFrame:
 def parser_checks(data: PilotData) -> pd.DataFrame:
     """Two checks on what the minimal parser wrote.
 
-    ``hard_not_argmax``: rows of sample 0 at stage two whose hard answer is not the
-    answer with the highest ``p_logprob`` (at temperature 0 they should coincide).
+    ``hard_not_argmax``: rows of sample 0 at stage two whose answer is not the
+    answer with the highest ``p_logprob`` (at temperature 0 they should coincide; at
+    a higher temperature the sample can take another answer).
     ``stage1_p_sample_not_modal``: rows of stage one in ``summary.csv`` whose
-    ``p_sample`` differs from the frequency of the hard answer over the five
+    ``p_sample`` differs from the frequency of the hard answer over the valid
     samples; ``summarise`` orients it on the first admitted answer, which at stage
-    one is the first scheme id, so the number has no meaning there.
+    one is the first scheme id, so the number has no meaning there.  An entry that
+    answers once has no ``p_sample`` and no such row.
     """
     zero = data.sample0
     zero = zero[zero["answer"] != INVALID]
@@ -655,15 +728,17 @@ def parser_checks(data: PilotData) -> pd.DataFrame:
     argmax = masses.idxmax(axis=1).str.removeprefix("p_logprob_")
     wrong = has_mass & (argmax != zero["answer"])
 
-    stage1 = data.answers[data.answers["stage"] == "stage1"]
+    stage1 = valid_samples(data.answers[data.answers["stage"] == "stage1"])
     keys = ["model", "item_id"]
-    hard = stage1[stage1["sample_index"] == 0].set_index(keys)["answer"].rename("hard")
+    summary1 = data.summary[data.summary["stage"] == "stage1"]
+    hard = summary1.set_index(keys)["answer"].rename("hard")
     samples = stage1.join(hard, on=keys)
     modal = ((samples["answer"] == samples["hard"])
              .groupby([samples["model"], samples["item_id"]]).mean()
              .rename("frequency").reset_index())
-    summary1 = data.summary[data.summary["stage"] == "stage1"].merge(modal, on=keys)
-    off = (summary1["p_sample"] - summary1["frequency"]).abs() > 1e-9
+    summary1 = summary1.merge(modal, on=keys, how="left")
+    off = summary1["p_sample"].notna() & (
+        (summary1["p_sample"] - summary1["frequency"]).abs() > 1e-9)
     rows = []
     for entry in data.entries:
         rows.append({
@@ -718,9 +793,10 @@ def render(data: PilotData) -> str:
     shares = cq_shares(data)
     flagged = stopping_rule(shares)
     s1, s1_errors = stage_one(data)
-    tokens = token_counts(data.raw_path)
-    calls = full_run_calls(data)
-    items = data.sample0["item_id"].nunique()
+    records = raw_records(data.raw_path)
+    tokens = None if records is None else _token_means(records)
+    questions = full_run_questions(data)
+    items = data.hard["item_id"].nunique()
     gold = data.items.set_index("item_id").loc[data.answers["item_id"].unique()]
     out: list[str] = []
     add = out.append
@@ -731,12 +807,14 @@ def render(data: PilotData) -> str:
         "`schemes/`. Spec 04, section 4.\n")
     add(f"* Items: {len(gold)} (seed {config['items']['seed']}, stratified by gold scheme, "
         f"at least {config['items']['min_per_scheme']} per scheme); scheme condition "
-        f"`{config['scheme_condition']}`; {config['samples']} samples per question "
-        f"(sample 0 at temperature {config['generation']['temperature_sample0']}, the others "
-        f"at {config['generation']['temperature_rest']}).")
-    add("* Entries: " + ", ".join(
-        f"`{e}` ({data.manifest['models'][e]['model_id']}, max_tokens "
-        f"{data.manifest['models'][e]['max_tokens']})" for e in data.entries) + ".")
+        f"`{config['scheme_condition']}`.")
+    add("* Entries, with their samples per question and how each is drawn: " + ", ".join(
+        f"`{e}` ({m['model_id']}, {m['samples']} at temperature {m['temperature']}, top_p "
+        f"{m['top_p']}, top_k {m['top_k']}, max_tokens {m['max_tokens']})"
+        for e, m in ((e, data.manifest["models"][e]) for e in data.entries)) + ".")
+    add("* Hard answer: sample 0 for an entry with one sample; for an entry with several, the "
+        "majority of the valid samples (parsed, not cut off), a tie going to the higher mean "
+        "confidence, then to the lower sample index.")
     add(f"* Calls: {data.manifest['calls_executed']} executed of "
         f"{data.manifest['calls_planned']} planned, {data.manifest['calls_failed']} failed, "
         f"{data.manifest['calls_from_cache']} from the cache. Started "
@@ -749,7 +827,7 @@ def render(data: PilotData) -> str:
     add("## 1. Stopping rule\n")
     add(f"Questions with more than {CBD_THRESHOLD:.0%} `{CBD}`, more than "
         f"{NA_THRESHOLD:.0%} `na` or more than {INVALID_THRESHOLD:.0%} `invalid` on an "
-        f"entry, over all five samples: **{len(flagged)} (question, entry) pairs, "
+        f"entry, over all its samples: **{len(flagged)} (question, entry) pairs, "
         f"{flagged.reset_index()[['scheme', 'cq_id']].drop_duplicates().shape[0]} distinct "
         f"questions out of {len(shares.reset_index()[['scheme', 'cq_id']].drop_duplicates())}**.\n")
     if len(flagged):
@@ -759,8 +837,8 @@ def render(data: PilotData) -> str:
     add("Share of each answer outside the arcs over all stage-two calls:\n")
     add(markdown_table(overall_shares(data), {CBD: "pct1", NA: "pct1", INVALID: "pct1"}) + "\n")
 
-    add(f"What each entry answered at sample 0 where another entry answered `{CBD}` on the "
-        "same item and question:\n")
+    add(f"Hard answer of each entry where the hard answer of another entry was `{CBD}` on "
+        "the same item and question:\n")
     across = answers_where_another_cannot_determine(data)
     add(markdown_table(across, {**{c: "pct" for c in across.columns}, "questions": "int"})
         + "\n")
@@ -770,24 +848,34 @@ def render(data: PilotData) -> str:
     add("`truncated` counts the answers with `finish_reason` equal to `length`; each is also "
         "`invalid`. `logprob_partial`: an admitted answer is missing from the top_logprobs "
         "at the answer token.\n")
+    if records is None:
+        add(f"Layout of the JSON: no `{RAW_NAME}` in the run folder, not measured in this "
+            "copy of the report.\n")
+    else:
+        add("Share of the calls whose content (after the reasoning parser) begins with "
+            '`{"scheme": "` at stage one and `{"answer": "` at stage two; expected 100%:\n')
+        add(markdown_table(layout_share(records).reindex(data.entries), {
+            stage: "pct1" for stage in LAYOUT}) + "\n")
 
     add("## 3. Stage one\n")
-    add(markdown_table(s1, {"accuracy_sample0": "f2", "accuracy_majority5": "f2",
-                            "unanimous": "pct"}) + "\n")
-    add("Accuracy of sample 0 per gold scheme:\n")
+    add(markdown_table(s1, {"samples": "int", "accuracy": "f2", "unanimous": "pct"}) + "\n")
+    add("`accuracy`: of the hard answer. `unanimous`: share of items whose valid samples all "
+        "agree, for an entry with several.\n")
+    add("Accuracy of the hard answer per gold scheme:\n")
     add(markdown_table(stage_one_by_scheme(data), {e: "f2" for e in data.entries}) + "\n")
     if len(s1_errors):
-        add("Errors of sample 0 (reduced confusion matrix):\n")
+        add("Errors of the hard answer (reduced confusion matrix):\n")
         pivot = s1_errors.pivot_table(index=["gold", "predicted"], columns="entry",
                                       values="n", aggfunc="sum", fill_value=0)
         add(markdown_table(pivot.reindex(columns=data.entries, fill_value=0),
                            {e: "int" for e in data.entries}) + "\n")
 
     add("## 4. Samples and probabilities\n")
-    add("Stability of the stage-two answers over the five samples:\n")
-    add(markdown_table(stability(data), {"sample0_is_majority": "pct1", "unanimous": "pct1"})
-        + "\n")
-    add("Spearman correlation between the three probabilities of a yes (rows with all three):\n")
+    add("Stability of the stage-two answers over the samples (`unanimous`: share of the "
+        "questions whose valid samples all agree):\n")
+    add(markdown_table(stability(data), {"samples": "int", "unanimous": "pct1"}) + "\n")
+    add("Spearman correlation between the three probabilities of a yes, each pair on the rows "
+        "that have both (`n`: rows with `p_logprob` and `p_verbal`):\n")
     add(markdown_table(probability_correlations(data),
                        {"n": "int", "logprob_verbal": "f2", "logprob_sample": "f2",
                         "verbal_sample": "f2"}) + "\n")
@@ -800,7 +888,7 @@ def render(data: PilotData) -> str:
                         "verbal_extreme": "pct1", "sample_between": "pct1"}) + "\n")
 
     add("## 5. Verdicts through the diagrams\n")
-    add(f"Sample 0, {items} items, scored with the canonical scorer (fine space, "
+    add(f"Hard answers, {items} items, scored with the canonical scorer (fine space, "
         f"{len(label_space('fine'))} terminals; no verdict counts as wrong). `binary` is "
         "fallacy against good "
         "argumentation. Rules: `diagram` uses the hard answers as they are, so "
@@ -821,7 +909,7 @@ def render(data: PilotData) -> str:
 
     overall, by_cq = human_cq_agreement(data)
     add("## 6. Agreement with the per-CQ human annotation\n")
-    add("Sample 0 against the `Annotazione Dumitru` sheets, on the pilot items annotated "
+    add("Hard answers against the `Annotazione Dumitru` sheets, on the pilot items annotated "
         "under the same scheme (`idk` compared with `cannot_be_determined`).\n")
     add(markdown_table(overall, {"items": "int", "answers": "int", "human_idk": "int",
                                  "agreement": "pct"}) + "\n")
@@ -840,36 +928,46 @@ def render(data: PilotData) -> str:
             "message, which holds where `usage` reports no reasoning tokens):\n")
         add(markdown_table(tokens.reindex(data.entries), {c: "f1" for c in tokens.columns})
             + "\n")
-    add(f"Projection of the full run: {calls['items']} items at stage one, the CQs of the "
-        f"items with a gold scheme at stage two, gold condition, "
-        f"{data.manifest['n_samples']} samples: {calls['stage1']} + {calls['stage2']} calls "
-        "per entry. Hours estimated as calls x mean latency / concurrency, without loading "
-        "and smoke tests; `pilot_hours_estimated` applies the same estimate to the pilot.\n")
-    add(markdown_table(projection(data), {"concurrency": "int", "pilot_hours_estimated": "f1",
+        add("Output tokens per call (completion, reasoning included): median, 95th and 99th "
+            "percentile, maximum, and the calls cut off by `max_tokens` (`finish_reason` "
+            "`length`):\n")
+        out_tokens = output_tokens(records).reindex(data.entries)
+        add(markdown_table(out_tokens, {c: "int" for c in out_tokens.columns}) + "\n")
+    add(f"Projection of the full run: {questions['items']} items at stage one, the CQs of "
+        f"the items with a gold scheme at stage two, gold condition: {questions['stage1']} + "
+        f"{questions['stage2']} questions, times the samples of the entry. Hours estimated as "
+        "calls x mean latency / concurrency, without loading and smoke tests; "
+        "`pilot_hours_estimated` applies the same estimate to the pilot.\n")
+    add(markdown_table(projection(data), {"concurrency": "int", "samples": "int",
+                                          "pilot_hours_estimated": "f1",
                                           "full_run_hours": "f1"}) + "\n")
 
     add("## 8. Reasoning off against reasoning on\n")
-    add(markdown_table(reasoning_comparison(data, tokens),
-                       {"agreement_sample0": "pct", "agreement_both_decided": "pct",
-                        "stage1_off": "f2", "stage1_on": "f2", "cbd_off": "pct",
-                        "cbd_on": "pct", "logprob_extreme_off": "pct",
-                        "logprob_extreme_on": "pct", "latency_ratio": "f1",
-                        "completion_tokens_ratio": "f1",
-                        "full_run_hours_off": "f1", "full_run_hours_on": "f1"}) + "\n")
-    add("`agreement_both_decided`: only the questions where both conditions answered on an "
-        "arc of the diagram.\n")
+    if not reasoning_pairs(data.entries):
+        add("No model of this run is in both reasoning conditions.\n")
+    else:
+        add(markdown_table(reasoning_comparison(data, tokens),
+                           {"agreement_hard": "pct", "agreement_both_decided": "pct",
+                            "stage1_off": "f2", "stage1_on": "f2", "cbd_off": "pct",
+                            "cbd_on": "pct", "logprob_extreme_off": "pct",
+                            "logprob_extreme_on": "pct", "latency_ratio": "f1",
+                            "completion_tokens_ratio": "f1",
+                            "full_run_hours_off": "f1", "full_run_hours_on": "f1"}) + "\n")
+        add("`agreement_both_decided`: only the questions where both conditions answered on "
+            "an arc of the diagram.\n")
 
     add("## 9. Parser checks\n")
     checks = parser_checks(data)
     add(markdown_table(checks, {c: "int" for c in checks.columns}) + "\n")
-    add("`hard_not_argmax`: stage-two rows of sample 0 whose hard answer is not the answer "
-        "with the highest `p_logprob`. `stage1_p_sample_not_modal`: stage-one rows of "
-        "`summary.csv` whose `p_sample` is not the frequency of the hard answer; the minimal "
+    add("`hard_not_argmax`: stage-two rows of sample 0 whose answer is not the answer "
+        "with the highest `p_logprob` (meaningful at temperature 0). "
+        "`stage1_p_sample_not_modal`: stage-one rows of `summary.csv` whose `p_sample` is "
+        "not the frequency of the hard answer over the valid samples; the minimal "
         "parser orients `p_sample` and `p_verbal` on the first admitted answer, which at "
         "stage one is the first scheme id, so at stage one both columns have no meaning.\n")
 
     add("## Appendix A. Answers per question\n")
-    add("Share of each answer over all five samples; `n` is the number of calls.\n")
+    add("Share of each answer over all the samples; `n` is the number of calls.\n")
     for entry in data.entries:
         own = shares.xs(entry, level="model")
         own = own.loc[:, [c for c in ANSWERS if own[c].any()] + ["n"]]
@@ -903,6 +1001,7 @@ __all__ = [
     "probability_correlations", "probability_shape",
     "traversals", "toward_good_arc", "incomplete_traversals", "majority_baseline",
     "verdict_scores", "human_cq_agreement", "latency", "projection", "token_counts",
+    "raw_records", "output_tokens", "layout_share", "full_run_questions",
     "reasoning_comparison", "agreement_by_cq", "parser_checks", "reasoning_pairs",
     "markdown_table",
 ]

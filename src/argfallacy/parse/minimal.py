@@ -10,6 +10,10 @@ Changing the parser costs a re-parse, never a re-run — that separation is the
 reason the two live in different packages.
 
 This one stops at what the pilot report needs; the full parser comes later.
+
+How many samples an entry took decides what its hard answer is.  With one
+sample, the hard answer is that sample.  With more, it is the majority over the
+valid samples, and ``p_sample`` the frequency of a yes among them.
 """
 
 from __future__ import annotations
@@ -226,6 +230,32 @@ def parse_answers(
     )
 
 
+def valid_samples(group: pd.DataFrame) -> pd.DataFrame:
+    """The samples that count: parsed, and not cut off by the token limit."""
+    return group[group["parse_ok"].astype(bool) & (group["finish_reason"] != "length")]
+
+
+def majority(group: pd.DataFrame) -> str:
+    """The hard answer of a question asked several times.
+
+    The most frequent answer among the valid samples.  A tie goes to the answer
+    with the highest mean confidence over the samples that gave it, and a tie
+    that remains to the answer given at the lowest sample index.  No valid
+    sample: ``invalid``.
+    """
+    valid = valid_samples(group)
+    if valid.empty:
+        return INVALID
+    ranked = valid.groupby("answer").agg(
+        n=("answer", "size"),
+        confidence=("confidence", lambda c: c.astype(float).mean()),
+        first=("sample_index", "min"),
+    )
+    ranked["confidence"] = ranked["confidence"].fillna(-math.inf)
+    ranked = ranked.sort_values(["n", "confidence", "first"], ascending=[False, False, True])
+    return str(ranked.index[0])
+
+
 def summarise(
     answers: pd.DataFrame, schemes: Mapping[str, Any] | None = None
 ) -> pd.DataFrame:
@@ -235,6 +265,13 @@ def summarise(
     answer — ``yes``, or ``positive`` for ad hominem CQ1 — so the three numbers
     always point the same way.  ``p_verbal`` is oriented to match: a confident
     ``no`` is a low probability of yes, not a high one.
+
+    An entry that answered once, sample 0 alone, has its hard answer, ``p_logprob``
+    and ``p_verbal`` from that sample, and no ``p_sample``.  An entry that answered
+    several times has the majority of :func:`majority` as its hard answer and
+    ``p_sample`` over the valid samples; ``p_logprob`` and ``p_verbal`` still come
+    from sample 0, ``p_verbal`` oriented on the answer of sample 0, which is what
+    its confidence is about.
 
     ``na`` gets no ``p_verbal``, the same as ``cannot_be_determined``: reading it
     as a low probability of yes would decide, silently, that na means no.  It
@@ -261,11 +298,16 @@ def summarise(
         group = group.sort_values("sample_index")
         zero = group[group["sample_index"] == 0]
         zero_row = zero.iloc[0] if len(zero) else None
-        hard = zero_row["answer"] if zero_row is not None else INVALID
+        several = bool((group["sample_index"] > 0).any())
 
-        ok = group[group["parse_ok"]]
-        n_ok = len(ok)
-        p_sample = (ok["answer"] == yes_like).mean() if n_ok else None
+        valid = valid_samples(group)
+        n_ok = len(valid)
+        if several:
+            hard = majority(group)
+            p_sample = (valid["answer"] == yes_like).mean() if n_ok else None
+        else:
+            hard = zero_row["answer"] if zero_row is not None else INVALID
+            p_sample = None
 
         p_logprob = None
         if zero_row is not None:
@@ -274,11 +316,13 @@ def summarise(
 
         p_verbal = None
         idk = hard == CANNOT_BE_DETERMINED
-        if zero_row is not None and zero_row["parse_ok"] and not idk and hard != NOT_APPLICABLE:
+        stated = zero_row["answer"] if zero_row is not None else INVALID
+        if (zero_row is not None and zero_row["parse_ok"]
+                and stated not in (CANNOT_BE_DETERMINED, NOT_APPLICABLE)):
             confidence = zero_row["confidence"]
             if confidence is not None and not pd.isna(confidence):
                 fraction = float(confidence) / 100.0
-                p_verbal = fraction if hard == yes_like else 1.0 - fraction
+                p_verbal = fraction if stated == yes_like else 1.0 - fraction
 
         records.append({
             "item_id": item_id, "stage": stage, "scheme_condition": condition,

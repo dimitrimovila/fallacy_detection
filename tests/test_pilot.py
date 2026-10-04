@@ -78,14 +78,14 @@ def data(schemes) -> pilot.PilotData:
     })
     manifest = {
         "config": {"models": ENTRIES, "items": {"seed": 1, "min_per_scheme": 1},
-                   "scheme_condition": "gold", "samples": 5,
-                   "generation": {"temperature_sample0": 0.0, "temperature_rest": 0.7}},
-        "models": {e: {"model_id": "x", "max_tokens": 512, "max_concurrency": 1}
+                   "scheme_condition": "gold", "generation": {"max_tokens": 512}},
+        "models": {e: {"model_id": "x", "max_tokens": 512, "max_concurrency": 1, "samples": 5,
+                       "temperature": 1.0, "top_p": 1.0, "top_k": 0}
                    for e in ENTRIES},
         "calls_planned": len(answers), "calls_executed": len(answers), "calls_failed": 0,
         "calls_from_cache": 0, "started_at": "2026-09-27T00:00:00",
         "finished_at": "2026-09-27T01:00:00", "prompt_versions": ["stage2_v1"],
-        "schemes_version": {"tag": "1.1"}, "n_samples": 5,
+        "schemes_version": {"tag": "1.1"},
     }
     annotations = pd.DataFrame(columns=["item_id", "annotator", "sheet", "row", "field",
                                         "value", "raw"])
@@ -113,6 +113,17 @@ def test_the_three_rules_on_an_answer_outside_the_arcs(data):
     # logprob: p(yes) 0.3 at CQ1, so the arc no, to irrelevant_authority
     assert by_rule["logprob"].loc[("m", "b"), "verdict"] == "irrelevant_authority"
     assert by_rule["diagram"].loc[("m", "a"), "verdict"] == "good_argumentation"
+
+
+def test_the_verdicts_follow_the_majority_not_sample_zero(data, schemes):
+    """Sample 0 of item b says cannot_be_determined on CQ1, the other four say yes."""
+    answers = data.answers
+    four = ((answers["model"] == "m") & (answers["item_id"] == "b") & (answers["cq_id"] == "CQ1")
+            & (answers["sample_index"] > 0))
+    answers.loc[four, "answer"] = "yes"
+    data.summary = summarise(answers, schemes)
+    diagram = pilot.traversals(data, "diagram").set_index(["entry", "item_id"])
+    assert diagram.loc[("m", "b"), "verdict"] == "good_argumentation"
 
 
 def test_toward_good_has_no_arc_where_no_path_reaches_good_argumentation(schemes):
@@ -146,6 +157,27 @@ def test_the_tokens_of_a_reasoning_field_are_counted_when_usage_says_zero(tmp_pa
     tokens = pilot.token_counts(path)
     assert tokens.loc["k", "reasoning_tokens"] == 0 and tokens.loc["k", "reasoning_chars"] == 4
     assert tokens.loc["q", "answer_tokens"] == 20 and tokens.loc["q", "prompt_tokens"] == 500
+
+
+def test_the_output_tokens_and_the_layout_of_the_json(tmp_path):
+    def line(completion, finish, content, stage="stage2"):
+        return {"model": "g", "stage": stage, "raw_response": {
+            "usage": {"prompt_tokens": 10, "completion_tokens": completion},
+            "finish_reason": finish, "content": content}}
+
+    lines = [line(100, "stop", '{"answer": "yes", "confidence": 9}'),
+             line(300, "stop", '{\n  "answer": "no"}'),
+             line(32768, "length", "We need to"),
+             line(50, "stop", '{"scheme": "analogy"}', stage="stage1")]
+    path = tmp_path / "raw.jsonl"
+    path.write_text("\n".join(json.dumps(x) for x in lines) + "\n", encoding="utf-8")
+    records = pilot.raw_records(path)
+
+    out = pilot.output_tokens(records).loc["g"]
+    assert out["calls"] == 4 and out["median"] == 200 and out["max"] == 32768
+    assert out["length"] == 1
+    share = pilot.layout_share(records).loc["g"]
+    assert share["stage2"] == pytest.approx(1 / 3) and share["stage1"] == 1.0
 
 
 def test_the_report_puts_the_flagged_questions_first(data):
