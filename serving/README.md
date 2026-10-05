@@ -81,8 +81,9 @@ interactive session.
    (`_think`), served by two separate launches of the same model. The entry with reasoning off is
    launched without a reasoning parser: with the parser on and no reasoning, vLLM from
    0.19.0 onwards can silently skip the JSON schema constraint. The `_think` entry is
-   launched with the reasoning parser of the model and with `--max-model-len 16384`,
-   because it has `max_tokens` 8192; without a parser, structured output constrains the
+   launched with the reasoning parser of the model and with `--max-model-len 34816`,
+   because it has `max_tokens` 32768 (the first pilot, tag `pilot1`, ran it with 8192 and
+   16384); without a parser, structured output constrains the
    JSON from the first token and the model does not reason. A call sent to the server of
    the other entry would be accepted, since the `model_id` is the same, and answered in
    the wrong condition: that is why the smoke test comes before every run of an entry.
@@ -93,7 +94,7 @@ interactive session.
    schema to the `final` channel of the harmony format, leaving the `analysis` channel
    free for the reasoning, only when a parser is configured; without it the schema
    constrains the JSON from the first token and the model does not reason.
-   Every entry of the runs (all but the `_think` ones) is also launched with
+   Every entry of the runs is also launched with
    `--generation-config vllm`, so that the `generation_config.json` of the model does not
    replace the sampling of the request with its own, and with
    `--structured-outputs-config '{"backend": "xgrammar", "disable_any_whitespace": true}'`,
@@ -122,8 +123,9 @@ interactive session.
    Then it sends the same question three times at temperature 1 and checks that every
    content (after the reasoning parser) begins with `{"answer": "`: a stop for an entry
    with one sample, a warning with the prefixes seen for an entry with several.
-   The exit code is zero only if the entry can be run: a prompt not read, no reasoning or
-   a cut-off answer on an entry that reasons, a JSON that does not begin with
+   The exit code is zero only if the entry can be run: a prompt not read, no reasoning
+   (a warning only on an entry with `reasoning_optional: true`) or a cut-off answer on an
+   entry that reasons, a JSON that does not begin with
    `{"answer": "` on an entry with one sample, and no logprobs on an entry with `supports_logprobs: true`, give
    another code, and a job stops on it.
 5. **Count the calls** before making them:
@@ -233,12 +235,18 @@ sbatch serving/slurm/pilot.sbatch configs/pilot2.yaml $RUN_ID qwen3_8_27b gemma4
 squeue -u $USER                                        # the job and its node
 ```
 
-The second pilot is one run made in two jobs. The first runs the two entries with
+The second pilot is one run made in three jobs. The first runs the two entries with
 reasoning off; then `argfallacy parse $RUN_ID` and `argfallacy pilot report $RUN_ID`, and
 only if the report holds, the second job adds the two entries that reason to the same run:
 
 ```
 sbatch serving/slurm/pilot.sbatch configs/pilot2.yaml $RUN_ID gpt_oss_20b k2_horizon_32b
+```
+
+A third job adds gpt oss 120b to the same run:
+
+```
+sbatch serving/slurm/pilot.sbatch configs/pilot2.yaml $RUN_ID gpt_oss_120b
 ```
 
 The job has ten hours. One that runs out of time is resubmitted with the same arguments,

@@ -24,7 +24,9 @@
 #             each entry gives the flags. For gpt oss it does not switch off: the effort
 #             takes only low, medium or high, and it is kept at low, so its answers are
 #             not produced under the same conditions as those of the other models. For
-#             K2 Horizon it does not switch off, and the level is still to be chosen.
+#             K2 Horizon it does not switch off and its depth is chosen per request:
+#             phase 2 runs `k2_horizon_32b_high`, at high with one sample, while
+#             `k2_horizon_32b`, at low with five samples, is the entry of the second pilot.
 # `max_tokens` optional: applies instead of the one in the configuration. The `_think`
 #             entries, K2 Horizon and gpt oss need it: they write their reasoning before
 #             the JSON, and with the 512 of the configuration they would be cut off. The
@@ -52,6 +54,8 @@
 # `enabled`   a disabled model enters no plan.
 # `supports_logprobs`  the server returns the token logprobs.
 # `is_reasoning`       the model can reason before answering.
+# `reasoning_optional` the entry reasons but may answer without reasoning: in the smoke test
+#                      no reasoning is a warning, not a stop. A cut-off answer still stops.
 # `max_concurrency`    the maximum number of simultaneous calls.
 #
 # revision, tier, reasoning, max_tokens, the sampling parameters and serve_args go into the
@@ -99,14 +103,30 @@ models:
     supports_logprobs: true
     is_reasoning: true
     reasoning: {chat_template_kwargs: {enable_thinking: true}}
+    reasoning_optional: false
     max_concurrency: 8
-    max_tokens: 8192
-    serve_args: [--reasoning-parser, qwen3, --max-model-len, "16384"]
+    max_tokens: 32768
+    samples: 1
+    temperature: 1.0
+    top_p: 0.95
+    top_k: 20
+    serve_args: [--reasoning-parser, qwen3, --max-model-len, "34816", --generation-config, vllm,
+                 --structured-outputs-config,
+                 '{"backend": "xgrammar", "disable_any_whitespace": true}']
     notes: >-
       Same weights and same revision as `qwen3_8_27b`: only the reasoning changes, switched
       on at the template's default level. Separate server: without the reasoning parser,
       structured output would constrain the JSON from the first token and the model would
-      not reason; the context holds the prompt and the 8192 tokens of `max_tokens`.
+      not reason. One sample at temperature 1, top_p 0.95 and top_k 20, the values of the
+      `generation_config.json` of the model, sent with every request since the server
+      ignores that file (`--generation-config vllm`). `max_tokens` 32768 and a context of
+      34816, the longest prompt of the v2 templates (1269 tokens with this tokenizer and
+      the reasoning on, stage one) plus 32768, rounded up to a multiple of 1024. Trace of
+      the ablation of the reasoning (`configs/ablation_reasoning.yaml`), not part of phase
+      2: reasoning on did not agree with the per-CQ annotation significantly more than
+      reasoning off, which phase 2 keeps. The first pilot,
+      run with `max_tokens` 8192 and a context of 16384, is reproducible from the tag
+      `pilot1`.
 
   gemma4_31b:
     tier: 1
@@ -144,14 +164,30 @@ models:
     supports_logprobs: true
     is_reasoning: true
     reasoning: {chat_template_kwargs: {enable_thinking: true}}
+    reasoning_optional: false
     max_concurrency: 8
-    max_tokens: 8192
-    serve_args: [--reasoning-parser, gemma4, --max-model-len, "16384"]
+    max_tokens: 32768
+    samples: 1
+    temperature: 1.0
+    top_p: 0.95
+    top_k: 64
+    serve_args: [--reasoning-parser, gemma4, --max-model-len, "34816", --generation-config, vllm,
+                 --structured-outputs-config,
+                 '{"backend": "xgrammar", "disable_any_whitespace": true}']
     notes: >-
       Same weights and same revision as `gemma4_31b`: only the reasoning changes, switched
       on at the template's default level. Separate server: without the reasoning parser,
       structured output would constrain the JSON from the first token and the model would
-      not reason; the context holds the prompt and the 8192 tokens of `max_tokens`.
+      not reason. One sample at temperature 1, top_p 0.95 and top_k 64, the values of the
+      `generation_config.json` of the model, sent with every request since the server
+      ignores that file (`--generation-config vllm`). `max_tokens` 32768 and a context of
+      34816, the longest prompt of the v2 templates (1231 tokens with this tokenizer and
+      the reasoning on, stage one) plus 32768, rounded up to a multiple of 1024. Trace of
+      the ablation of the reasoning (`configs/ablation_reasoning.yaml`), not part of phase
+      2: reasoning on did not agree with the per-CQ annotation significantly more than
+      reasoning off, which phase 2 keeps. The first pilot,
+      run with `max_tokens` 8192 and a context of 16384, is reproducible from the tag
+      `pilot1`.
 
   gpt_oss_20b:
     tier: 1
@@ -223,7 +259,8 @@ models:
     enabled: true
     supports_logprobs: true
     is_reasoning: true
-    reasoning: {chat_template_kwargs: {reasoning_effort: high}}
+    reasoning: {chat_template_kwargs: {reasoning_effort: low}}
+    reasoning_optional: true
     max_concurrency: 4
     max_tokens: 32768
     samples: 5
@@ -235,10 +272,15 @@ models:
                  --generation-config, vllm, --structured-outputs-config,
                  '{"backend": "xgrammar", "disable_any_whitespace": true}']
     notes: >-
-      Dense, 32B. The reasoning does not switch off: it is set with `reasoning_effort` in
-      `chat_template_kwargs`, at `high`, the only level the model card documents and the
-      default of the template. Five samples at temperature 1 and top_p 0.95, the sampling
-      of the model card. Since it always reasons before the JSON, the answer needs room:
+      Dense, 32B. The reasoning does not switch off: its depth is chosen per request with
+      `reasoning_effort` in `chat_template_kwargs`, `high` (the default of the template),
+      `medium` or `low`; the template opens the reasoning with a different tag for each,
+      and the reasoning parser of vLLM ends it on the matching one, structured output
+      included. This entry, at `low` with five samples, is the one of the second pilot
+      and does not enter phase 2: at `low` the model closes its reasoning at once, before
+      any thinking, on every call of the pilot (hence `reasoning_optional`). Phase 2 runs
+      `k2_horizon_32b_high`. Five samples at temperature 1 and top_p 0.95, the sampling of
+      the model card. Since it always reasons before the JSON, the answer needs room:
       `max_tokens` 32768, and a context of 34816, the longest prompt of the v2 templates
       (1161 tokens with this tokenizer, stage one) plus 32768, rounded up to a multiple
       of 1024. The revision is the
@@ -255,6 +297,34 @@ models:
       about a greeting. vLLM does not fill `usage.reasoning_tokens` for this model: it is
       0 even when the model reasons, so the length of the reasoning comes from the text
       of the reasoning field of the message, not from `usage`.
+
+  k2_horizon_32b_high:
+    tier: 2
+    model_id: "IFM/K2-Horizon-32B"
+    revision: "eff3d24a3a40360c6fd1a1dd5723ce6329d93484"
+    display_name: "K2 Horizon 32B, high effort"
+    enabled: true
+    supports_logprobs: true
+    is_reasoning: true
+    reasoning: {chat_template_kwargs: {reasoning_effort: high}}
+    reasoning_optional: false
+    max_concurrency: 4
+    max_tokens: 32768
+    samples: 1
+    temperature: 1.0
+    top_p: 0.95
+    top_k: 0
+    serve_args: [--trust-remote-code, --reasoning-parser, k2_horizon, --tool-call-parser,
+                 k2_horizon, --max-model-len, "34816", --chat-template-content-format, string,
+                 --generation-config, vllm, --structured-outputs-config,
+                 '{"backend": "xgrammar", "disable_any_whitespace": true}']
+    notes: >-
+      The K2 Horizon entry of phase 2: `reasoning_effort` high, the level at which the
+      model card reports its results, with one sample at temperature 1 and top_p 0.95.
+      On the 50 pilot items its answers agree with the per-CQ annotation more than those
+      of `k2_horizon_32b` at low (exact McNemar test below 0.05). Everything else, served
+      flags included, is that entry's, so its calls share their cache keys with any
+      earlier call at `high` with the same sampling.
 
   # ------------------------------------------------------------------- tier 3
   gpt_5_5:

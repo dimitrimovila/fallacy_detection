@@ -1,0 +1,23 @@
+# Ablation of the reasoning of Qwen3.8 and Gemma 4: the 50 items of pilot2, the same
+# selection, with the `_think` entries at one sample. Compared with the entries with
+# reasoning off in the run of pilot2. `argfallacy run plan configs/ablation_reasoning.yaml`
+# counts the calls.
+
+name: ablation_reasoning
+
+items:
+  n: 50
+  seed: 20260911
+  # stratified by gold scheme, proportionally, with at least 4 items per scheme
+  min_per_scheme: 4
+  # `none` has no CQs to ask: left out of the pilot
+  exclude_none_scheme: true
+
+stages: [stage1, stage2]
+scheme_condition: gold
+models: [qwen3_8_27b_think, gemma4_31b_think]
+prompt_version: v2
+
+generation:
+  # for the entries without a max_tokens of their own
+  max_tokens: 512

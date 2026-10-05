@@ -15,8 +15,9 @@ items:
 
 stages: [stage1, stage2]
 scheme_condition: gold
-# run in two times into one run: first the two entries with reasoning off, then the other two
-models: [qwen3_8_27b, gemma4_31b, gpt_oss_20b, k2_horizon_32b]
+# run in three times into one run: first the two entries with reasoning off, then gpt oss 20b
+# and K2 Horizon, then gpt oss 120b
+models: [qwen3_8_27b, gemma4_31b, gpt_oss_20b, k2_horizon_32b, gpt_oss_120b]
 prompt_version: v2
 
 generation:

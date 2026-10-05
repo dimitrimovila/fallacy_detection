@@ -113,9 +113,9 @@ the CUDA 12.9 variant for older drivers. The model revisions in `serving/models.
 pinned Hugging Face commits, except the placeholder of the commercial model, disabled.
 Calls refuse to start while a revision is a placeholder. Qwen and Gemma each have a second entry
 with reasoning on (`_think`), served by a separate launch with the reasoning parser and
-`--max-model-len 16384`; the entry with reasoning off is served without the parser. gpt oss
+`--max-model-len 34816`; the entry with reasoning off is served without the parser. gpt oss
 and K2 Horizon, whose reasoning does not switch off, are served in the same way as the
-`_think` entries, with their own reasoning parser and a context of 34816. The flags of each
+`_think` entries, with their own reasoning parser and the same context. The flags of each
 entry are its `serve_args`; the servers of the runs compact the JSON
 (`--structured-outputs-config`) and ignore the sampling defaults of the model
 (`--generation-config vllm`). Each entry also states how many samples it takes and how they

@@ -34,9 +34,10 @@ Five checks matter more than the rest:
 
 The exit code is zero only if the entry can be run: a job stops on anything else.
 Besides a refusal, an error or an answer token missing from the JSON, that means
-a prompt the server did not read, no reasoning or a cut-off answer on an entry
-that reasons, a JSON that does not begin with ``{"answer": "`` on an entry with one
-sample, and no logprobs on an entry whose ``supports_logprobs`` is true.
+a prompt the server did not read, no reasoning (unless the entry has
+``reasoning_optional``) or a cut-off answer on an entry that reasons, a JSON
+that does not begin with ``{"answer": "`` on an entry with one sample, and no
+logprobs on an entry whose ``supports_logprobs`` is true.
 
     python serving/smoke_test.py --model qwen3_8_27b        # a key of serving/models.yaml
     python serving/smoke_test.py --model qwen3_8_27b_think  # same weights, thinking on
@@ -265,7 +266,10 @@ def main(argv: list[str] | None = None) -> int:
     if thinking_on(spec):
         count, source = reasoning_length(response)
         print(f"Thinking  : {count} {source}")
-        if count == 0:
+        if count == 0 and spec.get("reasoning_optional"):
+            print("WARNING, not blocking: no reasoning. The entry may answer without it "
+                  "(`reasoning_optional`), and the run measures how often it does.")
+        elif count == 0:
             unusable = True
             print("WARNING: this entry reasons and there was no reasoning. "
                   "Check that the server passes the reasoning settings of the entry to the "

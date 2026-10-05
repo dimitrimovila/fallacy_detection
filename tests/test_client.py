@@ -471,7 +471,7 @@ PILOT = REPO_ROOT / "configs" / "pilot2.yaml"
 def test_the_pilot_plans_the_calls_the_spec_declares(schemes):
     """50 items: 50 questions of stage one and 298 of stage two, times the samples.
 
-    One sample for the two entries with reasoning off, five for the two that reason.
+    One sample for the two entries with reasoning off, five for the three that reason.
     """
     from argfallacy.client import load_items
 
@@ -479,8 +479,9 @@ def test_the_pilot_plans_the_calls_the_spec_declares(schemes):
     chosen = select_items(config, load_items())
     calls = plan(config, chosen, load_models(), schemes)
 
-    assert config.models == ["qwen3_8_27b", "gemma4_31b", "gpt_oss_20b", "k2_horizon_32b"]
-    assert len(calls) == 2 * 348 + 2 * 1740
+    assert config.models == ["qwen3_8_27b", "gemma4_31b", "gpt_oss_20b", "k2_horizon_32b",
+                             "gpt_oss_120b"]
+    assert len(calls) == 2 * 348 + 3 * 1740
     for model in config.models:
         samples = 1 if model in ("qwen3_8_27b", "gemma4_31b") else 5
         mine = [c for c in calls if c.model == model]
@@ -498,7 +499,7 @@ def test_the_pilot_entries_differ_only_in_reasoning_and_room(schemes):
         assert models[off]["reasoning"]["chat_template_kwargs"]["enable_thinking"] is False
         assert models[on]["reasoning"]["chat_template_kwargs"]["enable_thinking"] is True
         assert models[off]["max_tokens"] == 1024
-        assert models[on]["max_tokens"] == 8192
+        assert models[on]["max_tokens"] == 32768
 
 
 def test_item_selection_is_reproducible(schemes):
@@ -636,8 +637,8 @@ def _flag(args: list[str], name: str) -> str | None:
 @pytest.mark.parametrize("entry,parser,room", [
     ("qwen3_8_27b", None, "8192"),
     ("gemma4_31b", None, "8192"),
-    ("qwen3_8_27b_think", "qwen3", "16384"),
-    ("gemma4_31b_think", "gemma4", "16384"),
+    ("qwen3_8_27b_think", "qwen3", "34816"),
+    ("gemma4_31b_think", "gemma4", "34816"),
 ])
 def test_the_serve_command_of_each_pilot_entry(entry, parser, room):
     """Reasoning off without a parser; reasoning on with the model's parser and room."""
@@ -708,6 +709,30 @@ def test_the_smoke_test_reads_the_reasoning_in_the_message(monkeypatch, capsys):
 
     monkeypatch.setattr(smoke_test, "build_backend", lambda *_: _server_like())
     assert smoke_test.main(["--model", "fake", "--fake-reasoning"]) != 0, "no reasoning anywhere"
+
+
+def test_no_reasoning_only_warns_where_the_reasoning_is_optional(monkeypatch, capsys):
+    """``reasoning_optional``: no reasoning is a warning, a cut-off answer still stops."""
+    smoke_test = _serving_script("smoke_test")
+    monkeypatch.setitem(smoke_test.FAKE_SPEC, "reasoning_optional", True)
+    monkeypatch.setattr(smoke_test, "build_backend", lambda *_: _server_like())
+    assert smoke_test.main(["--model", "fake", "--fake-reasoning"]) == 0
+    assert "WARNING, not blocking: no reasoning" in capsys.readouterr().out
+
+    server = _server_like()
+
+    def cut_off(**kwargs):
+        payload = server.create(**kwargs)
+        payload["choices"][0]["finish_reason"] = "length"
+        return payload
+
+    monkeypatch.setattr(smoke_test, "build_backend", lambda *_: SimpleNamespace(create=cut_off))
+    assert smoke_test.main(["--model", "fake", "--fake-reasoning"]) != 0
+
+
+def test_only_k2_horizon_may_answer_without_reasoning():
+    models = load_models()
+    assert [k for k, m in models.items() if m.get("reasoning_optional")] == ["k2_horizon_32b"]
 
 
 def test_the_smoke_test_fails_on_a_prompt_the_server_did_not_read(monkeypatch):
