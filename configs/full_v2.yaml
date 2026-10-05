@@ -1,0 +1,19 @@
+# Full run on prompts v2: every item of items.csv at stage one, and at stage two the CQs of
+# Eleni's gold scheme for the items of the test set (the others have no gold scheme, so
+# they take stage one only). The regimes of the entries are those of phase 2 in
+# serving/models.yaml. `argfallacy run plan configs/full_v2.yaml` counts the calls.
+
+name: full_v2
+
+items:
+  # every item: no sample, and the items without a gold scheme are kept for stage one
+  exclude_none_scheme: false
+
+stages: [stage1, stage2]
+scheme_condition: gold
+models: [qwen3_8_27b, gemma4_31b, gpt_oss_20b, gpt_oss_120b, k2_horizon_32b_high]
+prompt_version: v2
+
+generation:
+  # for the entries without a max_tokens of their own
+  max_tokens: 512
