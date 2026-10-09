@@ -1,0 +1,20 @@
+# The zero-shot condition: for every item of the test set, the text, its gold scheme and the
+# verdicts of that scheme's diagram, each with its definition, and the verdict asked directly,
+# without the CQs. The same information A0 has in the gold condition. The regimes of the
+# entries are those of phase 2 in serving/models.yaml. `argfallacy run plan
+# configs/zeroshot_v1.yaml` counts the calls.
+
+name: zeroshot_v1
+
+items:
+  # the 601 items of the test set: every item with a gold scheme, no sample
+  exclude_none_scheme: true
+
+stages: [zeroshot]
+scheme_condition: gold
+models: [qwen3_8_27b, gemma4_31b, gpt_oss_20b, gpt_oss_120b, k2_horizon_32b_high]
+prompt_version: v1
+
+generation:
+  # for the entries without a max_tokens of their own
+  max_tokens: 512

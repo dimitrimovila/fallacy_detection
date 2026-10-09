@@ -1,0 +1,20 @@
+# A small trial of the zero-shot condition (configs/zeroshot_v1.yaml) on the 50 items of
+# configs/pilot2.yaml, same selection and seed, with one entry that answers once and one that
+# samples five times.
+
+name: zeroshot_pilot
+
+items:
+  n: 50
+  seed: 20260911
+  min_per_scheme: 4
+  exclude_none_scheme: true
+
+stages: [zeroshot]
+scheme_condition: gold
+models: [qwen3_8_27b, gpt_oss_20b]
+prompt_version: v1
+
+generation:
+  # for the entries without a max_tokens of their own
+  max_tokens: 512

@@ -138,6 +138,13 @@ The token counts and the layout of the JSON come from `raw.jsonl`, read one line
 time: without it (a copy of the run that has only the tables) the report says so and the
 rest is unchanged, and `--no-raw` skips the reading.
 
+The zero-shot condition gives each item of the test set, with its gold scheme, the verdicts
+of that scheme's diagram and their definitions, and asks for the verdict directly, without
+the critical questions: `configs/zeroshot_v1.yaml` (601 items, the five entries of the full
+run) and `configs/zeroshot_pilot.yaml` (the 50 pilot items, two entries), run and parsed with
+the same commands. The parser writes the verdict as its terminal id, with the probability of
+the label chosen in `p_label`.
+
 On the cluster two Slurm jobs do this, launching and stopping the servers themselves
 (preparation in `serving/README.md`):
 

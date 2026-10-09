@@ -33,9 +33,11 @@ from ..prompts import (
     DEFAULT_VERSION,
     STAGE1,
     STAGE2,
+    ZEROSHOT,
     prompt_version,
     render_stage1,
     render_stage2,
+    render_zeroshot,
 )
 from ..schemes import load_all
 from ..schemes.loader import SchemeError
@@ -211,6 +213,9 @@ def plan(
     predicted scheme differs from the gold one: where the two agree, the calls
     made in the ``gold`` condition answer this condition too, and the parser
     knows it.
+
+    The zero-shot stage is one prompt per item under the scheme stage two would
+    use, asking for the verdict directly.
     """
     entries = select_models(config, only)
     models = models if models is not None else load_models()
@@ -249,13 +254,26 @@ def plan(
                         max_tokens=max_tokens, logprobs=logprobs,
                         **identity,
                     ))
-            if STAGE2 not in config.stages:
+            if STAGE2 not in config.stages and ZEROSHOT not in config.stages:
                 continue
 
             scheme_id = _scheme_for(item, config, predictions)
             if scheme_id is None or scheme_id not in schemes:
                 continue
             scheme = schemes[scheme_id]
+            if ZEROSHOT in config.stages:
+                rendered = render_zeroshot(item, scheme, config.prompt_version)
+                for sample in range(samples):
+                    calls.append(PlannedCall(
+                        model=model_name, model_id=spec["model_id"], item_id=item_id,
+                        stage=ZEROSHOT, scheme=scheme_id, cq_id=None, sample_index=sample,
+                        prompt=rendered.text, prompt_version=rendered.prompt_version,
+                        json_schema=rendered.json_schema,
+                        max_tokens=max_tokens, logprobs=logprobs,
+                        **identity,
+                    ))
+            if STAGE2 not in config.stages:
+                continue
             for cq_id in scheme.cq_order:
                 rendered = render_stage2(item, scheme, cq_id, config.prompt_version)
                 for sample in range(samples):

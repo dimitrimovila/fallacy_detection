@@ -14,6 +14,10 @@ This one stops at what the pilot report needs; the full parser comes later.
 How many samples an entry took decides what its hard answer is.  With one
 sample, the hard answer is that sample.  With more, it is the majority over the
 valid samples, and ``p_sample`` the frequency of a yes among them.
+
+A zero-shot call answers with the name its prompt showed for a verdict; the row
+carries the terminal id instead, read back through ``labels/fallacies.yaml``, and
+``p_label``, the probability of the whole name as the model generated it.
 """
 
 from __future__ import annotations
@@ -22,15 +26,23 @@ import json
 import math
 import re
 from collections.abc import Iterable, Mapping
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 from jsonschema import Draft202012Validator
 
-from ..prompts import CANNOT_BE_DETERMINED, NOT_APPLICABLE, STAGE1, answer_options
+from ..prompts import (
+    CANNOT_BE_DETERMINED,
+    NOT_APPLICABLE,
+    STAGE1,
+    ZEROSHOT,
+    answer_options,
+    verdicts,
+)
 from ..schemes import load_all
-from ..schemes.loader import SchemeError
+from ..schemes.loader import SchemeError, load_vocabulary
 
 INVALID = "invalid"
 ALL_OPTIONS = ("yes", "no", "positive", "negative", CANNOT_BE_DETERMINED, NOT_APPLICABLE)
@@ -39,7 +51,7 @@ ANSWERS_COLUMNS = [
     "run_id", "item_id", "stage", "scheme_condition", "scheme", "cq_id", "sample_index",
     "model", "model_id", "prompt_version", "cache_key", "from_cache",
     "answer", "confidence", "justification",
-    *[f"p_logprob_{option}" for option in ALL_OPTIONS],
+    *[f"p_logprob_{option}" for option in ALL_OPTIONS], "p_label",
     "logprob_partial", "parse_ok", "finish_reason", "latency_s", "error",
 ]
 SUMMARY_COLUMNS = [
@@ -49,16 +61,35 @@ SUMMARY_COLUMNS = [
 ]
 
 
+@lru_cache(maxsize=1)
+def _vocabulary() -> dict[str, Any]:
+    return load_vocabulary(check_schemes=False)
+
+
+def shown_verdicts(scheme: Any) -> dict[str, str]:
+    """Name shown in the zero-shot prompt -> terminal id, for one scheme."""
+    return {v.shown: v.terminal for v in verdicts(scheme, _vocabulary())}
+
+
 def options_for(
     row: Mapping[str, Any], schemes: Mapping[str, Any] | None = None
 ) -> tuple[str, ...]:
-    """What this call was allowed to answer.  Stage one answers with a scheme id."""
+    """What this call was allowed to answer.
+
+    Stage one answers with a scheme id, the zero-shot stage with the names its
+    prompt showed for the verdicts of the scheme.
+    """
     if row.get("stage") == STAGE1:
         from ..labels import scheme_ids
 
         return tuple(scheme_ids())
     schemes = schemes if schemes is not None else load_all()
     scheme = schemes.get(row.get("scheme"))
+    if row.get("stage") == ZEROSHOT:
+        if scheme is None:
+            raise SchemeError(f"zero-shot row of item {row.get('item_id')!r} has no known "
+                              f"scheme: {row.get('scheme')!r}")
+        return tuple(shown_verdicts(scheme))
     if scheme is None or not row.get("cq_id"):
         return ("yes", "no", CANNOT_BE_DETERMINED, NOT_APPLICABLE)
     return answer_options(scheme, row["cq_id"])
@@ -113,10 +144,9 @@ def answer_position(
     if not logprobs:
         return None
     tokens = [str(entry.get("token", "")) for entry in (logprobs.get("content") or [])]
-    matches = list(re.finditer('"' + re.escape(key) + r'"\s*:\s*"', "".join(tokens)))
-    if not matches:
+    start = _value_start(tokens, key)
+    if start is None:
         return None
-    start = matches[-1].end()
     options = list(options)
     offset = 0
     for index, token in enumerate(tokens):
@@ -127,6 +157,39 @@ def answer_position(
                 return index if any(option.startswith(piece) for option in options) else None
         offset = end
     return None
+
+
+def _value_start(tokens: list[str], key: str) -> int | None:
+    """Offset, in the joined tokens, where the value of the last ``"key": "`` begins."""
+    matches = list(re.finditer('"' + re.escape(key) + r'"\s*:\s*"', "".join(tokens)))
+    return matches[-1].end() if matches else None
+
+
+def value_probability(
+    logprobs: Mapping[str, Any] | None, options: Iterable[str], key: str = "answer"
+) -> float | None:
+    """Probability of the whole value of ``key``, as the model generated it.
+
+    The product of the probabilities of its tokens, from the token of
+    :func:`answer_position` to the one holding the last character before the
+    closing quote, which may carry the quote and what follows it too.  None where
+    there is no answer position or no closing quote.
+    """
+    if answer_position(logprobs, options, key) is None:
+        return None
+    content = logprobs.get("content") or []
+    tokens = [str(entry.get("token", "")) for entry in content]
+    start = _value_start(tokens, key)
+    end = "".join(tokens).find('"', start)
+    if end <= start:
+        return None
+    total, offset = 0.0, 0
+    for entry, token in zip(content, tokens, strict=True):
+        token_end = offset + len(token)
+        if token_end > start and offset < end:
+            total += float(entry.get("logprob", -math.inf))
+        offset = token_end
+    return math.exp(total)
 
 
 def logprob_masses(
@@ -182,7 +245,16 @@ def parse_row(
         justification = parsed.get("justification")
         parse_ok = True
 
-    masses, partial = logprob_masses(raw.get("logprobs"), options, key)
+    p_label = None
+    if row.get("stage") == ZEROSHOT:
+        # the name shown goes back to its terminal; no masses over the first token,
+        # since a name may take several tokens
+        if parse_ok:
+            answer = shown_verdicts((schemes or load_all())[row["scheme"]])[answer]
+        masses, partial = {}, False
+        p_label = value_probability(raw.get("logprobs"), options, key)
+    else:
+        masses, partial = logprob_masses(raw.get("logprobs"), options, key)
     out: dict[str, Any] = {
         "run_id": row.get("run_id"),
         "item_id": row.get("item_id"),
@@ -199,6 +271,7 @@ def parse_row(
         "answer": answer,
         "confidence": confidence,
         "justification": justification,
+        "p_label": p_label,
         "logprob_partial": partial,
         "parse_ok": parse_ok,
         "finish_reason": raw.get("finish_reason"),
@@ -278,6 +351,9 @@ def summarise(
     does not set ``idk`` either — that flag stays exactly ``answer ==
     cannot_be_determined`` — so the two stay distinguishable downstream by
     ``answer`` alone, which is the only thing this parser records about them.
+
+    A zero-shot row has its hard answer and none of the three probabilities: a
+    verdict has no yes to orient them on.  ``p_label`` stays in ``answers.csv``.
     """
     schemes = schemes if schemes is not None else load_all()
     if answers.empty:
@@ -290,6 +366,7 @@ def summarise(
     records: list[dict[str, Any]] = []
     for keys, group in grouped:
         item_id, stage, condition, scheme, cq_id, model = keys
+        zeroshot = stage == ZEROSHOT
         options = options_for(
             {"stage": stage, "scheme": scheme, "cq_id": cq_id}, schemes
         )
@@ -304,20 +381,20 @@ def summarise(
         n_ok = len(valid)
         if several:
             hard = majority(group)
-            p_sample = (valid["answer"] == yes_like).mean() if n_ok else None
+            p_sample = (valid["answer"] == yes_like).mean() if n_ok and not zeroshot else None
         else:
             hard = zero_row["answer"] if zero_row is not None else INVALID
             p_sample = None
 
         p_logprob = None
-        if zero_row is not None:
+        if zero_row is not None and not zeroshot:
             value = zero_row.get(f"p_logprob_{yes_like}")
             p_logprob = None if pd.isna(value) else float(value)
 
         p_verbal = None
         idk = hard == CANNOT_BE_DETERMINED
         stated = zero_row["answer"] if zero_row is not None else INVALID
-        if (zero_row is not None and zero_row["parse_ok"]
+        if (zero_row is not None and zero_row["parse_ok"] and not zeroshot
                 and stated not in (CANNOT_BE_DETERMINED, NOT_APPLICABLE)):
             confidence = zero_row["confidence"]
             if confidence is not None and not pd.isna(confidence):

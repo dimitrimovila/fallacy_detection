@@ -13,14 +13,16 @@ from .minimal import (
     parse_content,
     parse_row,
     parse_run,
+    shown_verdicts,
     summarise,
     valid_samples,
     validate_against_schema,
+    value_probability,
 )
 
 __all__ = [
     "parse_run", "parse_answers", "summarise", "parse_row", "parse_content",
     "logprob_masses", "answer_position", "majority", "valid_samples", "options_for",
-    "validate_against_schema",
+    "validate_against_schema", "value_probability", "shown_verdicts",
     "INVALID", "ALL_OPTIONS", "ANSWERS_COLUMNS", "SUMMARY_COLUMNS",
 ]

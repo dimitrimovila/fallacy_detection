@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "zeroshot_v1",
+  "description": "Zero-shot: the verdict chosen directly. The enum of `answer` is rewritten per scheme with the names the prompt shows for the terminals of its diagram (labels/fallacies.yaml); the value here is a placeholder.",
+  "type": "object",
+  "properties": {
+    "answer": {
+      "type": "string",
+      "enum": [
+        "Good Argumentation"
+      ]
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "justification": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "answer",
+    "confidence",
+    "justification"
+  ],
+  "additionalProperties": false
+}

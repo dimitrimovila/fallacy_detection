@@ -1,4 +1,7 @@
-# Vocabulary of the fallacy labels. Version 1.6.
+# Vocabulary of the fallacy labels. Version 1.7.
+# 1.7 compared with 1.6: every terminal has a `definition`, and the four ad hominem variants a
+# `display_label`, both for the zero-shot prompt; the terminals take one field per line. No
+# id, label, alias or space changed.
 # 1.6 compared with 1.5: the compat block, with the strings that the scoring code of the
 # prior runs writes in its own code. No terminal, alias or space changed.
 # 1.5 compared with 1.4: the space collapsed_eleni is called collapsed_compat, like the
@@ -19,7 +22,7 @@
 # Rule: a new alias is added here, never in the code.
 # Aliases are compared after light normalization: lower case, whitespace squeezed.
 
-version: "1.6"
+version: "1.7"
 
 # Families. A family id is a class in the collapsed spaces and is not one in the
 # fine space. normalize_label recognises it with kind "family": it accepts no
@@ -31,57 +34,195 @@ families:
     label: "Ad Hominem"
     note: "Used by the collapsed spaces. Includes Ad Fidentia and Poisoning the Well, as in Eleni's collapse."
 
+# The verdicts the diagrams reach. `label` names a terminal everywhere; `display_label`, where
+# present, is the name the zero-shot prompt shows in its place (the four ad hominem variants
+# lose their prefix: the prompt already names the scheme), and the parser takes it back to
+# the id. `definition` is what that prompt says the verdict means: an English translation of
+# the definition the thesis gives under "Fallacie relative allo schema" in chapter 3 (one text
+# per fallacy, the same in every scheme where it occurs), with nothing added; where the
+# original has two sentences, they are joined into one. The thesis does not define Good
+# Argumentation: its definition is the project's own.
 terminals:
   good_argumentation:
-    {label: "Good Argumentation", type: good, schemes: [analogy, cause_to_effect, correlation_to_cause, example, expert_opinion, popular_opinion, slippery_slope]}
+    label: "Good Argumentation"
+    type: good
+    schemes: [analogy, cause_to_effect, correlation_to_cause, example, expert_opinion, popular_opinion, slippery_slope]
+    definition: "The argument is acceptable as it stands: none of the fallacies listed applies to it."
+    note: "The definition is the project's own: the thesis defines only the fallacies."
   ad_fidentia:
-    {label: "Ad Fidentia", type: fallacy, family: ad_hominem, schemes: [ad_hominem]}
+    label: "Ad Fidentia"
+    type: fallacy
+    family: ad_hominem
+    schemes: [ad_hominem]
+    definition: "Attacking the person's self-esteem instead of the argument or the evidence supporting it."
   ad_hominem_abusive:
-    {label: "Ad Hominem (Abusive)", type: fallacy, family: ad_hominem, schemes: [ad_hominem]}
+    label: "Ad Hominem (Abusive)"
+    display_label: "Abusive"
+    type: fallacy
+    family: ad_hominem
+    schemes: [ad_hominem]
+    definition: >-
+      Attacking the person making the argument, rather than the argument itself, when the
+      attack on the person is entirely irrelevant to the argument they are making.
   ad_hominem_circumstantial:
-    {label: "Ad Hominem (Circumstantial)", type: fallacy, family: ad_hominem, schemes: [ad_hominem]}
+    label: "Ad Hominem (Circumstantial)"
+    display_label: "Circumstantial"
+    type: fallacy
+    family: ad_hominem
+    schemes: [ad_hominem]
+    definition: >-
+      Suggesting that the person making the argument is biased or predisposed to take a
+      certain position and that, as a consequence, the argument is necessarily invalid.
   ad_hominem_guilt_by_association:
-    {label: "Ad Hominem (Guilt by Association)", type: fallacy, family: ad_hominem, schemes: [ad_hominem]}
+    label: "Ad Hominem (Guilt by Association)"
+    display_label: "Guilt by Association"
+    type: fallacy
+    family: ad_hominem
+    schemes: [ad_hominem]
+    definition: >-
+      When the source is viewed negatively because of its link with another person or group
+      that is already viewed negatively.
   ad_hominem_tu_quoque:
-    {label: "Ad Hominem (Tu Quoque)", type: fallacy, family: ad_hominem, schemes: [ad_hominem]}
+    label: "Ad Hominem (Tu Quoque)"
+    display_label: "Tu Quoque"
+    type: fallacy
+    family: ad_hominem
+    schemes: [ad_hominem]
+    definition: >-
+      Claiming that the argument is flawed by pointing out that the person who makes it does
+      not act consistently with what the argument itself states.
   ad_populum:
-    {label: "Ad Populum", type: fallacy, schemes: [popular_opinion]}
+    label: "Ad Populum"
+    type: fallacy
+    schemes: [popular_opinion]
+    definition: "Using the popularity of a premise or a thesis as evidence of its truth."
   appeal_to_authority:
-    {label: "Appeal to Authority", type: fallacy, schemes: [ad_hominem, expert_opinion]}
+    label: "Appeal to Authority"
+    type: fallacy
+    schemes: [ad_hominem, expert_opinion]
+    definition: >-
+      Claiming that a statement is true simply because a technical, moral or religious
+      authority has declared it so, without any other supporting evidence being given.
   appeal_to_extremes:
-    {label: "Appeal to Extremes", type: fallacy, schemes: [analogy, example]}
+    label: "Appeal to Extremes"
+    type: fallacy
+    schemes: [analogy, example]
+    definition: >-
+      Wrongly trying to turn a reasonable argument into an absurd one by taking it to
+      extremes; it is not a valid reductio ad absurdum.
   appeal_to_nature:
-    {label: "Appeal to Nature", type: fallacy, schemes: [popular_opinion]}
+    label: "Appeal to Nature"
+    type: fallacy
+    schemes: [popular_opinion]
+    definition: 'Holding that something is better or truer only because it is "natural".'
   appeal_to_tradition:
-    {label: "Appeal to Tradition", type: fallacy, schemes: [popular_opinion]}
+    label: "Appeal to Tradition"
+    type: fallacy
+    schemes: [popular_opinion]
+    definition: >-
+      Using people's historical preferences (tradition), in a general or in a specific
+      sense, as evidence that such a historical preference is correct.
   causal_reductionism:
-    {label: "Causal Reductionism", type: fallacy, schemes: [cause_to_effect, correlation_to_cause]}
+    label: "Causal Reductionism"
+    type: fallacy
+    schemes: [cause_to_effect, correlation_to_cause]
+    definition: >-
+      Assuming that there is a single cause or reason for an event, when in fact the causes
+      or reasons are many.
   cherry_picking:
-    {label: "Cherry Picking", type: fallacy, schemes: [analogy, cause_to_effect, example, popular_opinion]}
+    label: "Cherry Picking"
+    type: fallacy
+    schemes: [analogy, cause_to_effect, example, popular_opinion]
+    definition: >-
+      When only qualitatively selected evidence is presented to persuade the audience to
+      accept a given position, leaving out the evidence that contradicts it; the stronger
+      the evidence left out, the more fallacious the argument.
   definist_fallacy:
-    {label: "Definist Fallacy", type: fallacy, schemes: [correlation_to_cause, slippery_slope]}
+    label: "Definist Fallacy"
+    type: fallacy
+    schemes: [correlation_to_cause, slippery_slope]
+    definition: "Defining a term in such a way as to make one's own position much easier to defend."
   false_attribution:
-    {label: "False Attribution", type: fallacy, schemes: [example, expert_opinion]}
+    label: "False Attribution"
+    type: fallacy
+    schemes: [example, expert_opinion]
+    definition: >-
+      Appealing to an irrelevant, unqualified, unidentified, biased or made-up source in
+      support of an argument.
   false_premise:
-    {label: "False Premise", type: fallacy, schemes: [analogy, cause_to_effect, correlation_to_cause]}
+    label: "False Premise"
+    type: fallacy
+    schemes: [analogy, cause_to_effect, correlation_to_cause]
+    definition: >-
+      An error of reasoning that occurs when an argument starts from a mistaken, false or
+      unproven assumption.
   hasty_generalization:
-    {label: "Hasty Generalization", type: fallacy, schemes: [cause_to_effect, correlation_to_cause, example, popular_opinion]}
+    label: "Hasty Generalization"
+    type: fallacy
+    schemes: [cause_to_effect, correlation_to_cause, example, popular_opinion]
+    definition: >-
+      Drawing conclusions from a small sample, rather than examining statistics much more in
+      line with the typical or average situation.
   irrelevant_authority:
-    {label: "Irrelevant Authority", type: fallacy, schemes: [expert_opinion]}
+    label: "Irrelevant Authority"
+    type: fallacy
+    schemes: [expert_opinion]
+    definition: >-
+      Appealing to a supposed authority as evidence in support of one's own argument, when
+      that authority is not in fact competent on the facts relevant to the argument itself.
   non_sequitur:
-    {label: "Non Sequitur", type: fallacy, schemes: [expert_opinion]}
+    label: "Non Sequitur"
+    type: fallacy
+    schemes: [expert_opinion]
+    definition: >-
+      When the conclusion does not follow from the premises; in more informal reasoning,
+      this can happen when what is presented as evidence or reason is irrelevant or
+      contributes only minimally to supporting the conclusion.
   poisoning_the_well:
-    {label: "Poisoning the Well", type: fallacy, family: ad_hominem, schemes: [ad_hominem]}
+    label: "Poisoning the Well"
+    type: fallacy
+    family: ad_hominem
+    schemes: [ad_hominem]
+    definition: >-
+      Launching a pre-emptive ad hominem attack against an opponent, that is, preparing the
+      audience from the start with negative information about the opponent, in an attempt to
+      make one's own thesis more acceptable or to lessen the credibility of the opponent's.
   post_hoc:
-    {label: "Post Hoc", type: fallacy, schemes: [cause_to_effect, correlation_to_cause]}
+    label: "Post Hoc"
+    type: fallacy
+    schemes: [cause_to_effect, correlation_to_cause]
+    definition: >-
+      Claiming that, since event Y followed event X, event Y must have been caused by event
+      X, without having adequately shown the causal link.
   questionable_cause:
-    {label: "Questionable Cause", type: fallacy, schemes: [correlation_to_cause]}
+    label: "Questionable Cause"
+    type: fallacy
+    schemes: [correlation_to_cause]
+    definition: "Concluding that one thing caused the other simply because they are often associated."
   slippery_slope:
-    {label: "Slippery Slope", type: fallacy, schemes: [slippery_slope]}
+    label: "Slippery Slope"
+    type: fallacy
+    schemes: [slippery_slope]
+    definition: >-
+      When a relatively insignificant first event is assumed to lead to a more significant
+      event, which in turn leads to an even more significant event, and so on, until a final,
+      significant event is reached, where the link between each event is not only unfounded
+      but becomes less and less likely at each step.
   strawman:
-    {label: "Strawman", type: fallacy, schemes: [expert_opinion]}
+    label: "Strawman"
+    type: fallacy
+    schemes: [expert_opinion]
+    definition: >-
+      Replacing a person's actual position or argument with a distorted, exaggerated or
+      misrepresented version of that position or argument.
   weak_analogy:
-    {label: "Weak Analogy", type: fallacy, schemes: [analogy, example]}
+    label: "Weak Analogy"
+    type: fallacy
+    schemes: [analogy, example]
+    definition: >-
+      When an analogy is used to prove or refute an argument, but the analogy is too
+      dissimilar to be effective, that is, it has more differences than similarities with
+      the case under consideration.
 
 # Coarse labels found in the data: they name a family, not a terminal.
 # They are not refined; in evaluation they give partial credit

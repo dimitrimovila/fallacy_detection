@@ -1,6 +1,6 @@
 # Spec 03. Prompts and answer format
 
-Version 2.1, 4 October 2026 (version 1, 11 September 2026; 1.1, 26 September 2026, added the definitions of expert opinion CQ3.1; 2 describes the prompts v2 and makes the version placeholder optional, sections 2 to 4; 2.1 takes the samples per entry, section 6, and states what the logprobs are, section 5). Component: `src/argfallacy/prompts/`. Data: `prompts/`.
+Version 2.2, 9 October 2026 (version 1, 11 September 2026; 1.1, 26 September 2026, added the definitions of expert opinion CQ3.1; 2 describes the prompts v2 and makes the version placeholder optional, sections 2 to 4; 2.1 takes the samples per entry, section 6, and states what the logprobs are, section 5; 2.2 adds the zero-shot prompt, section 8). Component: `src/argfallacy/prompts/`. Data: `prompts/`.
 Depends on: 01 and the data (`docs/data.md`). Used by: 04.
 
 ## 1. Principles
@@ -16,6 +16,7 @@ Depends on: 01 and the data (`docs/data.md`). Used by: 04.
 * `stage2_v2.md`: one critical question.
 * `stage2_v2_answers.yaml`: what each stage-two answer means (section 4).
 * `schemas/stage1_v2.json`, `schemas/stage2_v2.json`: JSON Schema of the answer, used for vLLM's structured output and for validation in the parser.
+* `zeroshot_v1.md` and `schemas/zeroshot_v1.json`: the verdict asked directly, without the CQs (section 8).
 
 The v1 files were replaced by the v2 files, not kept next to them: the runs made with v1 keep their prompts in `raw.jsonl` and their version in the manifest.
 * A test checks that every template declared in `prompts/` compiles for every scheme and every CQ with no missing field.
@@ -91,3 +92,19 @@ Since 20 September 2026 `tests/` keeps only the tests that defend a result, chec
 3. The stage-two JSON Schema rejects an `answer` outside the enumeration and a `confidence` outside the range; the stage-one schema rejects a non-canonical `scheme`. *Today only the stage-two part has an automatic test, checked through the parser (spec 04, point 5).*
 4. Rendering is deterministic: same item, same prompt, byte for byte. *Today without an automatic test.*
 5. A template with the `{{prompt_version}}` placeholder gets the version in the rendered prompt; one without it renders without error. The v2 templates have none. *Today without an automatic test.*
+
+## 8. Zero-shot, `zeroshot_v1.md`
+
+A comparison condition for A0: for every item, the model receives the text, the gold scheme and the terminals of the diagram of that scheme, each with a definition, and chooses the verdict directly. It has the information A0 has in the `gold` condition, without passing through the CQs. Version `zeroshot_v1`, rendered by `render_zeroshot(item, scheme)`.
+
+The template has the structure and the reading instructions of `stage2_v2.md`, so that the only difference from stage two is the task:
+1. The same role, with the task of choosing the one verdict that best describes the argument; the same block of the scheme (`name`, `schema`, `variables`) and of the text, filled by the same functions.
+2. In place of the critical question, the verdicts: the terminals of the scheme's diagram, taken from the YAML, never written by hand, in alphabetical order of the name shown (case aside), with Good Argumentation last. Ad hominem lists none, like its diagram. Each verdict is a line ``* `name`: definition``.
+3. "What to do" keeps the indications on reading: own judgement, also on points the arguer does not write down; what the text says and makes clear, and general knowledge; nothing about where the text comes from or how it has been classified; the standards of everyday argument where a verdict calls for an assessment; the argument that follows the scheme; one's view on the truth of the conclusion does not decide. Without a question, "unless the question asks about truth" goes, and so does the sentence that forbids deciding whether the argument is fallacious: the task is to choose the single verdict that best describes the argument.
+4. The answer, `{"answer": <one of the verdicts>, "confidence": <0-100>, "justification": <at most two sentences>}`, `answer` first, prefix `{"answer": "` as at stage two (section 5). The JSON Schema `schemas/zeroshot_v1.json` gets, per scheme, the enumeration of the names shown.
+
+Names and definitions come from `labels/fallacies.yaml` (version 1.7, rule 3 of spec 01). The name shown is the `label` of the terminal, except the four ad hominem variants, which have a `display_label` without the prefix: `Abusive`, `Circumstantial`, `Guilt by Association`, `Tu Quoque`; `Ad Fidentia` and the two `Appeal to` keep theirs. The `definition` of every fallacy is an English translation of the definition the thesis gives in chapter 3, under "Fallacie relative allo schema" of every scheme where the fallacy occurs (one text per fallacy, the same in every scheme), with nothing added; where the original has two sentences they are joined into one. The thesis does not define Good Argumentation: its definition, "The argument is acceptable as it stands: none of the fallacies listed applies to it.", is the project's own and is marked as such in the file. Two terminals with the same name shown, or a terminal without a definition, stop the loading of the vocabulary.
+
+The parser takes the name shown back to the terminal id through the same file, and records the probability of the label chosen (spec 04, section 4.2).
+
+Acceptance tests: rendering is deterministic; the admitted verdicts, in the JSON Schema and in the prompt, are the terminals of the scheme, in the order above; ad hominem has no Good Argumentation; every name shown is read back as its terminal id, and a name not shown (the full `label` of an ad hominem variant) is `invalid`.

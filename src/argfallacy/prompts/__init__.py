@@ -12,7 +12,10 @@ from .render import (
     SCHEMAS_DIR,
     STAGE1,
     STAGE2,
+    ZEROSHOT,
+    ZEROSHOT_VERSION,
     RenderedPrompt,
+    Verdict,
     answer_options,
     answer_schema,
     fill,
@@ -22,11 +25,15 @@ from .render import (
     prompt_version,
     render_stage1,
     render_stage2,
+    render_zeroshot,
+    verdict_schema,
+    verdicts,
 )
 
 __all__ = [
-    "PROMPTS_DIR", "SCHEMAS_DIR", "STAGE1", "STAGE2", "DEFAULT_VERSION",
-    "CANNOT_BE_DETERMINED", "NOT_APPLICABLE", "RenderedPrompt",
-    "render_stage1", "render_stage2", "answer_options", "answer_schema",
+    "PROMPTS_DIR", "SCHEMAS_DIR", "STAGE1", "STAGE2", "ZEROSHOT", "DEFAULT_VERSION",
+    "ZEROSHOT_VERSION", "CANNOT_BE_DETERMINED", "NOT_APPLICABLE", "RenderedPrompt", "Verdict",
+    "render_stage1", "render_stage2", "render_zeroshot", "verdicts", "verdict_schema",
+    "answer_options", "answer_schema",
     "load_template", "load_json_schema", "load_answer_meanings", "prompt_version", "fill",
 ]

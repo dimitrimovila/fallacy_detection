@@ -310,10 +310,19 @@ def _check_vocabulary(vocab: dict[str, Any], filename: str) -> None:
             if tid not in terminals:
                 problems.append(f"coarse label {cid!r} refines to unknown terminal {tid!r}")
 
+    shown: dict[str, str] = {}
     for tid, spec in vocab["terminals"].items():
         fam = spec.get("family")
         if fam is not None and fam not in families:
             problems.append(f"terminal {tid!r} declares unknown family {fam!r}")
+        # the zero-shot prompt shows this name and reads it back: two terminals with the
+        # same one could not be told apart
+        name = spec.get("display_label", spec.get("label"))
+        if name in shown:
+            problems.append(f"terminals {shown[name]!r} and {tid!r} are both shown as {name!r}")
+        shown[name] = tid
+        if not str(spec.get("definition") or "").strip():
+            problems.append(f"terminal {tid!r} has no definition")
 
     for space, mapping in vocab.get("spaces", {}).items():
         for src, dst in mapping.items():

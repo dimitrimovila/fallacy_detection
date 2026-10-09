@@ -25,14 +25,17 @@ from typing import Any
 import yaml
 
 from ..paths import REPO_ROOT
-from ..schemes.loader import Scheme, SchemeError
+from ..schemes.loader import Scheme, SchemeError, load_vocabulary
 
 PROMPTS_DIR = REPO_ROOT / "prompts"
 SCHEMAS_DIR = PROMPTS_DIR / "schemas"
 
 STAGE1 = "stage1"
 STAGE2 = "stage2"
+ZEROSHOT = "zeroshot"
+"""The verdict asked directly, from the text and the gold scheme, without the CQs."""
 DEFAULT_VERSION = "v2"
+ZEROSHOT_VERSION = "v1"
 
 CANNOT_BE_DETERMINED = "cannot_be_determined"
 """The third option, a choice of this project: the diagrams and the prompts described in
@@ -303,4 +306,87 @@ def render_stage2(
         cq_id=cq_id,
         answer_options=options,
         json_schema=answer_schema(scheme, cq_id, version),
+    )
+
+
+@dataclass(frozen=True)
+class Verdict:
+    """One verdict of the zero-shot prompt: the terminal, the name shown, what it means."""
+
+    terminal: str
+    shown: str
+    definition: str
+
+
+def verdicts(scheme: Scheme, vocabulary: Mapping[str, Any] | None = None) -> tuple[Verdict, ...]:
+    """The terminals of a scheme's diagram, as the zero-shot prompt lists them.
+
+    Names and definitions come from ``labels/fallacies.yaml``: the ``display_label`` of a
+    terminal where it has one, its ``label`` otherwise.  Alphabetical by the name shown,
+    case aside, with the good verdict last; ad hominem, whose diagram has none, lists
+    fallacies only.
+    """
+    vocab = vocabulary or load_vocabulary(check_schemes=False)
+    terminals = vocab["terminals"]
+    unknown = sorted(scheme.terminals - set(terminals))
+    if unknown:
+        raise SchemeError(f"{scheme.scheme_id}: terminals {unknown} are not in the vocabulary")
+    listed = [
+        Verdict(terminal, terminals[terminal].get("display_label", terminals[terminal]["label"]),
+                " ".join(str(terminals[terminal]["definition"]).split()))
+        for terminal in scheme.terminals
+    ]
+    return tuple(sorted(
+        listed,
+        key=lambda v: (terminals[v.terminal].get("type") == "good", v.shown.casefold()),
+    ))
+
+
+def verdict_schema(
+    scheme: Scheme, version: str = ZEROSHOT_VERSION,
+    vocabulary: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """The zero-shot JSON schema with ``answer`` narrowed to the verdicts of this scheme."""
+    schema = json.loads(json.dumps(load_json_schema(ZEROSHOT, version)))
+    schema["properties"]["answer"]["enum"] = [v.shown for v in verdicts(scheme, vocabulary)]
+    schema["title"] = f"{schema['title']}_{scheme.scheme_id}"
+    return schema
+
+
+def render_zeroshot(
+    item: Mapping[str, Any],
+    scheme: Scheme,
+    version: str = ZEROSHOT_VERSION,
+    vocabulary: Mapping[str, Any] | None = None,
+) -> RenderedPrompt:
+    """The zero-shot prompt: one item, its scheme, and the verdicts of that scheme's diagram.
+
+    The scheme and the text are placed as in stage two; the critical question gives way
+    to the verdicts, each with its definition.
+    """
+    text = str(item.get("text") or "").strip()
+    if not text:
+        raise SchemeError(f"item {item.get('item_id')!r} has no text")
+
+    listed = verdicts(scheme, vocabulary)
+    filled = _fill_versioned(
+        load_template(ZEROSHOT, version),
+        {
+            "scheme_name": scheme.name,
+            "schema": scheme.schema,
+            "variables": _variables_block(scheme),
+            "text": text,
+            "verdicts": "\n".join(f"* `{v.shown}`: {v.definition}" for v in listed),
+        },
+        prompt_version(ZEROSHOT, version),
+        where=f"{ZEROSHOT}_{version}.md",
+    )
+    return RenderedPrompt(
+        text=filled,
+        stage=ZEROSHOT,
+        prompt_version=prompt_version(ZEROSHOT, version),
+        scheme_id=scheme.scheme_id,
+        cq_id=None,
+        answer_options=tuple(v.shown for v in listed),
+        json_schema=verdict_schema(scheme, version, vocabulary),
     )

@@ -1,6 +1,6 @@
 # Spec 04. Interviewer, serving, minimal parser and pilot
 
-Version 4.13, 4 October 2026. Components: `src/argfallacy/client/`, `src/argfallacy/parse/` (minimal version), `src/argfallacy/eval/pilot.py` (the pilot report), `serving/` (with `serving/serve_command.py` and the jobs in `serving/slurm/`), `.gitattributes`.
+Version 4.14, 9 October 2026 (4.14 adds the zero-shot stage, section 4.2). Components: `src/argfallacy/client/`, `src/argfallacy/parse/` (minimal version), `src/argfallacy/eval/pilot.py` (the pilot report), `serving/` (with `serving/serve_command.py` and the jobs in `serving/slurm/`), `.gitattributes`.
 Depends on: 01, 03 and the data (`docs/data.md`). Produces: `runs/<run_id>/`.
 
 ## 1. Serving on the cluster (`serving/`)
@@ -104,6 +104,12 @@ Two read-only checks on the run `20260927T135510Z_pilot`, reasoning off, stage t
 * The first token `n` is shared by `no`, `na` and `negative`: the parser counts it for the first of them in the list. Its mass was at most 0.00018 in the pilot, so the answers are not renamed.
 * The vocabulary of Gemma has two entries with the same text for `y`, `c` and `n`, both in `top_logprobs`; their masses are negligible (of the order of 1e-8) and the parser sums them with no effect on the result.
 
+### 4.2 The zero-shot condition
+
+A third stage, `zeroshot` (spec 03, section 8): one prompt per item, under the scheme stage two would use, in the `gold` condition the gold scheme; the samples of each entry as at the other stages, so the regimes of `models.yaml` hold (one call for Qwen, Gemma and K2 Horizon at high, five samples for gpt oss). A configuration with `stages: [zeroshot]` and `prompt_version: v1` plans only these calls; the lines of `raw.jsonl` have `stage` `zeroshot`, the `scheme` of the prompt and an empty `cq_id`. Two configurations: `configs/zeroshot_v1.yaml`, the 601 items of the test set with the five entries of phase 2 (`qwen3_8_27b`, `gemma4_31b`, `gpt_oss_20b`, `gpt_oss_120b`, `k2_horizon_32b_high`), 7813 calls; `configs/zeroshot_pilot.yaml`, the 50 items of `configs/pilot2.yaml` (same selection and seed) with `qwen3_8_27b` and `gpt_oss_20b`, 300 calls. Both run with `pilot.sbatch` like the other configurations.
+
+The parser reads a zero-shot row as a stage-two row, with three differences. The admitted answers are the names the prompt showed, and `answer` holds the terminal id the name stands for, read back through `labels/fallacies.yaml`; a name outside the enumeration is `invalid`. The `p_logprob_*` columns stay empty, since a name can take several tokens and two names can share the first one; `p_label` holds instead the probability of the label chosen: the product of the probabilities of its tokens along the generated sequence, from the token where the value begins to the one that holds its last character, which may carry the closing quote too. It is the probability at temperature 1 over the tokens the grammar admits (section 4.1), so once the first tokens single out a name the rest are worth 1. In `summary.csv` the hard answer follows the regime of the entry (sample 0, or the majority of the valid samples with the tie rule of section 3), and `p_logprob`, `p_verbal` and `p_sample` stay empty: a verdict has no yes to orient them on. The pilot report does not read this stage.
+
 ## 5. Acceptance tests
 
 Since 20 September 2026 `tests/` keeps only the tests that defend a result, check the data or help the work. The points without a note have an automatic test; the marked points remain requirements, but today they have no test, or only a partial one.
@@ -125,6 +131,7 @@ All of them with the fake backend in `tests/fakes/llm.py`, which returns determi
 13. Reading `raw.jsonl`: `read_raw` returns the first row before decoding the second line, and a line with U+2028 and U+0085 inside a string comes back as one row.
 14. Stored form: with a fake backend that returns the copy and `bytes`, the lines of `raw.jsonl` and the cache entries of a run have neither, still have the alternatives and `top_logprobs` 20; a response stored whole in the cache reads back equal, and its whole and stored forms parse to the same row.
 15. Pilot report, on a run written by hand (two expert opinion items, one model in both reasoning conditions, five samples): the stopping rule lists a CQ above threshold and not one exactly at it; where the hard answer is `cannot_be_determined`, `diagram` gives no verdict and stops at that node, `toward_good` gives `good_argumentation` and `logprob` the arc of the higher mass; `toward_good` has no arc at any node of ad hominem; no verdict counts as wrong and lowers the coverage; the token counts measure the reasoning on the field of the message where `usage` says zero, and leave out a line with `error`; the CQs above threshold come first in the report, and without `raw.jsonl` the report says so; the verdicts follow the majority where sample 0 differs from it; the distribution of the output tokens and the share of the compact layout per stage come out of a `raw.jsonl` written by hand.
+16. Zero-shot: on the fake backend, an execution of the zero-shot stage parses to the terminal ids of the schemes, with `p_label` equal to the probability of the tokens of the name, and a `summary.csv` without the three probabilities; on a line written by hand, `p_label` is the product over every token of the name, the one that carries the closing quote included, and nothing outside it; the two configurations plan 300 and 7813 calls, all of the zero-shot stage.
 
 ## 6. What not to do
 * No parsing inside the client: the client saves, and that is all.
