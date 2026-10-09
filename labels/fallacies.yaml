@@ -54,7 +54,9 @@ terminals:
     type: fallacy
     family: ad_hominem
     schemes: [ad_hominem]
-    definition: "Attacking the person's self-esteem instead of the argument or the evidence supporting it."
+    # "self-confidence" for the "autostima" of the thesis, the word of ad hominem CQ5, so that
+    # the zero-shot prompt and the diagram describe this fallacy with the same term
+    definition: "Attacking the person's self-confidence instead of the argument or the evidence supporting it."
   ad_hominem_abusive:
     label: "Ad Hominem (Abusive)"
     display_label: "Abusive"
