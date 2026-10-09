@@ -17,7 +17,7 @@ from argfallacy.client import RunConfig, execute, load_models, plan, read_raw
 from argfallacy.paths import REPO_ROOT
 from argfallacy.prompts import ZEROSHOT, render_zeroshot, verdict_schema, verdicts
 from argfallacy.schemes import SchemeError
-from fakes.llm import REAL_WEIGHT, FakeBackend
+from fakes.llm import REAL_WEIGHT, SPLIT_REST, SPLIT_SHORT, SPLIT_WHOLE, FakeBackend
 
 ITEM = {"item_id": "0123456789abcdef", "text": "Everyone I know buys it, so it must be good."}
 FAKE_MODELS = load_models(Path(__file__).parent / "fakes" / "models.yaml")
@@ -88,16 +88,81 @@ def test_the_names_shown_go_back_to_the_ids(schemes):
     assert wrong.iloc[0]["answer"] == "invalid"
 
 
-def test_the_probability_of_the_chosen_label_spans_all_its_tokens(schemes):
+def _logprobs(tokens) -> dict:
+    """A logprob block from (token, logprob, alternatives) triples."""
+    return {"content": [
+        {"token": token, "logprob": logprob,
+         "top_logprobs": [{"token": t, "logprob": lp} for t, lp in alternatives]}
+        for token, logprob, alternatives in tokens
+    ]}
+
+
+HEAD = [('{"', -0.01, []), ("answer", -0.01, []), ('": "', -0.5, [])]
+TAIL = [(', "confidence": 70, "justification": "x"}', -0.4, [])]
+
+
+def test_the_probability_of_the_chosen_label_sums_its_splits(schemes):
     from argfallacy.parse import parse_answers
 
-    tokens = [('{"', -0.01), ("answer", -0.01), ('": "', -0.5), ("We", -0.1), ("ak", -0.2),
-              (' Analogy"', -0.3), (', "confidence": 70, "justification": "x"}', -0.4)]
-    logprobs = {"content": [{"token": t, "logprob": lp, "top_logprobs": []} for t, lp in tokens]}
-    row = parse_answers([_zeroshot_line(schemes["analogy"], "Weak Analogy", logprobs)],
-                        schemes).iloc[0]
+    # "We" already singles out Weak Analogy: every alternative there that can only
+    # become it counts, and the tokens after it count for nothing
+    first = [("We", -0.1), ("Weak", -1.5), ("W", -3.0), ("False", -4.0), ("Good", -5.0)]
+    tokens = HEAD + [("We", -0.1, first), ("ak", -0.2, []), (' Analogy"', -0.3, [])] + TAIL
+    row = parse_answers([_zeroshot_line(schemes["analogy"], "Weak Analogy",
+                                        _logprobs(tokens))], schemes).iloc[0]
     assert row["answer"] == "weak_analogy"
-    assert row["p_label"] == pytest.approx(math.exp(-0.6))
+    assert row["p_label"] == pytest.approx(math.exp(-0.1) + math.exp(-1.5) + math.exp(-3.0))
+    assert not row["p_label_lower_bound"]
+
+
+def test_a_split_before_the_label_is_singled_out_makes_a_lower_bound(schemes):
+    from argfallacy.parse import parse_answers
+
+    # "Appe" and "Appeal to" are shared by Nature and Tradition; " Nature" decides
+    tokens = HEAD + [
+        ("Appe", -0.2, [("Appe", -0.2), ("Ap", -2.0), ("Ad", -3.0)]),
+        ("al to", -0.1, []),
+        (" Nature", -0.3, [(" Nature", -0.3), (" Nat", -2.5), (" Tradition", -1.6)]),
+        ('"', -0.01, []),
+    ] + TAIL
+    row = parse_answers([_zeroshot_line(schemes["popular_opinion"], "Appeal to Nature",
+                                        _logprobs(tokens))], schemes).iloc[0]
+    assert row["answer"] == "appeal_to_nature"
+    assert row["p_label"] == pytest.approx(math.exp(-0.3) * (math.exp(-0.3) + math.exp(-2.5)))
+    assert row["p_label_lower_bound"]
+
+
+def test_a_label_split_two_ways_on_the_fake_backend(tmp_path, schemes):
+    from argfallacy.client import ResponseCache
+    from argfallacy.parse import parse_answers
+
+    data = {"name": "zs", "models": ["fake_single", "fake"], "stages": [ZEROSHOT],
+            "scheme_condition": "gold", "prompt_version": "v1", "items": {}, "generation": {}}
+    config = RunConfig(raw=data, **data)
+    items = [{"item_id": f"item{n}", "text": f"Argument {n}.", "gold_scheme": s}
+             for n, s in enumerate(sorted(schemes) * 3)]
+    with ResponseCache(tmp_path / "cache.sqlite") as cache:
+        execute(config, items, run_id="zs", runs_dir=tmp_path,
+                backend=FakeBackend(split_labels=True), cache=cache, models=FAKE_MODELS,
+                schemes=schemes, sleep=lambda _: None)
+
+    answers = parse_answers(read_raw(tmp_path / "zs"), schemes)
+    assert answers["parse_ok"].all()
+    seen = set()
+    for row in answers.itertuples():
+        shown = {v.terminal: v.shown for v in verdicts(schemes[row.scheme])}
+        label = shown[row.answer]
+        alone = [n for n in shown.values() if n.startswith(label[:2])] == [label]
+        if alone:
+            # the two characters single it out: both ways of writing it count
+            expected, bound = SPLIT_SHORT + SPLIT_WHOLE, False
+        else:
+            # shared two characters: the path written, the whole label left out
+            expected, bound = SPLIT_SHORT * SPLIT_REST, True
+        assert row.p_label == pytest.approx(expected), (row.scheme, label)
+        assert row.p_label_lower_bound == bound
+        seen.add(alone)
+    assert seen == {True, False}
 
 
 def test_the_probability_of_the_chosen_label_on_the_fake_backend(tmp_path, schemes):

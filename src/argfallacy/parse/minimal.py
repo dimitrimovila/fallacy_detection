@@ -17,7 +17,7 @@ valid samples, and ``p_sample`` the frequency of a yes among them.
 
 A zero-shot call answers with the name its prompt showed for a verdict; the row
 carries the terminal id instead, read back through ``labels/fallacies.yaml``, and
-``p_label``, the probability of the whole name as the model generated it.
+``p_label``, the probability of the name chosen, over the ways of writing it.
 """
 
 from __future__ import annotations
@@ -51,7 +51,7 @@ ANSWERS_COLUMNS = [
     "run_id", "item_id", "stage", "scheme_condition", "scheme", "cq_id", "sample_index",
     "model", "model_id", "prompt_version", "cache_key", "from_cache",
     "answer", "confidence", "justification",
-    *[f"p_logprob_{option}" for option in ALL_OPTIONS], "p_label",
+    *[f"p_logprob_{option}" for option in ALL_OPTIONS], "p_label", "p_label_lower_bound",
     "logprob_partial", "parse_ok", "finish_reason", "latency_s", "error",
 ]
 SUMMARY_COLUMNS = [
@@ -165,31 +165,75 @@ def _value_start(tokens: list[str], key: str) -> int | None:
     return matches[-1].end() if matches else None
 
 
-def value_probability(
-    logprobs: Mapping[str, Any] | None, options: Iterable[str], key: str = "answer"
-) -> float | None:
-    """Probability of the whole value of ``key``, as the model generated it.
+def _compatible(written: str, options: Iterable[str]) -> set[str]:
+    """The labels a value written so far can still become.
 
-    The product of the probabilities of its tokens, from the token of
-    :func:`answer_position` to the one holding the last character before the
-    closing quote, which may carry the quote and what follows it too.  None where
-    there is no answer position or no closing quote.
+    Once the closing quote is written the value is over, and only the label equal to
+    it is left.
     """
-    if answer_position(logprobs, options, key) is None:
-        return None
+    if '"' in written:
+        value = written[: written.index('"')]
+        return {option for option in options if option == value}
+    return {option for option in options if option.startswith(written)}
+
+
+def label_probability(
+    logprobs: Mapping[str, Any] | None, options: Iterable[str], chosen: str,
+    key: str = "answer",
+) -> tuple[float | None, bool]:
+    """Probability of the label chosen, over the ways of writing it, and whether it is a bound.
+
+    A model can write the same label split into tokens in different ways, so the
+    product along the path it wrote undercounts the label.  Reading the value
+    token by token, k is the first position where the text written so far, that
+    token included, can only become ``chosen``.  The probability is the product of
+    the tokens chosen before k, times the sum, at k, of every alternative in
+    ``top_logprobs`` that, after the text written before k, can only become
+    ``chosen``, the token chosen included.  After k the grammar admits nothing but
+    ``chosen``, so nothing more is multiplied.
+
+    Before k the text is shared by several labels.  An alternative there that is
+    another way of writing a prefix of ``chosen`` reaches it by a path this does
+    not follow: the probability is then a lower bound, and the flag says so.  None
+    where there is no value, the answer is not a label, or the value never singles
+    it out.
+    """
+    options = list(options)
+    if chosen not in options or answer_position(logprobs, options, key) is None:
+        return None, False
     content = logprobs.get("content") or []
     tokens = [str(entry.get("token", "")) for entry in content]
     start = _value_start(tokens, key)
-    end = "".join(tokens).find('"', start)
-    if end <= start:
-        return None
-    total, offset = 0.0, 0
+    total, offset, written, bound = 0.0, 0, "", False
     for entry, token in zip(content, tokens, strict=True):
         token_end = offset + len(token)
-        if token_end > start and offset < end:
-            total += float(entry.get("logprob", -math.inf))
+        if token_end <= start:
+            offset = token_end
+            continue
+        # the first token of the value may carry what comes before it, the quote say
+        lead = token[: max(0, start - offset)]
+        piece = token[len(lead):]
         offset = token_end
-    return math.exp(total)
+        alternatives = [
+            (str(alt.get("token", ""))[len(lead):], float(alt.get("logprob", -math.inf)))
+            for alt in entry.get("top_logprobs") or []
+            if str(alt.get("token", "")).startswith(lead) and str(alt.get("token", "")) != lead
+        ]
+        chosen_logprob = float(entry.get("logprob", -math.inf))
+        if _compatible(written + piece, options) == {chosen}:
+            mass = sum(math.exp(logprob) for text, logprob in alternatives
+                       if _compatible(written + text, options) == {chosen})
+            if not any(text == piece for text, _ in alternatives):
+                mass += math.exp(chosen_logprob)
+            return math.exp(total) * mass, bound
+        if any(text != piece and chosen in _compatible(written + text, options)
+               for text, _ in alternatives):
+            bound = True
+        total += chosen_logprob
+        written += piece
+        if '"' in written:
+            break
+    return None, bound
 
 
 def logprob_masses(
@@ -245,14 +289,14 @@ def parse_row(
         justification = parsed.get("justification")
         parse_ok = True
 
-    p_label = None
+    p_label, p_label_bound = None, None
     if row.get("stage") == ZEROSHOT:
         # the name shown goes back to its terminal; no masses over the first token,
         # since a name may take several tokens
+        p_label, p_label_bound = label_probability(raw.get("logprobs"), options, answer, key)
         if parse_ok:
             answer = shown_verdicts((schemes or load_all())[row["scheme"]])[answer]
         masses, partial = {}, False
-        p_label = value_probability(raw.get("logprobs"), options, key)
     else:
         masses, partial = logprob_masses(raw.get("logprobs"), options, key)
     out: dict[str, Any] = {
@@ -272,6 +316,7 @@ def parse_row(
         "confidence": confidence,
         "justification": justification,
         "p_label": p_label,
+        "p_label_lower_bound": p_label_bound,
         "logprob_partial": partial,
         "parse_ok": parse_ok,
         "finish_reason": raw.get("finish_reason"),

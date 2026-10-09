@@ -12,6 +12,9 @@ what a real run will meet:
 
 * ``partial_logprobs`` drops one admitted answer out of the alternatives, so the
   parser has to renormalise over what is left and mark the row;
+* ``split_labels`` writes an answer in two tokens, its first two characters and
+  the rest, and offers the whole answer as an alternative to the first: the same
+  label split in two ways, as a model writes a verdict name;
 * ``reasoning`` thinks before the JSON, as a server with a reasoning parser
   answers: the thinking goes in the ``reasoning`` field of the message and the
   content is the JSON alone, while the logprob block keeps the tokens of both.
@@ -42,6 +45,9 @@ REAL_WEIGHT = 0.6
 """Probability the fake gives its own answer at the real answer token."""
 DECOY_WEIGHT = 0.9
 """Probability the decoy in the reasoning gives to a different answer."""
+SPLIT_SHORT, SPLIT_WHOLE, SPLIT_REST = 0.5, 0.2, 0.9
+"""With ``split_labels``: the first two characters of the answer, the whole answer as an
+alternative to them, and the rest after the two characters."""
 
 
 class FakeError(RuntimeError):
@@ -98,6 +104,7 @@ class FakeBackend:
     calls: int = 0
     fail_after: int | None = None
     partial_logprobs: bool = False
+    split_labels: bool = False
     reasoning: bool = False
     invalid_on: tuple[str, ...] = ()
     latency_s: float = 0.0
@@ -168,6 +175,8 @@ class FakeBackend:
         match = re.search(re.escape(f'"{key}": "'), body)
         start = match.end()
         value_end = body.index('"', start)
+        if self.split_labels and len(answer) > 2:
+            return self._split_tokens(body, key, answer, options, start, value_end)
         first = first_token(answer)
         pieces = [
             _token(body[:2]),
@@ -180,6 +189,23 @@ class FakeBackend:
             pieces.append(_token(body[start + len(first) : value_end]))
         pieces.append(_token(body[value_end:]))
         return pieces
+
+    def _split_tokens(self, body: str, key: str, answer: str, options: tuple[str, ...],
+                      start: int, value_end: int) -> list[dict[str, Any]]:
+        """The answer as its first two characters and the rest, the whole as an alternative."""
+        others = [first_token(o) for o in options if o != answer]
+        rest = (1.0 - SPLIT_SHORT - SPLIT_WHOLE) / max(1, len(others))
+        alternatives = [_token(answer[:2], math.log(SPLIT_SHORT)),
+                        _token(answer, math.log(SPLIT_WHOLE))]
+        alternatives += [_token(o, math.log(rest)) for o in others]
+        return [
+            _token(body[:2]),
+            _token(body[2 : 2 + len(key)]),
+            _token(body[2 + len(key) : start]),
+            _token(answer[:2], math.log(SPLIT_SHORT), alternatives),
+            _token(answer[2:], math.log(SPLIT_REST)),
+            _token(body[value_end:]),
+        ]
 
     def _reasoning_tokens(self, options: tuple[str, ...], key: str,
                           answer: str) -> list[dict[str, Any]]:

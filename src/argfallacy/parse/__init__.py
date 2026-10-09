@@ -6,6 +6,7 @@ from .minimal import (
     INVALID,
     SUMMARY_COLUMNS,
     answer_position,
+    label_probability,
     logprob_masses,
     majority,
     options_for,
@@ -17,12 +18,11 @@ from .minimal import (
     summarise,
     valid_samples,
     validate_against_schema,
-    value_probability,
 )
 
 __all__ = [
     "parse_run", "parse_answers", "summarise", "parse_row", "parse_content",
     "logprob_masses", "answer_position", "majority", "valid_samples", "options_for",
-    "validate_against_schema", "value_probability", "shown_verdicts",
+    "validate_against_schema", "label_probability", "shown_verdicts",
     "INVALID", "ALL_OPTIONS", "ANSWERS_COLUMNS", "SUMMARY_COLUMNS",
 ]
