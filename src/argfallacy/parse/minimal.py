@@ -225,7 +225,9 @@ def label_probability(
                        if _compatible(written + text, options) == {chosen})
             if not any(text == piece for text, _ in alternatives):
                 mass += math.exp(chosen_logprob)
-            return math.exp(total) * mass, bound
+            # the server's logprobs are rounded, so a label that takes all the mass can
+            # sum to a hair above 1
+            return min(1.0, max(0.0, math.exp(total) * mass)), bound
         if any(text != piece and chosen in _compatible(written + text, options)
                for text, _ in alternatives):
             bound = True

@@ -106,13 +106,24 @@ def test_the_probability_of_the_chosen_label_sums_its_splits(schemes):
 
     # "We" already singles out Weak Analogy: every alternative there that can only
     # become it counts, and the tokens after it count for nothing
-    first = [("We", -0.1), ("Weak", -1.5), ("W", -3.0), ("False", -4.0), ("Good", -5.0)]
-    tokens = HEAD + [("We", -0.1, first), ("ak", -0.2, []), (' Analogy"', -0.3, [])] + TAIL
+    first = [("We", -0.5), ("Weak", -2.0), ("W", -4.0), ("False", -1.5), ("Good", -2.5)]
+    tokens = HEAD + [("We", -0.5, first), ("ak", -0.2, []), (' Analogy"', -0.3, [])] + TAIL
     row = parse_answers([_zeroshot_line(schemes["analogy"], "Weak Analogy",
                                         _logprobs(tokens))], schemes).iloc[0]
     assert row["answer"] == "weak_analogy"
-    assert row["p_label"] == pytest.approx(math.exp(-0.1) + math.exp(-1.5) + math.exp(-3.0))
+    assert row["p_label"] == pytest.approx(math.exp(-0.5) + math.exp(-2.0) + math.exp(-4.0))
     assert not row["p_label_lower_bound"]
+
+
+def test_the_probability_of_the_chosen_label_never_exceeds_one(schemes):
+    from argfallacy.parse import parse_answers
+
+    # rounded logprobs: the token chosen at 0.0 and an alternative of the same label on top
+    first = [("We", 0.0), ("Weak", -20.0)]
+    tokens = HEAD + [("We", 0.0, first), ("ak Analogy", 0.0, []), ('"', 0.0, [])] + TAIL
+    row = parse_answers([_zeroshot_line(schemes["analogy"], "Weak Analogy",
+                                        _logprobs(tokens))], schemes).iloc[0]
+    assert row["p_label"] == 1.0
 
 
 def test_a_split_before_the_label_is_singled_out_makes_a_lower_bound(schemes):
