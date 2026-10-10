@@ -4,217 +4,73 @@
 strumento di individuazione delle fallacie* [Argumentation schemes and critical questions in Large
 Language Models as a tool for fallacy detection], master's thesis, University of Padova, Department
 of Linguistic and Literary Studies, academic year 2025-2026. Supervisor prof. Massimiliano Carrara,
-co-supervisor prof. Giovanni Da San Martino. **Published version confirmed by the author**, 23 September
+co-supervisor prof. Giovanni Da San Martino. Published version confirmed by the author, 23 September
 2026, 182 pages, **chapter 3**, §3.1 "Diagrammi degli schemi" [Diagrams of the schemes], printed
-pp. 50-96.
+pp. 50-96. The page references below are those of this version.
 
-**Check against the published version.** On 23 September 2026 the scheme cards and the files of
-`schemes/` were compared block by block with the published version: formal schema, identification
-question, critical questions and terminals on the extracted text, formulas with subscripts and all
+On 23 September 2026 the scheme cards and the files of `schemes/` (version 1.1) were compared block
+by block with it: formal schema, identification question, critical questions, terminals, and all
 eight diagrams on the rendered pages. They coincide with the thesis, except for the corrections of
-ours listed in the Conventions. The page references are those of the published version. The
-alignment is recorded in §0.6; §0.1-§0.5 record the earlier revisions and keep the page numbers of
-the PDFs of their time.
+ours listed in the Conventions.
 
-**What this document contains.** Only the schemes. Argumentation scheme, identification
-question, critical questions, diagram, terminals, plus the structural properties that
-follow from them. Dataset, annotation method, prompts, runs and results are in
-`diagnosi_pipeline_cq.md`, outside the repository.
+**What this document contains.** Only the schemes: argumentation scheme, identification question,
+critical questions, diagram, terminals, and the structural properties that follow from them. Dataset
+and annotation method are in `data.md`. Prompts, runs and results are in `diagnosi_pipeline_cq.md`,
+outside the repository.
 
 ---
 
 ## Conventions
 
-**The critical questions report the words of chapter 3**. No reformulation, no content added or
-removed. The corrections of ours are the only differences from the published version, each for an
-evident error of the thesis, and they are also the only differences between the thesis and the files
-of `schemes/`:
+**The critical questions report the words of chapter 3**, with no reformulation. The corrections of
+ours are the only differences from the published version and from the files of `schemes/`. Each is
+made for an evident error of the thesis, with the reason given here:
 
-1. expert opinion CQ3, `claim` in the infinitive: "Did S really assert (or claim) A as true?"; the
-   thesis writes `(or claimed)`.
-2. cause to effect CQ2.1, `evidence` instead of `example`: "Was the evidence cited chosen in such a
-   clearly biased and malicious manner as to undermine the validity of the generalization?". The
-   scheme has no example, CQ2 and CQ2.2 speak of the evidence cited, and the Comment says that
-   "la domanda 2.1 indaga se le evidenze siano state selezionate" [question 2.1 asks whether the
-   evidence was selected]. See §3.
-3. the name of the non-fallacious terminal, `Good Argumentation` (below).
-4. the arcs of correlation to cause CQ5, inverted in the thesis with respect to its own question
-   and Comment (§4, §12.1).
-5. ad hominem CQ3, the missing complement: "Does the direct attack on the other person consist of
+1. **Expert opinion CQ3**, `claim` in the infinitive: "Did S really assert (or claim) A as true?".
+   The thesis writes `(or claimed)`.
+2. **Cause to effect CQ2.1**, `evidence` instead of `example`: "Was the evidence cited chosen in such
+   a clearly biased and malicious manner as to undermine the validity of the generalization?". This
+   scheme has no example: CQ2 and CQ2.2 speak of the evidence cited, and the Comment of the thesis
+   says that question 2.1 asks whether the evidence was selected.
+3. **Name of the non-fallacious terminal**, `Good Argumentation`. The published version calls the
+   green terminal `Non-fallacious Argument`, and earlier versions `Good Argument`. It is the same
+   terminal, and the name changes neither the path nor the meaning.
+4. **Correlation to cause CQ5**, arcs inverted. The thesis sends `yes` to Definist Fallacy, against
+   its own question and Comment. See §4.
+5. **Ad hominem CQ3**, the missing complement: "Does the direct attack on the other person consist of
    an accusation that they are committed to a group, movement or cause (for example political,
    religious or ideological) that is viewed negatively?". The thesis stops at "an accusation that
-   they are committed?", which does not say committed to what. The Comment, printed p. 75, states
-   the intended sense: "la terza domanda verifica se l'attacco consista nell'accusare
-   l'interlocutore di un impegno o vincolo personale (ad esempio politico, religioso o ideologico)
-   tale da motivarne la posizione. In questo caso si ricade nella fallacia guilt by association: la
-   credibilità dell'argomentazione viene minata non in base al suo contenuto, ma in virtù
-   dell'appartenenza dell'interlocutore a un gruppo, movimento o categoria percepiti negativamente"
-   [the third question checks whether the attack consists in accusing the other person of a
-   personal commitment or tie (for example political, religious or ideological) such as to
-   motivate their position. In this case one falls into the guilt by association fallacy: the
-   credibility of the argument is undermined not on the basis of its content, but by virtue of the
-   other person's membership of a group, movement or category perceived negatively]. "tale da
-   motivarne la posizione" [such as to motivate their position] is left out on purpose: a personal
-   commitment that motivates a position is bias, which is CQ2 (Circumstantial), and including it
-   would make the two nodes overlap. See §5 and §12.0.
-6. slippery slope CQ3, the object of the definition: "Is it possible to provide a precise
+   they are committed?", which does not say committed to what. A commitment to an inconsistent
+   position would be tu quoque (CQ4), membership of a discredited group is guilt by association, and
+   the diagram chooses the second. The Comment (printed p. 75) states that sense: the credibility is
+   undermined by the other person's membership of a group, movement or category perceived
+   negatively. The Comment's clause that the commitment motivates the person's position is left out
+   on purpose: that is bias, which is CQ2 (Circumstantial), and including it would make the two
+   nodes overlap. The partial overlap with CQ4 is not a defect of the text and stays.
+6. **Slippery slope CQ3**, the object of the definition: "Is it possible to provide a precise
    definition of the initial action or of the concepts involved that removes the ambiguity to such
    an extent as to halt the decline?". The thesis writes "a precise definition that removes the
-   ambiguity", which does not say a definition of what. The Comment, printed p. 95, states it: "è
-   possibile fornire una definizione sufficientemente precisa dell'atto iniziale o dei concetti
-   coinvolti, tale da eliminare l'ambiguità che alimenta la catena verso le conseguenze peggiori?"
-   [is it possible to provide a sufficiently precise definition of the initial act or of the
-   concepts involved, such as to remove the ambiguity that feeds the chain towards the worst
-   consequences?]. See §8.
-
-The spelling `committed` (ad hominem CQ3) and `claimed` (correlation to cause CQ3), corrections of
-ours on the earlier versions, are the text of the published version; the complement of ad hominem
-CQ3 is correction 5.
+   ambiguity", which does not say a definition of what. The Comment (printed p. 95) states it: the
+   initial act or the concepts involved.
 
 **The text of the thesis and our observations are kept separate.** Everything that is not
 transcription is marked `⟶ our observation` or collected in §12. Nothing in the cards must be
 attributed to Enrico unless it is transcribed.
 
 **The arcs of the diagrams** were read from the rasterised pages of the PDF, because the
-flowcharts are vector graphics and text extraction returns the labels `yes` and `no`
-in an order that cannot be reconstructed. All eight were reread on the rendered pages of the
-published version.
+flowcharts are vector graphics and text extraction returns the labels `yes` and `no` in an order
+that cannot be reconstructed.
 
-**Notation.** `CQn: answer → destination`. `⟲` flags a reconvergence arc, that is, two or
-more paths that enter the same node or terminal.
+**Notation.** `CQn: answer → destination`. `⟲` flags a reconvergence arc, that is, two or more
+paths that enter the same node or terminal.
 
-**The reference version is chapter 3.** Chapter 4 of the same thesis reports, in a
-prompt listing, a different version of ad hominem, and the prompts actually run in the
-experiments report a third one. The comparison is in §11 and does not contaminate the cards.
+**The reference version is chapter 3.** The prompts actually run in the earlier experiments differ
+from it in a few points (§11).
 
-**Name of the non-fallacious terminal.** In the published version the green terminal is called
-`Non-fallacious Argument` everywhere, appendix included, while in the earlier versions it was
-called `Good Argument` or `Good Argumentation`. Here it stays
-`Good Argumentation`: it is the same terminal, and the name changes neither the path nor the meaning.
-
----
-
-## 0. Changelog with respect to the previous revision of this document
-
-The previous revision was based on the 73-page PDF. Comparison limited to the schemes. §0.1-§0.5
-are the record of the revisions made on the drafts and on the PDF of 14 September 2026: their page
-numbers and their statements about the thesis refer to those versions. The current state is in §0.6 and §0.7.
-
-### 0.1 Resolved
-
-| Problem | Status |
-|---|---|
-| **Comments in Italian systematically out of date.** On all 8 schemes the "Commento" [Comment] section described a set of CQs different from the one listed and diagrammed | **Resolved on all 8.** Checked by reading the opening of each Comment. They now describe the CQs actually diagrammed |
-| **CQ1 of expert opinion with `and/or`**, a truth connective that is not defined | **Mitigated.** It is now `or` |
-| **CQ4 of expert opinion**, a conditional with the guard inside the text of the question | **Resolved.** Split into CQ4 plus CQ4.1 |
-| **Inconsistent numbering of slippery slope**, `CQ4.1` in the list and `CQ5.1` in the node | **Resolved.** Now `C.Q. 4.1` in both |
-
-### 0.2 Modified
-
-| Scheme | What |
-|---|---|
-| example, CQ2.1 | rewritten on the model of the one of cause to effect, from "selected on the basis of biased quality criteria that undermine the strength" to "selected in a clearly biased and malicious manner in order to undermine the validity" |
-
-### 0.3 Unchanged in the thesis, corrected by us
-
-The inverted polarity of correlation to cause CQ5 is still present in the published version: we
-corrected it by inverting the arcs, see §4 and §12.1. The one of slippery slope CQ5, which we had
-corrected in the same way, was corrected by the author in the published version: the thesis and our
-file coincide (§8).
-
-Ad hominem without a Good Argumentation terminal remains unchanged and uncorrected, because it is not
-a sign error but a coverage choice. See §12.4.
-
-### 0.4 Comparison with the definitive PDF (14 September 2026, 181 pages)
-
-**correlation to cause, CQ3.** The thesis wrote `a significant number of observation?`, the
-definitive PDF writes `observations`. Our transcription was already in the plural, so from a
-correction of ours it becomes text of the thesis: `observations` was removed from the list of
-corrections in the Conventions. The form `claimed` remains a correction of ours, the definitive PDF
-still writes `Is the claim relationship`.
-
-**The two inverted polarities of §0.3 are still inverted in the definitive PDF too.** Rechecked
-on the rendered pages: correlation to cause CQ5 sends `yes` to Definist Fallacy (printed p.
-64), slippery slope CQ5 sends `no` to Slippery Slope (printed p. 90). Our two arc
-corrections remain necessary.
-
-**Page references, realigned.** The page numbers of this document came from the
-135-page PDF and were +2 with respect to the definitive one. They have all been brought back to the
-numbering of the definitive PDF, taking them from the PDF itself and not converting them by hand.
-§3.1 is at pp. 46-92.
-Pages of the diagrams: 49 example, 54 analogy, 59 cause to effect, 64 correlation to cause,
-70 ad hominem, 77 expert opinion, 83 popular opinion, 90 slippery slope.
-
-**Critical questions, identification questions and lists of fallacies** coincide word for
-word with what is transcribed here. As for the diagrams, the three of correlation to cause, slippery
-slope and expert opinion were reread on the rendered pages of the definitive PDF; the other five
-were checked on the extraction of the labels of nodes and terminals, which shows no
-changes. **The formal Schema blocks had not been checked**: two of them did not coincide,
-see §0.5.
-
-### 0.5 Formal schemas realigned and source B lapsed (15 September 2026)
-
-The comparison of §0.4 had covered critical questions, identification questions, lists
-of fallacies and diagrams, but not the **Schema** blocks. Once those were checked too, two out of
-eight diverged from the definitive PDF, because the transcription dated back to the 135-page PDF.
-
-| Scheme | What changed |
-|---|---|
-| ad hominem, §5 | replaced with the two lines printed on p. 68 ("a is a person of bad character…"). Before, there was Walton's long ethotic formulation |
-| slippery slope, §8 | replaced with the version in `C0 … Cn` notation printed on p. 88. Before, there was the `A0 … An` notation |
-| slippery slope, CQ 2 | goes back to `Cn` as in the thesis. The correction `An`, applied for consistency with the old schema, was also removed from the Conventions |
-
-**Why it matters.** The formal schema is not decoration: in the stage-one prompt it is shown
-to the model together with the closed list of the eight schemes, instead of the bare label. If
-our YAML files carry the old schema, the model sees a text that is not that of the thesis.
-The files of `schemes/` were aligned on 23 September 2026 (§0.6).
-
-**The prompt listing no longer exists.** In the definitive PDF, §4.3.2 (pp. 109-110) describes the
-prompts in words and does not report their text. It states that every critical question receives a
-**binary answer, Yes or No**, with a mandatory justification anchored in the text. In all the 181
-pages the string "Cannot be determined from the text" never appears. Source **B** of
-§11 therefore lapses as a citable source, and the third answer of our prompt remains a project
-choice of ours, to be justified as such and not as an inheritance from the thesis.
-
-**Lesson of method.** A comparison between two versions of the thesis is not enough to validate our
-files: our document must be compared with the thesis, block by block. §0.4 compared the
-two drafts of the thesis with each other, and for this reason it had not seen the two divergences.
-
-### 0.6 Alignment with the published version (23 September 2026, 182 pages)
-
-The version published on 23 September 2026, 182 pages, confirmed by the author, replaces the PDF of
-14 September (181 pages) as the reference. The files of `schemes/` go to version 1.1 and follow it,
-except for the corrections of ours listed in the Conventions. No arc was changed.
-
-| Scheme | What changed in the thesis, now in the cards and in `schemes/` |
-|---|---|
-| example, CQ2.1 | "Was the example cited chosen in such a clearly biased and malicious manner as to undermine…", before "selected in a clearly biased and malicious manner in order to undermine…" |
-| example, CQ2.2, CQ2.3, CQ3; cause to effect, CQ2.2 | `generalization`, before `generalisation` |
-| cause to effect, CQ2.1 | the same rewording as example CQ2.1, with `example` in place of `evidence`: we keep `evidence` (Conventions, correction 2) |
-| expert opinion, CQ1 | `recognized`, before `recognised` |
-| expert opinion, CQ2 | "Is the fact that S stated (or claimed) A used as the sole basis for supporting the truth of the conclusion, without providing any other form of argument?", before "The fact that S has asserted (or claimed) A is used as the sole supporting consideration…, without providing any other type of argument?" |
-| slippery slope, identification question | "Does the text put forward the argument that, if a particular action is permitted or carried out…?", before "The text contains an argument claiming that if you allow or carry out…?" |
-| slippery slope, schema | the fourth premise says `Cn`, before `C0` (a typo of the version of 14 September) |
-| slippery slope, CQ5 | the arcs are corrected by the author: `yes` leads to Slippery Slope, as in our file |
-| terminal names | `Non-fallacious Argument` everywhere, appendix included |
-
-Files of `schemes/` that were still behind the PDF of 14 September, now aligned: the formal
-schema of ad hominem and of slippery slope (§0.5), CQ2 of slippery slope with `Cn`, and the
-glossaries of the variables of the two schemes, which follow the formal schema. `committed` and
-`claimed` are now the text of the thesis and leave the list of corrections.
-
-Pages of the diagrams in the published version: 53 example, 58 analogy, 63 cause to effect,
-68 correlation to cause, 74 ad hominem, 81 expert opinion, 87 popular opinion, 94 slippery slope.
-
-### 0.7 Complements of ad hominem CQ3 and slippery slope CQ3 (26 September 2026)
-
-CQ3 of ad hominem receives the complement that the thesis leaves out, taken from its own Comment
-(printed p. 75): correction 5 of the Conventions. Text only; the graph, the arcs and the terminal do
-not change. The schemes stay at version 1.1, because no real run had happened yet.
-
-On the same day, for the same reason, CQ3 of slippery slope receives the object of its definition,
-"of the initial action or of the concepts involved", taken from its Comment (printed p. 95):
-correction 6 of the Conventions. Text only, as above.
+**The answer space of the prompt.** The thesis (§4.3.2, printed pp. 113-114) describes the prompts
+only in words: every critical question receives a binary answer, `Yes` or `No`, with a mandatory
+justification anchored in the text. The third answer of our prompt, `cannot_be_determined`, is a
+project choice to be justified as such, not an inheritance from the thesis.
 
 ---
 
@@ -322,11 +178,8 @@ Therefore in this case, B will (might) occur.
 - **C.Q. 3** — Is the relationship between cause and effect based solely on temporal sequence?
 - **C.Q. 4** — Are there other causal factors that clearly represent the real reason behind the occurrence of the effect?
 
-⚑ **Correction of ours.** The thesis writes "Was the **example** cited chosen…", the wording of
-example CQ2.1. This scheme has no example: CQ2 and CQ2.2 speak of the evidence cited, and the Comment
-says "la domanda 2.1 indaga se le evidenze siano state selezionate in maniera deliberatamente
-distorta e faziosa" [question 2.1 asks whether the evidence was selected in a deliberately distorted
-and partisan way]. We write `evidence`, as in the version of 14 September.
+⚑ **Correction 2 of the Conventions.** The thesis writes "Was the **example** cited chosen…". We
+write `evidence`.
 
 **Diagram**
 ```
@@ -369,9 +222,6 @@ Therefore, A causes B.
 - **C.Q. 4** — Could there be a third factor C (or a set of several factors) that is the clear cause of B or of both A and B?
 - **C.Q. 5** — Can it be shown that the increase or change in B is not solely due to the way B is defined?
 
-⟶ *version note*. `observations` in the plural and `claimed` are the text of the published version;
-the earlier versions wrote `observation` and `Is the claim relationship`. See §0.4 and §0.6.
-
 **Diagram**
 ```
 CQ1   no  → False Premise
@@ -390,15 +240,17 @@ CQ5   yes → Good Argumentation      ⚑ arc corrected by us
       no  → Definist Fallacy        ⚑ arc corrected by us
 ```
 
-⚑ **Correction applied.** In the diagram of the thesis, checked on the rendered page, printed
-p. 68, the arcs of CQ5 are the opposite, `yes` towards Definist
-Fallacy and `no` towards Good Argumentation. Given the text of the question that direction is
-reversed, and the Comment of the thesis itself confirms it, according to which the definist fallacy
-arises when the change in B is "un effetto della definizione stessa di B, piuttosto che un mutamento
-sostanziale del fenomeno osservato" [an effect of the very definition of B, rather than a substantial
-change in the observed phenomenon]. We inverted the two arcs, leaving the text
-of the question intact. Rechecked on the published version of 23 September 2026: the arcs are
-still inverted, the correction remains necessary.
+⚑ **Correction 4 of the Conventions.** In the diagram of the thesis (printed p. 68, checked on the
+rendered page) the arcs of CQ5 are the opposite: `yes` towards Definist Fallacy and `no` towards
+Good Argumentation. But `yes` means that the change in B does not depend on how B is defined, that
+is, that the argument holds. The Comment of the thesis confirms it: the definist fallacy arises when
+the change in B is an effect of the very definition of B. We inverted the two arcs and left the text
+of the question intact. It is the minimal correction, it requires no rewording, and it aligns the
+diagram with the Comment, so it adds no interpretation of ours.
+
+The 607 rows of the earlier runs (606 distinct texts) were evaluated with the uncorrected arcs. The
+arcs are applied by the code to the answers already recorded, not by the prompt, so recomputing with
+the corrected arcs does not require a single new call to a model.
 
 **Terminals** — False Premise · Post Hoc · Questionable Cause · Hasty Generalization ·
 Causal Reductionism · Definist Fallacy · Good Argumentation
@@ -413,13 +265,6 @@ a is a person of bad character.
 Therefore, a's argument A should not be accepted.
 ```
 
-⚑ **Schema replaced on 15 September 2026.** This is the text printed on p. 72 of the published
-version, with citation [6]; the file `schemes/ad_hominem.yaml` carries it since version 1.1. The previous revision of this document reported Walton's longer ethotic
-formulation ("If x is a person of good (bad) moral character, then
-what x says should be accepted as more plausible…"), which came from the 135-page PDF and no longer
-appears in the thesis. It matters because the formal schema is shown to the model in the stage-one
-prompt. See §0.5.
-
 **Identification question**
 > Does the text shift the focus from arguments to personal judgments about the other person?
 
@@ -431,14 +276,7 @@ prompt. See §0.5.
 - **C.Q. 5** — Is the direct attack on the other person intended to undermine their self-confidence?
 - **C.Q. 6** — Is a direct attack on the other person used as a pretext to discredit them even before the discussion has begun?
 
-⚑ **Correction of ours.** The thesis stops at "…an accusation that they are committed?". The
-complement comes from the Comment, printed p. 75, which speaks of "un impegno o vincolo personale
-(ad esempio politico, religioso o ideologico)" [a personal commitment or tie (for example
-political, religious or ideological)] and of "l'appartenenza dell'interlocutore a un gruppo,
-movimento o categoria percepiti negativamente" [the other person's membership of a group, movement
-or category perceived negatively]. The Comment's "tale da motivarne la posizione" [such as to
-motivate their position] is left out, because a commitment that motivates a position is the bias of
-CQ2. Conventions, correction 5; §12.0.
+⚑ **Correction 5 of the Conventions.** The thesis stops at "…an accusation that they are committed?".
 
 **Diagram**
 ```
@@ -460,7 +298,8 @@ CQ6   yes → Poisoning the Well
 Association) · Ad Hominem (Tu Quoque) · Ad Fidentia · Poisoning the Well · Ad Hominem (Abusive)
 
 **Structural uniqueness.** It is the only one of the eight schemes **without a Good Argumentation
-terminal**. Every path ends in a fallacy.
+terminal**. Every path ends in a fallacy, so on this scheme the accuracy of the non-fallacious class
+is not defined, and any macro average that includes it must say so.
 
 ⟶ *our observation*. CQ1 is the only question of the whole set that does not branch on `yes` and `no`
 but on `positive` and `negative`. This must be kept in mind in the encoding, because the answer
@@ -515,7 +354,8 @@ Non Sequitur · Good Argumentation
 ⟶ *our observation*. With the split of CQ4, the case in which the arguer merely
 reports the assertion, that is `C = A`, exits on CQ4 `no` towards Good Argumentation without needing
 to encode an `na` value. The case of the **implicit** conclusion, the enthymeme, remains uncovered:
-the diagram gives no rule for it. See §12.3.
+the diagram gives no rule for it. EthiX reconstructs the enthymeme from the topic of the debate for
+the purpose of annotation, but keeps the original text in the dataset.
 
 ---
 
@@ -577,16 +417,6 @@ The penultimate step Cn−1 leads to a horrible outcome, Cn, which is not accept
 Therefore, C0 is not acceptable (contrary to the presumption of the initial premise).
 ```
 
-⚑ **Schema replaced on 15 September 2026.** This is the text printed on p. 92 of the published
-version, with citation [9], in `C0 … Cn` notation; the file `schemes/slippery_slope.yaml` carries it
-since version 1.1, with the subscripts written inline (`Cn-1`). The previous revision reported the
-version in `A0 … An` notation, which came from the 135-page PDF. As a consequence CQ 2 goes back
-to saying `Cn`, which is consistent with the schema: our correction from `Cn` to `An` is no longer
-needed.
-
-⟶ *version note*. The version of 14 September had a typo in the fourth premise, "…leads to a
-horrible outcome, C0"; the published version writes `Cn`, the outcome that CQ 2 refers to.
-
 **Identification question**
 > Does the text put forward the argument that, if a particular action is permitted or carried out (even if it is minor or seemingly harmless), it will inevitably lead (through a chain of intermediate consequences) to an extreme or catastrophic final outcome?
 
@@ -598,11 +428,8 @@ horrible outcome, C0"; the published version writes `Cn`, the outcome that CQ 2 
   - **C.Q. 4.1** — Would these steps lead to a different conclusion?
 - **C.Q. 5** — Are there weak links in the sequence, where specific critical questions should be asked on whether one event will really lead to another?
 
-⚑ **Correction of ours.** The thesis writes "Is it possible to provide a precise definition that
-removes the ambiguity…", without saying a definition of what. The object comes from the Comment,
-printed p. 95: "una definizione sufficientemente precisa dell'atto iniziale o dei concetti
-coinvolti" [a sufficiently precise definition of the initial act or of the concepts involved].
-Conventions, correction 6.
+⚑ **Correction 6 of the Conventions.** The thesis writes "Is it possible to provide a precise
+definition that removes the ambiguity…".
 
 **Diagram**
 ```
@@ -620,14 +447,10 @@ CQ5   yes → Slippery Slope         ⟲
       no  → Good Argumentation
 ```
 
-⟶ *version note*. Up to the version of 14 September the diagram of the thesis had the arcs of CQ5
-the opposite way, `no` towards Slippery Slope and `yes` towards Good Argumentation, and we had
-corrected them. In the published version (printed p. 94, checked on the rendered page) the author
-corrected them: `yes` leads to Slippery Slope, and the thesis and our file coincide. The presence of weak links in the chain is the fallacious
-condition, not the sound one, and the Comment of the thesis on CQ1 confirms it: "se anche un solo
-anello causale risulta privo di adeguata giustificazione, la catena si spezza e l'argomentazione
-ricade nella fallacia dello slippery slope" [if even a single causal link lacks adequate
-justification, the chain breaks and the argument falls into the slippery slope fallacy]. That is the direction of the published diagram.
+⟶ *version note*. The presence of weak links in the chain is the fallacious condition, so `yes` on
+CQ5 leads to Slippery Slope. The thesis had the opposite arcs up to the version of 14 September 2026.
+The author corrected them in the published version (printed p. 94, checked on the rendered page), so
+the thesis and our file coincide and this is not a correction of ours.
 
 **Terminals** — Slippery Slope · Definist Fallacy · Good Argumentation
 
@@ -675,36 +498,13 @@ schemes can produce it.
 
 ## 10. Structural properties
 
-**The diagrams are not trees.** Six schemes out of eight contain reconvergences. Only **ad hominem**
-is a pure tree.
+**The diagrams are not trees.** Six schemes out of eight contain reconvergences, marked `⟲` in the
+diagrams. Only **ad hominem** is a pure tree.
 
-| Scheme | Reconvergence on a decision node | Reconvergence on a terminal |
-|---|---|---|
-| example | CQ2.3 `no` → CQ3 | — |
-| analogy | CQ2 `no` → CQ1.1 | — |
-| cause to effect | CQ2.2 `no` → CQ3 | — |
-| correlation to cause | CQ2.2 `no` → CQ3 | — |
-| ad hominem | — | — |
-| expert opinion | — | Good Argumentation, 2 arcs |
-| popular opinion | — | Ad Populum, 2 arcs |
-| slippery slope | CQ4.1 `no` → CQ5 | Slippery Slope, 4 arcs |
-
-**Consequence.** Reconstructing the answer vector backwards from the pair (exit CQ,
-verdict) is not unique. Example on *example*: CQ3 is reached both from `CQ2=yes` and from
+**Consequence.** Reconstructing the answer vector backwards from the pair (exit CQ, verdict) is not
+unique. Example on *example*: CQ3 is reached both from `CQ2=yes` and from
 `CQ2=no, CQ2.1=no, CQ2.2=no, CQ2.3=no`. The full answer vector must be **recorded**, not
 reconstructed.
-
-**Depth**, number of decision nodes on the longest path.
-
-| Scheme | Depth | Scheme | Depth |
-|---|---|---|---|
-| correlation to cause | 7 | ad hominem | 6 |
-| example | 6 | popular opinion | 6 |
-| cause to effect | 6 | slippery slope | 6 |
-| expert opinion | 5 | analogy | 4 |
-
-**Non-uniform answer space.** All the nodes branch on `yes` and `no` except CQ1 of
-ad hominem, which branches on `positive` and `negative`.
 
 **Early exit.** The final CQs of every scheme are reached only by a fraction of the
 items, and not at random. If the per-CQ gold is recorded only along the path, the
@@ -712,50 +512,25 @@ supervision on the late CQs is systematically scarce.
 
 ---
 
-## 11. Divergences between the writings of the same schemes
+## 11. Divergences between the cards and the prompts actually run
 
-The same eight schemes exist in four writings that do not coincide. **The canonical version is
-the first**, and it is the one transcribed in §1-8.
+The prompts run in the earlier experiments are `Lavoro di Enrico/src/prompts/template_stage2_*.txt`
+(source C). The number of questions per scheme in them coincides exactly with the number of answers
+recorded in the results on all eight schemes, so C is the version of the data. The cards (source A,
+chapter 3) are canonical. The table lists only the substantial differences of C from A; purely
+orthographic ones are not reported.
 
-| | source | role |
+| Scheme, CQ | A, thesis ch. 3 | C, run |
 |---|---|---|
-| **A** | thesis, chapter 3 | official and citable |
-| **B** | 135-page thesis, §4.3, prompt listing | **no longer exists.** In the published version §4.3.2 (pp. 113-114) describes the prompts only in words, without a listing. It stays cited below because it documents a prompt that was never run, but it is no longer a citable source |
-| **C** | `Lavoro di Enrico/src/prompts/template_stage2_*.txt` | the prompts actually run |
-| **D** | `Thesis/src/YAML/*.yaml` | Dumitru's encoding |
-
-Text divergences, listed only where they are substantial. Purely orthographic differences
-are not reported, because in this document and in our files the spelling is corrected.
-
-| Scheme, CQ | A, thesis ch. 3 | C, run | D, YAML |
-|---|---|---|---|
-| example CQ2.1 | "**Was** the example cited chosen in such a clearly biased and malicious manner…" | "**Is** the example cited selected…" | "…selected **on the basis of biased quality criteria that undermine the strength**…" |
-| analogy CQ4 | "…A is false (true)?" | "…A is false (**or** true)?" | same as A |
-| cause to effect CQ2.1 | "…clearly biased **and malicious** manner as to **undermine** the validity…" | same as A | "…clearly biased manner in order to **support** the generalization" |
-| correlation to cause CQ5 | "Can it be shown that … is **not** solely due to the way B is defined?" | same as A | "Is the increase or change in B **solely an artefact** of the way B is defined?" |
-| ad hominem CQ1 | branches on `positive` / `negative` | the text asks negative or positive but the format **imposes `Yes` or `No`** | `answer_space: ["positive", "negative"]` |
-| ad hominem CQ3 | "…that they **are committed**?" | "…that they **committed [something]**?" | "…that they **are committed to a group, cause or interest**?" |
-| ad hominem, number of CQs | 6 | 6 | 6. In **B** there are **7**, in a different order |
-| expert opinion CQ1 | "…true or false, **or** is S…" | "…true or false, **and/or** is S…" | same as A |
-| expert opinion CQ4 | split into CQ4 plus CQ4.1 | same as A, with the variable written in lower case, `uses **a** to justify itself` | single node, earlier conditional form, `answer_space: ["yes", "no", "na"]` |
+| example CQ2.1 | "**Was** the example cited chosen in such a clearly biased and malicious manner…" | "**Is** the example cited selected…" |
+| analogy CQ4 | "…A is false (true)?" | "…A is false (**or** true)?" |
+| ad hominem CQ1 | branches on `positive` / `negative` | the text asks negative or positive, but the format **imposes `Yes` or `No`** |
+| ad hominem CQ3 | "…that they **are committed**?" | "…that they **committed [something]**?" |
+| expert opinion CQ1 | "…true or false, **or** is S…" | "…true or false, **and/or** is S…" |
+| expert opinion CQ4 | split into CQ4 plus CQ4.1 | same as A, with the variable written in lower case: `uses **a** to justify itself` |
 
 **In the executed prompt the placeholder `[something]` stayed in the text** sent to the model, so
 CQ3 of ad hominem was asked in an unfinished form in all the experiments.
-
-**Confirmation that C is the version of the data.** The number of questions per scheme in the executed
-prompts coincides exactly with the number of answers recorded in the results on all eight
-schemes.
-
-⟶ *our operational observation*. D adopts the words of A, with the spelling corrected. Two
-points remain in which D had departed not in spelling but in meaning, cause to effect CQ2.1 and
-correlation to cause CQ5. Aligning them with A, the wording goes back to that of the thesis, and with
-it comes back the misalignment between the text of the question and the terminal it leads to. They
-are described in §12.1 and §12.2 and must be resolved by the author, by changing the text or the
-arc, not by us rewriting the question on our own.
-
-For ad hominem CQ3 the column A above stays the text of the thesis. The files of `schemes/` add to
-it the complement stated by the Comment of A (Conventions, correction 5; §12.0), in words other than
-those of D.
 
 ---
 
@@ -763,94 +538,16 @@ those of D.
 
 Nothing in this section is text of the thesis.
 
-### 12.0 Ambiguity of CQ3 of ad hominem, resolved
-
-With the spelling corrected, the question of the thesis remains ambiguous. "An accusation that they
-are committed" does not say committed to what, and the terminal is Guilt by Association. If the
-sense is commitment to an inconsistent position, it is tu quoque; if it is membership of a
-discredited group, it is guilt by association. The diagram chooses the second, the text does not say
-so.
-
-**Resolved by the Comment.** The Comment of the thesis (printed p. 75) states the second sense: an
-accusation of "un impegno o vincolo personale (ad esempio politico, religioso o ideologico)" [a
-personal commitment or tie (for example political, religious or ideological)], where the
-credibility is undermined "in virtù dell'appartenenza dell'interlocutore a un gruppo, movimento o
-categoria percepiti negativamente" [by virtue of the other person's membership of a group, movement
-or category perceived negatively]. The missing complement is therefore an evident error of the text,
-and it is applied as correction 5 of the Conventions: "…that they are committed to a group, movement
-or cause (for example political, religious or ideological) that is viewed negatively?". The clause
-"tale da motivarne la posizione" [such as to motivate their position] is not carried over: a
-personal commitment that motivates a position is bias, which is CQ2 (Circumstantial), and with it
-the two nodes would overlap. The partial overlap with CQ4 (tu quoque) is not a defect of the text
-and stays; the reformulation that separates it is a proposal for experiment 2
-(`cq_proposals.md` §2.2).
-
-### 12.1 Inverted polarities, corrected
-
-Two nodes had their arcs inverted with respect to the text of their own question; in the published
-version only the first still has. Checked by reading the diagrams on the rendered pages of the PDF,
-not from the text extraction.
-
-**correlation to cause, CQ5**, printed p. 68. "Can it be shown that
-the increase or change in B is **not** solely due to the way B is defined?" In the thesis `yes`
-leads to Definist Fallacy. But `yes` means that it can be shown that the change does **not**
-depend on the definition, that is, that the argument holds. The Comment of the thesis confirms it:
-the definist fallacy arises when the change is "un effetto della definizione stessa di B" [an effect
-of the very definition of B].
-
-**slippery slope, CQ5**, printed p. 94. "Are there weak links in the
-sequence…?" Up to the version of 14 September `no` led to Slippery Slope. But the presence of weak links is the
-fallacious condition. The Comment on CQ1 confirms it: "se anche un solo anello causale risulta
-privo di adeguata giustificazione … l'argomentazione ricade nella fallacia dello slippery slope"
-[if even a single causal link lacks adequate justification … the argument falls into the slippery
-slope fallacy].
-
-**Correction chosen.** Invert the two arcs, leaving the text of the questions exactly as it is
-in the thesis. It is the minimal correction and requires no rewording. It also aligns the
-diagram with the Comment that the author wrote, so it does not introduce an interpretation
-of ours.
-
-**Status on the published version.** Rechecked on the rendered pages of the version of
-23 September 2026: correlation to cause CQ5 is still inverted, and our correction stays; slippery
-slope CQ5 was corrected by the author and coincides with our file, so it is no longer a correction
-of ours.
-
-**Note for the comparison with the results.** The 607 rows of the previous runs (606 distinct texts) were evaluated with the uncorrected
-arcs. But the arcs are applied by the code to the answers already recorded, not by the
-prompt, so recomputing with the corrected arcs does not require a single new call to a
-model. Both versions can be obtained from the same data.
-
-### 12.2 Questions with a double condition
-
-**example CQ2.1 and cause to effect CQ2.1** contain two joined conditions, `clearly biased`
-**and** `malicious`. In the published version they say "chosen in such a clearly biased and
+**Questions with a double condition.** Example CQ2.1 and cause to effect CQ2.1 join two conditions,
+`clearly biased` **and** `malicious`. The published version says "chosen in such a clearly biased and
 malicious manner **as to** undermine the validity of the generalization": undermining the validity is
-the effect of the biased selection, no longer its purpose ("in order to" in the earlier versions).
-Read this way, `yes` leading to Cherry Picking is the right answer for the fallacy, and the text stays.
-The Comment of cause to effect still speaks of the purpose, evidence selected "al fine di avvalorare
-la generalizzazione causale" [in order to support the causal generalization]: it describes the aim of
-whoever argues, the question the effect on the validity. The two are compatible, and the difference is
-only recorded here.
+the effect of the biased selection, not its purpose. Read this way, `yes` leading to Cherry Picking
+is the right answer for the fallacy, and the text stays.
 
-**expert opinion CQ1** joins two distinct conditions, being in a position to know and being
-recognised by the community of experts. With `or` the connective is defined, but the case "competent
-source not recognised by peers" remains indistinguishable from "recognised source that is not
-competent".
+Expert opinion CQ1 joins two distinct conditions, being in a position to know and being recognized by
+the community of experts. With `or` the connective is defined, but the case "competent source not
+recognized by peers" remains indistinguishable from "recognized source that is not competent".
 
-### 12.3 Enthymemes
-
-CQ4 of expert opinion presupposes a conclusion `C` explicit in the text. The implicit
-conclusion has no rule. A useful comparison: EthiX reconstructs the enthymeme from the topic of the
-debate for the purpose of annotation, but keeps the original text in the dataset.
-
-### 12.4 Ad hominem without a non-fallacious outcome
-
-Ad hominem is the only scheme in which no path leads to Good Argumentation. On this scheme
-the accuracy of the non-fallacious class is not defined, and any macro average that includes it
-must say so.
-
-### 12.5 Ad hominem prefixes to be mapped
-
-The variants of ad hominem are prefixed in the diagrams, `Ad Hominem (Tu Quoque)`, but in the
-vocabulary of the annotations they appear without a prefix, `Tu quoque`. An explicit mapping
-between the two forms is needed before computing any metric.
+**Ad hominem prefixes to be mapped.** The variants of ad hominem are prefixed in the diagrams,
+`Ad Hominem (Tu Quoque)`, but in the vocabulary of the annotations they appear without a prefix,
+`Tu quoque`. An explicit mapping between the two forms is needed before computing any metric.

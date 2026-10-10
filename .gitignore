@@ -14,6 +14,10 @@ runs/
 # Temporary verification files: all here, never scattered around the repository.
 scratch/
 
+# Private reminders (proposals still to decide), not meant for the public repository.
+docs/proposals.md
+docs/cq_proposals.md
+
 # Caches and build artefacts
 __pycache__/
 *.py[cod]

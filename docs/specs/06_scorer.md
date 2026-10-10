@@ -143,7 +143,6 @@ The tests on the prior runs are skipped when `PRIOR_RUNS_DIR` is missing, as tod
 * The README: the command, and `eval/` in the package.
 * `docs/data.md`: the three `scheme_mismatch` items, as a fact of the gold, with no correction.
 * Spec 08, P6: the sentence "Partial credit remains in use for `any_fallacy`" goes. The gold of P6 is Enrico's terminal verdicts, and `any_fallacy` never appears among them.
-* `docs/cq_proposals.md`, section 5 and "What remains unverified": the ceiling and the majority with the values of the scorer and their basis. The three numbers written there mix bases: 0.669 is the ceiling on gpt-5, 0.558 equals the four-model mean of the majority (gpt-5 alone is 0.557), and the value of the tree belongs to A0, spec 07.
 
 ## 7. Definition of done
 

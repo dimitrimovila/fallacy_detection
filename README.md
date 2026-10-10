@@ -31,7 +31,7 @@ explanation: the path through the diagram, or the weights of the model that deci
 ```
 configs/          run configurations (the pilot: items, stages, models, samples)
 data/             the data: items.csv and annotations.csv
-docs/             specifications per component, data log, proposals
+docs/             specifications per component, data log
 labels/           label dictionaries: fallacies and schemes
 prompts/          versioned prompt templates, JSON Schemas of the answers, answer definitions
 schemes/          the eight scheme diagrams as YAML
