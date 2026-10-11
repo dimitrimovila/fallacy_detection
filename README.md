@@ -173,7 +173,7 @@ gives no number of the thesis. `report.md` lists the rows that stand for no item
 labels that the diagram of their gold scheme does not produce, and the predictions that are
 no class of the label space.
 
-Not implemented yet: the full parser, the full runs, the aggregators, and the evaluation
+Not implemented yet: the full parser, the aggregators, and the evaluation
 beyond the scorer, `argfallacy evaluate` (intervals, paired tests, out-of-fold estimation,
 the per-CQ and human agreement tables, abstention curves).
 
