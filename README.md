@@ -174,7 +174,8 @@ labels that the diagram of their gold scheme does not produce, and the predictio
 no class of the label space.
 
 Not implemented yet: the full parser, the full runs, the aggregators, and the evaluation
-beyond the scorer (intervals, paired tests, abstention curves).
+beyond the scorer, `argfallacy evaluate` (intervals, paired tests, out-of-fold estimation,
+the per-CQ and human agreement tables, abstention curves).
 
 ## License
 
