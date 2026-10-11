@@ -130,13 +130,17 @@ after its own launch, and `--run-id` gathers the four into one run:
 argfallacy run plan configs/pilot2.yaml                    # counts the calls, makes none
 argfallacy run execute configs/pilot2.yaml --run-id <run_id> --model <entry>
 argfallacy parse <run_id>                                  # answers.csv and summary.csv
-argfallacy pilot report <run_id>                           # pilot_report.md
+argfallacy report run <run_id>                             # run_report.md
 ```
 
 The report is computed from the files of the parser, the manifest, `data/` and `schemes/`.
 The token counts and the layout of the JSON come from `raw.jsonl`, read one line at a
 time: without it (a copy of the run that has only the tables) the report says so and the
-rest is unchanged, and `--no-raw` skips the reading.
+rest is unchanged, and `--no-raw` skips the reading. The same command reports any run:
+only the items of the test set with a gold label are scored, the projection of the full
+run appears for a run that covers part of the test set, and the comparison of the
+reasoning conditions only when a model is in both. `argfallacy pilot report <run_id>`, the
+earlier name, writes the same report as `pilot_report.md`.
 
 The zero-shot condition gives each item of the test set, with its gold scheme, the verdicts
 of that scheme's diagram and their definitions, and asks for the verdict directly, without

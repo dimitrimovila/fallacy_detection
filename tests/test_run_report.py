@@ -1,4 +1,4 @@
-"""The pilot report on a run written by hand.
+"""The report of a run, on a run written by hand.
 
 Two expert opinion items, one entry per reasoning condition, five samples per
 question.  Every number checked here is known in advance, so a change in how the
@@ -12,7 +12,7 @@ import json
 import pandas as pd
 import pytest
 
-from argfallacy.eval import pilot
+from argfallacy.eval import run_report
 from argfallacy.parse import ANSWERS_COLUMNS, summarise
 
 CQS = ["CQ1", "CQ2", "CQ3", "CQ3.1", "CQ4", "CQ4.1"]
@@ -68,7 +68,7 @@ def _answers() -> pd.DataFrame:
 
 
 @pytest.fixture
-def data(schemes) -> pilot.PilotData:
+def data(schemes) -> run_report.RunData:
     answers = _answers()
     items = pd.DataFrame({
         "item_id": ["a", "b"], "text": ["", ""], "source": ["logic", "logic"],
@@ -89,22 +89,22 @@ def data(schemes) -> pilot.PilotData:
     }
     annotations = pd.DataFrame(columns=["item_id", "annotator", "sheet", "row", "field",
                                         "value", "raw"])
-    return pilot.PilotData(run_id="r", answers=answers, summary=summarise(answers, schemes),
+    return run_report.RunData(run_id="r", answers=answers, summary=summarise(answers, schemes),
                            manifest=manifest, items=items, annotations=annotations,
                            schemes=schemes, raw_path=None)
 
 
 def test_the_stopping_rule_lists_only_what_is_above_threshold(data):
-    shares = pilot.cq_shares(data)
+    shares = run_report.cq_shares(data)
     assert shares.loc[("expert_opinion", "CQ1", "m_think"), "cannot_be_determined"] == 0.5
-    flagged = pilot.stopping_rule(shares).reset_index()
+    flagged = run_report.stopping_rule(shares).reset_index()
     assert list(zip(flagged["cq_id"], flagged["model"], strict=True)) == [("CQ1", "m")]
     assert flagged["reason"].iloc[0] == "cannot_be_determined 60%"
 
 
 def test_the_three_rules_on_an_answer_outside_the_arcs(data):
-    by_rule = {rule: pilot.traversals(data, rule).set_index(["entry", "item_id"])
-               for rule in pilot.RULES}
+    by_rule = {rule: run_report.traversals(data, rule).set_index(["entry", "item_id"])
+               for rule in run_report.RULES}
     diagram = by_rule["diagram"].loc[("m", "b")]
     assert pd.isna(diagram["verdict"]) and diagram["stopped_at"] == "CQ1"
     assert diagram["stop_answer"] == "cannot_be_determined"
@@ -122,19 +122,19 @@ def test_the_verdicts_follow_the_majority_not_sample_zero(data, schemes):
             & (answers["sample_index"] > 0))
     answers.loc[four, "answer"] = "yes"
     data.summary = summarise(answers, schemes)
-    diagram = pilot.traversals(data, "diagram").set_index(["entry", "item_id"])
+    diagram = run_report.traversals(data, "diagram").set_index(["entry", "item_id"])
     assert diagram.loc[("m", "b"), "verdict"] == "good_argumentation"
 
 
 def test_toward_good_has_no_arc_where_no_path_reaches_good_argumentation(schemes):
     ad_hominem = schemes["ad_hominem"]
-    assert all(pilot.toward_good_arc(ad_hominem, node) is None for node in ad_hominem.nodes)
-    assert pilot.toward_good_arc(schemes["expert_opinion"], "CQ4") == "no"
-    assert pilot.toward_good_arc(schemes["expert_opinion"], "CQ1") == "yes"
+    assert all(run_report.toward_good_arc(ad_hominem, node) is None for node in ad_hominem.nodes)
+    assert run_report.toward_good_arc(schemes["expert_opinion"], "CQ4") == "no"
+    assert run_report.toward_good_arc(schemes["expert_opinion"], "CQ1") == "yes"
 
 
 def test_no_verdict_is_wrong_and_lowers_coverage(data):
-    scores = pilot.verdict_scores(data).set_index(["rule", "entry"])
+    scores = run_report.verdict_scores(data).set_index(["rule", "entry"])
     assert scores.loc[("diagram", "m"), "coverage"] == 0.5
     assert scores.loc[("diagram", "m"), "accuracy_fine"] == 0.5
     assert scores.loc[("logprob", "m"), "accuracy_fine"] == 1.0
@@ -154,7 +154,7 @@ def test_the_tokens_of_a_reasoning_field_are_counted_when_usage_says_zero(tmp_pa
     ]
     path = tmp_path / "raw.jsonl"
     path.write_text("\n".join(json.dumps(line) for line in lines) + "\n", encoding="utf-8")
-    tokens = pilot.token_counts(path)
+    tokens = run_report.token_counts(path)
     assert tokens.loc["k", "reasoning_tokens"] == 0 and tokens.loc["k", "reasoning_chars"] == 4
     assert tokens.loc["q", "answer_tokens"] == 20 and tokens.loc["q", "prompt_tokens"] == 500
 
@@ -171,17 +171,17 @@ def test_the_output_tokens_and_the_layout_of_the_json(tmp_path):
              line(50, "stop", '{"scheme": "analogy"}', stage="stage1")]
     path = tmp_path / "raw.jsonl"
     path.write_text("\n".join(json.dumps(x) for x in lines) + "\n", encoding="utf-8")
-    records = pilot.raw_records(path)
+    records = run_report.raw_records(path)
 
-    out = pilot.output_tokens(records).loc["g"]
+    out = run_report.output_tokens(records).loc["g"]
     assert out["calls"] == 4 and out["median"] == 200 and out["max"] == 32768
     assert out["length"] == 1
-    share = pilot.layout_share(records).loc["g"]
+    share = run_report.layout_share(records).loc["g"]
     assert share["stage2"] == pytest.approx(1 / 3) and share["stage1"] == 1.0
 
 
 def test_the_report_puts_the_flagged_questions_first(data):
-    text = pilot.render(data)
+    text = run_report.render(data)
     first, _, rest = text.partition("## 2. Integrity")
     assert "## 1. Stopping rule" in first
     assert "| expert_opinion | CQ1 | m | cannot_be_determined 60% |" in first
@@ -194,7 +194,7 @@ def test_a_run_made_in_two_times_is_reported_on_the_entries_it_has(data):
     data.manifest["config"]["models"] = ["m", "later", "m_think"]
     data.manifest["models"]["later"] = dict(data.manifest["models"]["m"])
     assert data.entries == ["m", "m_think"]
-    assert "later" not in pilot.render(data)
+    assert "later" not in run_report.render(data)
 
 
 def test_a_run_with_one_sample_and_no_pair_of_conditions_is_reported(data, schemes):
@@ -204,6 +204,45 @@ def test_a_run_with_one_sample_and_no_pair_of_conditions_is_reported(data, schem
     data.summary = summarise(data.answers, schemes)
     data.manifest["config"]["models"] = ["m"]
     data.manifest["models"]["m"].update(samples=1, temperature=0.0)
-    text = pilot.render(data)
-    assert "No model of this run is in both reasoning conditions." in text
+    text = run_report.render(data)
+    assert "Reasoning off against reasoning on" not in text
+    assert "## 8. Parser checks" in text
     assert "on_off_agreement" not in text
+
+
+def test_a_full_run_scores_only_the_test_set_with_gold(data, schemes):
+    """Item c is outside the test set with no gold, d is in it with no gold scheme: both
+    run stage one only.  The configuration has no seed and no min_per_scheme."""
+    rows = []
+    for entry in ENTRIES:
+        for item in ("c", "d"):
+            row = data.answers[(data.answers["stage"] == "stage1")
+                               & (data.answers["item_id"] == "a")
+                               & (data.answers["model"] == entry)].iloc[0].copy()
+            row["item_id"], row["answer"] = item, "analogy"
+            rows.append(row)
+    data.answers = pd.concat([data.answers, pd.DataFrame(rows)], ignore_index=True)
+    data.summary = summarise(data.answers, schemes)
+    data.items = pd.concat([data.items, pd.DataFrame({
+        "item_id": ["c", "d"], "text": ["", ""], "source": ["ethix", "logic"],
+        "in_test_set": [False, True], "eleni_id": [None, None],
+        "gold_scheme": [None, None], "gold_fallacy": [None, "ad_hominem_abusive"]})],
+        ignore_index=True)
+    data.manifest["config"]["items"] = {"exclude_none_scheme": False}
+
+    stage1, errors = run_report.stage_one(data)
+    assert list(stage1["items"]) == [2, 2] and list(stage1["accuracy"]) == [1.0, 1.0]
+    assert errors.empty
+    assert run_report.integrity(data).loc["m", "calls"] == 64  # 60 + 2 + the 2 of c and d
+    assert run_report.left_out(data, "stage1", "gold_scheme") == {
+        "not in the test set": 1, "in the test set with no `gold_scheme`": 1}
+
+    text = run_report.render(data)
+    assert "* Items: 4; scheme condition `gold`." in text and "seed" not in text
+    assert ("Left out of scoring: 1 in the test set with no `gold_scheme`, "
+            "1 not in the test set.") in text
+    # every item of the test set has answers: there is no full run to project
+    assert "Projection of the full run" not in text
+    data.items = pd.concat([data.items, data.items.iloc[[0]].assign(item_id="e")],
+                           ignore_index=True)
+    assert "Projection of the full run" in run_report.render(data)

@@ -1,5 +1,6 @@
 """Command line: ``argfallacy annotations update``, ``argfallacy run plan|execute CONFIG``,
-``argfallacy parse RUN_ID``, ``argfallacy pilot report RUN_ID``, ``argfallacy score prior``."""
+``argfallacy parse RUN_ID``, ``argfallacy report run RUN_ID`` (and its earlier name
+``argfallacy pilot report RUN_ID``), ``argfallacy score prior``."""
 
 from __future__ import annotations
 
@@ -96,16 +97,20 @@ def _cmd_parse(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_pilot_report(args: argparse.Namespace) -> int:
+def _cmd_report_run(args: argparse.Namespace) -> int:
     from .client.run import default_runs_dir
-    from .eval.pilot import write_report
+    from .eval.run_report import PILOT_REPORT_NAME, REPORT_NAME, write_report
 
+    # `pilot report` is the earlier name: it writes the report under the earlier file name
+    pilot = args.group == "pilot"
+    name = PILOT_REPORT_NAME if pilot else REPORT_NAME
     run_dir = default_runs_dir() / args.run_id
     try:
-        path = write_report(run_dir, read_raw=not args.no_raw)
+        path = write_report(run_dir, name=name, title="Pilot report" if pilot else "Run report",
+                            read_raw=not args.no_raw)
     except FileNotFoundError as error:
         raise SystemExit(str(error)) from None
-    print(f"  pilot_report.md: {path}")
+    print(f"  {name}: {path}")
     return 0
 
 
@@ -170,18 +175,22 @@ def build_parser() -> argparse.ArgumentParser:
     parse_cmd.add_argument("run_id")
     parse_cmd.set_defaults(func=_cmd_parse)
 
-    pilot = sub.add_parser("pilot", help="the report of a pilot run").add_subparsers(
-        dest="command", required=True
-    )
-    report_cmd = pilot.add_parser(
-        "report", help="write pilot_report.md from a parsed run (answers.csv, summary.csv)"
-    )
-    report_cmd.add_argument("run_id")
-    report_cmd.add_argument(
-        "--no-raw", action="store_true",
-        help="skip the token counts, which read raw.jsonl one line at a time",
-    )
-    report_cmd.set_defaults(func=_cmd_pilot_report)
+    for group, group_help, command, help_text in (
+        ("report", "the report of a run", "run",
+         "write run_report.md from a parsed run (answers.csv, summary.csv)"),
+        ("pilot", "earlier name of `report run`", "report",
+         "the same report, written as pilot_report.md"),
+    ):
+        commands = sub.add_parser(group, help=group_help).add_subparsers(
+            dest="command", required=True
+        )
+        report_cmd = commands.add_parser(command, help=help_text)
+        report_cmd.add_argument("run_id")
+        report_cmd.add_argument(
+            "--no-raw", action="store_true",
+            help="skip the token counts, which read raw.jsonl one line at a time",
+        )
+        report_cmd.set_defaults(func=_cmd_report_run)
 
     score = sub.add_parser("score", help="compute the metrics").add_subparsers(
         dest="command", required=True

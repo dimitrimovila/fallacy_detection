@@ -236,7 +236,7 @@ squeue -u $USER                                        # the job and its node
 ```
 
 The second pilot is one run made in three jobs. The first runs the two entries with
-reasoning off; then `argfallacy parse $RUN_ID` and `argfallacy pilot report $RUN_ID`, and
+reasoning off; then `argfallacy parse $RUN_ID` and `argfallacy report run $RUN_ID`, and
 only if the report holds, the second job adds the two entries that reason to the same run:
 
 ```

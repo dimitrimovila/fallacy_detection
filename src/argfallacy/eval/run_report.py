@@ -1,4 +1,4 @@
-"""The pilot report: ``argfallacy pilot report RUN_ID``.
+"""The report of a run: ``argfallacy report run RUN_ID``.
 
 Everything here is computed from the files a run leaves behind, never by hand:
 ``answers.csv`` and ``summary.csv`` of the parser, ``manifest.json`` of the
@@ -7,6 +7,12 @@ client, ``data/items.csv``, ``data/annotations.csv`` and the diagrams in
 the layout of the JSON, which ``answers.csv`` does not carry; where it is absent (a
 local copy of the run) those sections say so and the rest of the report is
 unchanged.
+
+Only the items of the test set with a gold label are scored: ``gold_scheme`` at
+stage one, ``gold_fallacy`` for the verdicts.  The others, such as the items a full
+run sends to stage one only, still count where nothing is scored.  The projection of
+the full run appears only for a run that covers part of the test set, the
+comparison of the reasoning conditions only when a model is in both.
 
 The report measures; it decides nothing.  The stopping rule lists the questions
 above threshold at the top, and the choices it informs (what to do with
@@ -52,7 +58,9 @@ from .baselines import majority_by
 from .canonical import score_fallacies, score_schemes
 from .metrics import accuracy
 
-REPORT_NAME = "pilot_report.md"
+REPORT_NAME = "run_report.md"
+PILOT_REPORT_NAME = "pilot_report.md"
+"""What ``argfallacy pilot report``, the earlier name of the command, writes."""
 
 OUTSIDE_ARCS = (CBD, NA, INVALID)
 ANSWERS = (*ALL_OPTIONS, INVALID)
@@ -81,7 +89,7 @@ def good_terminal() -> str:
 
 
 @dataclass
-class PilotData:
+class RunData:
     """The tables of one run, plus what they are scored against."""
 
     run_id: str
@@ -123,22 +131,38 @@ class PilotData:
         return self.sample0.drop(columns="answer").merge(summary, on=keys, how="left")
 
     def samples(self, entry: str) -> int:
-        return int(self.manifest["models"][entry]["samples"])
+        """Samples per question; a manifest older than the per-entry sampling has one
+        number for the whole run."""
+        model = self.manifest["models"][entry]
+        return int(model.get("samples", self.manifest["config"].get("samples", 1)))
+
+    def scored(self, gold: str) -> set[str]:
+        """The items of the run that are scored on ``gold`` (``gold_scheme`` or
+        ``gold_fallacy``): in the test set, with that gold label."""
+        items = self.items
+        keep = items["in_test_set"].astype(bool) & items[gold].notna()
+        return set(items.loc[keep, "item_id"]) & set(self.answers["item_id"])
+
+    @property
+    def covers_part_of_test_set(self) -> bool:
+        """True when some item of the test set has no answer in the run."""
+        test = set(self.items.loc[self.items["in_test_set"].astype(bool), "item_id"])
+        return bool(test - set(self.answers["item_id"]))
 
 
-def load_pilot(
+def load_run(
     run_dir: str | Path,
     items: str | Path = ITEMS_FILE,
     annotations: str | Path = ANNOTATIONS_FILE,
     read_raw: bool = True,
-) -> PilotData:
+) -> RunData:
     """Read the files of a parsed run.  ``argfallacy parse`` must have run first."""
     run_dir = Path(run_dir)
     for name in ("answers.csv", "summary.csv", "manifest.json"):
         if not (run_dir / name).is_file():
             raise FileNotFoundError(f"no {name} in {run_dir}: run `argfallacy parse` first")
     raw = run_dir / RAW_NAME
-    return PilotData(
+    return RunData(
         run_id=run_dir.name,
         answers=pd.read_csv(run_dir / "answers.csv", low_memory=False),
         summary=pd.read_csv(run_dir / "summary.csv"),
@@ -159,7 +183,7 @@ def reasoning_pairs(entries: Sequence[str]) -> list[tuple[str, str]]:
 # ------------------------------------------------------------------ integrity
 
 
-def integrity(data: PilotData) -> pd.DataFrame:
+def integrity(data: RunData) -> pd.DataFrame:
     """Per entry: calls, errors, invalid answers, truncated answers, partial logprobs."""
     frame = data.answers
     grouped = frame.groupby("model")
@@ -182,14 +206,18 @@ def _unanimous(frame: pd.DataFrame, keys: list[str]) -> float:
     return (valid.groupby(keys)["answer"].nunique() == 1).mean()
 
 
-def stage_one(data: PilotData) -> tuple[pd.DataFrame, pd.DataFrame]:
+def stage_one(data: RunData) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Accuracy of the hard answer on the gold scheme per entry, and its errors.
 
-    The hard answer is scored with the canonical scorer.  Beside it, for an entry
-    that answers several times, the share of items where the valid samples agree.
+    The hard answer is scored with the canonical scorer, on the items of
+    :meth:`RunData.scored`.  Beside it, for an entry that answers several times, the
+    share of those items where the valid samples agree.
     """
-    frame = data.answers[data.answers["stage"] == "stage1"]
-    summary = data.summary[data.summary["stage"] == "stage1"]
+    scored = data.scored("gold_scheme")
+    frame = data.answers[(data.answers["stage"] == "stage1")
+                         & data.answers["item_id"].isin(scored)]
+    summary = data.summary[(data.summary["stage"] == "stage1")
+                           & data.summary["item_id"].isin(scored)]
     gold = data.items[["item_id", "gold_scheme"]]
     rows, errors = [], []
     for entry in data.entries:
@@ -207,9 +235,10 @@ def stage_one(data: PilotData) -> tuple[pd.DataFrame, pd.DataFrame]:
     return pd.DataFrame(rows).set_index("entry"), pd.DataFrame(errors)
 
 
-def stage_one_by_scheme(data: PilotData) -> pd.DataFrame:
+def stage_one_by_scheme(data: RunData) -> pd.DataFrame:
     """Accuracy of the hard answer per gold scheme (rows) and entry (columns)."""
-    frame = data.summary[data.summary["stage"] == "stage1"]
+    frame = data.summary[(data.summary["stage"] == "stage1")
+                         & data.summary["item_id"].isin(data.scored("gold_scheme"))]
     merged = frame.merge(data.items[["item_id", "gold_scheme"]], on="item_id")
     merged["correct"] = merged["answer"] == merged["gold_scheme"]
     table = merged.pivot_table(index="gold_scheme", columns="model", values="correct",
@@ -220,7 +249,7 @@ def stage_one_by_scheme(data: PilotData) -> pd.DataFrame:
 # ------------------------------------------------------------ answers per CQ
 
 
-def cq_shares(data: PilotData) -> pd.DataFrame:
+def cq_shares(data: RunData) -> pd.DataFrame:
     """Share of every answer per (scheme, CQ, entry), over all the samples."""
     frame = data.stage2
     counts = (frame.groupby(["scheme", "cq_id", "model"])["answer"]
@@ -250,7 +279,7 @@ def stopping_rule(shares: pd.DataFrame) -> pd.DataFrame:
     return flagged
 
 
-def overall_shares(data: PilotData) -> pd.DataFrame:
+def overall_shares(data: RunData) -> pd.DataFrame:
     """Share of ``cannot_be_determined``, ``na`` and ``invalid`` per entry, stage two."""
     frame = data.stage2
     table = pd.DataFrame({
@@ -261,7 +290,7 @@ def overall_shares(data: PilotData) -> pd.DataFrame:
     return table.reindex(data.entries)
 
 
-def answers_where_another_cannot_determine(data: PilotData) -> pd.DataFrame:
+def answers_where_another_cannot_determine(data: RunData) -> pd.DataFrame:
     """What each entry answered, as hard answer, where another entry's hard answer was
     ``cannot_be_determined`` on the same item and question.
 
@@ -286,7 +315,7 @@ def answers_where_another_cannot_determine(data: PilotData) -> pd.DataFrame:
 # ------------------------------------------------------------------ samples
 
 
-def stability(data: PilotData) -> pd.DataFrame:
+def stability(data: RunData) -> pd.DataFrame:
     """Per entry: samples per question and, with several, the share of unanimous questions.
 
     Unanimous over the valid samples; the hard answer of such a question is the
@@ -305,11 +334,11 @@ def stability(data: PilotData) -> pd.DataFrame:
 # ------------------------------------------------------------ probabilities
 
 
-def _stage2_summary(data: PilotData) -> pd.DataFrame:
+def _stage2_summary(data: RunData) -> pd.DataFrame:
     return data.summary[data.summary["stage"] == "stage2"]
 
 
-def probability_correlations(data: PilotData, by_cq: bool = False) -> pd.DataFrame:
+def probability_correlations(data: RunData, by_cq: bool = False) -> pd.DataFrame:
     """Spearman correlation between ``p_logprob``, ``p_verbal`` and ``p_sample``.
 
     Each pair on the rows that have both: an answer of ``cannot_be_determined`` or
@@ -331,7 +360,7 @@ def probability_correlations(data: PilotData, by_cq: bool = False) -> pd.DataFra
     return table if by_cq else table.reindex(data.entries)
 
 
-def probability_shape(data: PilotData) -> pd.DataFrame:
+def probability_shape(data: RunData) -> pd.DataFrame:
     """How much the three probabilities spread, per entry.
 
     ``logprob_extreme``: share of ``p_logprob`` above 0.99 or below 0.01.
@@ -361,7 +390,7 @@ def probability_shape(data: PilotData) -> pd.DataFrame:
     return pd.DataFrame(rows).set_index("entry")
 
 
-def logprob_extreme_by_cq(data: PilotData) -> pd.DataFrame:
+def logprob_extreme_by_cq(data: RunData) -> pd.DataFrame:
     """Share of extreme ``p_logprob`` per (scheme, CQ) and entry."""
     summary = _stage2_summary(data).dropna(subset=["p_logprob"])
     extreme = (summary["p_logprob"] > 1 - EXTREME) | (summary["p_logprob"] < EXTREME)
@@ -435,7 +464,7 @@ def _answers_for_rule(scheme: Scheme, rows: pd.DataFrame, rule: str) -> dict[str
     raise ValueError(f"unknown rule {rule!r}; known: {RULES}")
 
 
-def traversals(data: PilotData, rule: str = "diagram") -> pd.DataFrame:
+def traversals(data: RunData, rule: str = "diagram") -> pd.DataFrame:
     """One row per (entry, item): verdict or none, and where an incomplete one stopped."""
     rows = []
     for (entry, item_id), group in data.hard.groupby(["model", "item_id"]):
@@ -451,7 +480,7 @@ def traversals(data: PilotData, rule: str = "diagram") -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def incomplete_traversals(data: PilotData) -> pd.DataFrame:
+def incomplete_traversals(data: RunData) -> pd.DataFrame:
     """Incomplete traversals of the diagram rule, per scheme, node and answer."""
     table = traversals(data, "diagram")
     stopped = table[table["verdict"].isna()]
@@ -459,10 +488,10 @@ def incomplete_traversals(data: PilotData) -> pd.DataFrame:
             .unstack("entry", fill_value=0).reindex(columns=data.entries, fill_value=0))
 
 
-def majority_baseline(data: PilotData, item_ids: Iterable[str]) -> pd.DataFrame:
+def majority_baseline(data: RunData, item_ids: Iterable[str]) -> pd.DataFrame:
     """The majority fallacy per gold scheme on the test set, as a prediction per item.
 
-    An oracle on the prior (the gold of the test set, pilot items included, is
+    An oracle on the prior (the gold of the test set, the items of the run included, is
     used to build it), the comparison line of the scorer.
     """
     test = data.items[data.items["in_test_set"].astype(bool) & data.items["gold_scheme"].notna()]
@@ -480,13 +509,18 @@ def _binary(gold: Sequence[str], predicted: Sequence[str | None]) -> float:
     return accuracy(g, p)
 
 
-def verdict_scores(data: PilotData) -> pd.DataFrame:
-    """Per entry and rule: coverage, fine accuracy and macro F1, binary accuracy."""
+def verdict_scores(data: RunData) -> pd.DataFrame:
+    """Per entry and rule: coverage, fine accuracy and macro F1, binary accuracy.
+
+    On the items of :meth:`RunData.scored` with a gold fallacy.
+    """
+    scored = data.scored("gold_fallacy")
     gold = data.items[["item_id", "gold_fallacy"]]
     gold_map = dict(zip(gold["item_id"], gold["gold_fallacy"], strict=True))
     rows = []
     for rule in RULES:
         table = traversals(data, rule)
+        table = table[table["item_id"].isin(scored)]
         for entry in data.entries:
             own = table[table["entry"] == entry]
             predictions = own[["item_id", "verdict"]].rename(columns={"verdict": "predicted"})
@@ -498,7 +532,7 @@ def verdict_scores(data: PilotData) -> pd.DataFrame:
                 "accuracy_binary": _binary([gold_map[i] for i in own["item_id"]],
                                            list(own["verdict"])),
             })
-    item_ids = data.hard["item_id"].unique()
+    item_ids = set(data.hard["item_id"]) & scored
     baseline = majority_baseline(data, item_ids)
     score = score_fallacies(baseline, gold, "fine")
     rows.append({
@@ -513,7 +547,7 @@ def verdict_scores(data: PilotData) -> pd.DataFrame:
 # ------------------------------------------------------- human annotation
 
 
-def human_cq_agreement(data: PilotData) -> tuple[pd.DataFrame, pd.DataFrame]:
+def human_cq_agreement(data: RunData) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Agreement of the hard answer with the per-CQ annotation of the ``Annotazione Dumitru``
     sheets.
 
@@ -545,7 +579,7 @@ def human_cq_agreement(data: PilotData) -> tuple[pd.DataFrame, pd.DataFrame]:
 # ------------------------------------------------------------------- cost
 
 
-def latency(data: PilotData) -> pd.DataFrame:
+def latency(data: RunData) -> pd.DataFrame:
     """Mean and median latency in seconds per entry and stage."""
     table = (data.answers.groupby(["model", "stage"])["latency_s"]
              .agg(["mean", "median"]).unstack("stage"))
@@ -553,7 +587,7 @@ def latency(data: PilotData) -> pd.DataFrame:
     return table.reindex(data.entries)
 
 
-def full_run_questions(data: PilotData) -> dict[str, int]:
+def full_run_questions(data: RunData) -> dict[str, int]:
     """Questions of the full run: every item at stage one, every CQ of the items with a
     gold scheme at stage two (gold condition).  Each takes the samples of its entry."""
     per_scheme = {sid: len(s.nodes) for sid, s in data.schemes.items()}
@@ -563,12 +597,12 @@ def full_run_questions(data: PilotData) -> dict[str, int]:
             "stage2": int(with_scheme.map(per_scheme).sum())}
 
 
-def projection(data: PilotData) -> pd.DataFrame:
+def projection(data: RunData) -> pd.DataFrame:
     """Hours of the full run per entry, estimated as calls x mean latency / concurrency.
 
     The estimate leaves out the loading of the server and the smoke test, a few
     minutes per entry and per job.  For comparison, the same estimate is given for
-    the pilot itself.
+    the run itself.
     """
     questions = full_run_questions(data)
     rows = []
@@ -579,7 +613,7 @@ def projection(data: PilotData) -> pd.DataFrame:
         mean = own.groupby("stage")["latency_s"].mean()
         rows.append({
             "entry": entry, "concurrency": concurrency, "samples": samples,
-            "pilot_hours_estimated": own["latency_s"].sum() / concurrency / 3600,
+            "run_hours_estimated": own["latency_s"].sum() / concurrency / 3600,
             "full_run_hours": samples * (questions["stage1"] * mean.get("stage1", 0.0)
                                          + questions["stage2"] * mean.get("stage2", 0.0))
             / concurrency / 3600,
@@ -667,17 +701,18 @@ def layout_share(records: pd.DataFrame) -> pd.DataFrame:
 # -------------------------------------------------------- reasoning on/off
 
 
-def reasoning_comparison(data: PilotData, tokens: pd.DataFrame | None = None) -> pd.DataFrame:
+def reasoning_comparison(data: RunData, tokens: pd.DataFrame | None = None) -> pd.DataFrame:
     """For every model run in both conditions, the numbers of the comparison side by side.
 
     With the token counts of :func:`token_counts`, also the ratio of the completion
-    tokens, reasoning included, between the two conditions.
+    tokens, reasoning included, between the two conditions; on a run that covers part
+    of the test set, also the hours of the full run projected for each condition.
     """
     stage1, _ = stage_one(data)
     shape = probability_shape(data)
     shares = overall_shares(data)
     lat = data.answers.groupby("model")["latency_s"].mean()
-    hours = projection(data)["full_run_hours"]
+    hours = projection(data)["full_run_hours"] if data.covers_part_of_test_set else None
     zero = data.hard.pivot_table(index=["item_id", "cq_id"], columns="model",
                                  values="answer", aggfunc="first")
     decided = set(ALL_OPTIONS) - set(OUTSIDE_ARCS)
@@ -686,6 +721,8 @@ def reasoning_comparison(data: PilotData, tokens: pd.DataFrame | None = None) ->
         both = zero[off].isin(decided) & zero[on].isin(decided)
         ratio = {} if tokens is None else {"completion_tokens_ratio": (
             tokens.loc[on, "completion_tokens"] / tokens.loc[off, "completion_tokens"])}
+        full = {} if hours is None else {"full_run_hours_off": hours[off],
+                                         "full_run_hours_on": hours[on]}
         rows.append({
             "model": off,
             "agreement_hard": (zero[off] == zero[on]).mean(),
@@ -695,13 +732,12 @@ def reasoning_comparison(data: PilotData, tokens: pd.DataFrame | None = None) ->
             "cbd_off": shares.loc[off, CBD], "cbd_on": shares.loc[on, CBD],
             "logprob_extreme_off": shape.loc[off, "logprob_extreme"],
             "logprob_extreme_on": shape.loc[on, "logprob_extreme"],
-            "latency_ratio": lat[on] / lat[off], **ratio,
-            "full_run_hours_off": hours[off], "full_run_hours_on": hours[on],
+            "latency_ratio": lat[on] / lat[off], **ratio, **full,
         })
     return pd.DataFrame(rows).set_index("model")
 
 
-def agreement_by_cq(data: PilotData) -> pd.DataFrame:
+def agreement_by_cq(data: RunData) -> pd.DataFrame:
     """Agreement of the hard answers of the two conditions of a model, per CQ."""
     zero = data.hard.pivot_table(index=["scheme", "cq_id", "item_id"], columns="model",
                                  values="answer", aggfunc="first")
@@ -713,7 +749,7 @@ def agreement_by_cq(data: PilotData) -> pd.DataFrame:
 # ------------------------------------------------------------ parser checks
 
 
-def parser_checks(data: PilotData) -> pd.DataFrame:
+def parser_checks(data: RunData) -> pd.DataFrame:
     """Two checks on what the minimal parser wrote.
 
     ``hard_not_argmax``: rows of sample 0 at stage two whose answer is not the
@@ -792,7 +828,32 @@ def _pct_all(frame: pd.DataFrame) -> dict[str, str]:
     return {c: "pct" for c in frame.columns}
 
 
-def render(data: PilotData) -> str:
+def left_out(data: RunData, stage: str, gold: str) -> dict[str, int]:
+    """Items answered at ``stage`` and not scored on ``gold``, counted by reason."""
+    items = data.items.set_index("item_id")
+    test = items["in_test_set"].astype(bool)
+    scored = data.scored(gold)
+    counts: dict[str, int] = {}
+    for item_id in set(data.answers.loc[data.answers["stage"] == stage, "item_id"]) - scored:
+        reason = ("not in the test set" if item_id not in test.index or not test[item_id]
+                  else f"in the test set with no `{gold}`")
+        counts[reason] = counts.get(reason, 0) + 1
+    return counts
+
+
+def _sampling(data: RunData, entry: str) -> str:
+    """How the samples of an entry are drawn, from the manifest."""
+    model = data.manifest["models"][entry]
+    if "temperature" in model:
+        return (f"{model['samples']} at temperature {model['temperature']}, top_p "
+                f"{model['top_p']}, top_k {model['top_k']}")
+    generation = data.manifest["config"].get("generation", {})
+    return (f"{data.samples(entry)}: sample 0 at temperature "
+            f"{generation.get('temperature_sample0')}, the others at "
+            f"{generation.get('temperature_rest')}")
+
+
+def render(data: RunData, title: str = "Run report") -> str:
     """The whole report as Markdown."""
     config = data.manifest["config"]
     shares = cq_shares(data)
@@ -801,22 +862,40 @@ def render(data: PilotData) -> str:
     records = raw_records(data.raw_path)
     tokens = None if records is None else _token_means(records)
     questions = full_run_questions(data)
-    items = data.hard["item_id"].nunique()
-    gold = data.items.set_index("item_id").loc[data.answers["item_id"].unique()]
+    items = len(set(data.hard["item_id"]) & data.scored("gold_fallacy"))
+    gold = data.items.set_index("item_id").loc[sorted(data.scored("gold_scheme"))]
+    pairs = reasoning_pairs(data.entries)
+    number = iter(range(1, 100))
     out: list[str] = []
     add = out.append
 
-    add(f"# Pilot report: {data.run_id}\n")
-    add("Generated by `argfallacy pilot report` from `answers.csv`, `summary.csv` and "
+    add(f"# {title}: {data.run_id}\n")
+    add("Generated by `argfallacy report run` from `answers.csv`, `summary.csv` and "
         "`manifest.json` of the run, `data/items.csv`, `data/annotations.csv` and "
         "`schemes/`. Spec 04, section 4.\n")
-    add(f"* Items: {len(gold)} (seed {config['items']['seed']}, stratified by gold scheme, "
-        f"at least {config['items']['min_per_scheme']} per scheme); scheme condition "
-        f"`{config['scheme_condition']}`.")
+    selection = config.get("items") or {}
+    how = []
+    if "seed" in selection:
+        how.append(f"seed {selection['seed']}")
+    if "min_per_scheme" in selection:
+        how.append(f"stratified by gold scheme, at least {selection['min_per_scheme']} per "
+                   "scheme")
+    add(f"* Items: {data.answers['item_id'].nunique()}"
+        + (f" ({', '.join(how)})" if how else "")
+        + f"; scheme condition `{config['scheme_condition']}`.")
+    for stage, gold_column, what in (("stage1", "gold_scheme", "stage one"),
+                                     ("stage2", "gold_fallacy", "the verdicts")):
+        answered = set(data.answers.loc[data.answers["stage"] == stage, "item_id"])
+        reasons = left_out(data, stage, gold_column)
+        add(f"* Scored on {what}: {len(data.scored(gold_column) & answered)} items, those in "
+            f"the test set with a `{gold_column}`. Left out of scoring: "
+            + (", ".join(f"{n} {why}" for why, n in sorted(reasons.items())) if reasons
+               else "none") + ".")
+    add("* The items left out of scoring still count where nothing is scored: integrity, "
+        "answers per question, samples and probabilities, cost, parser checks.")
     add("* Entries, with their samples per question and how each is drawn: " + ", ".join(
-        f"`{e}` ({m['model_id']}, {m['samples']} at temperature {m['temperature']}, top_p "
-        f"{m['top_p']}, top_k {m['top_k']}, max_tokens {m['max_tokens']})"
-        for e, m in ((e, data.manifest["models"][e]) for e in data.entries)) + ".")
+        f"`{e}` ({data.manifest['models'][e]['model_id']}, {_sampling(data, e)}, max_tokens "
+        f"{data.manifest['models'][e]['max_tokens']})" for e in data.entries) + ".")
     add("* Hard answer: sample 0 for an entry with one sample; for an entry with several, the "
         "majority of the valid samples (parsed, not cut off), a tie going to the higher mean "
         "confidence, then to the lower sample index.")
@@ -826,10 +905,10 @@ def render(data: PilotData) -> str:
         f"{data.manifest['started_at'][:16]}, finished {data.manifest['finished_at'][:16]} (UTC).")
     add(f"* Prompts {', '.join(data.manifest['prompt_versions'])}; schemes version "
         f"{data.manifest['schemes_version']['tag']}.")
-    add("* Gold schemes of the items: " + ", ".join(
+    add("* Gold schemes of the items scored on stage one: " + ", ".join(
         f"{k} {v}" for k, v in gold["gold_scheme"].value_counts().items()) + ".\n")
 
-    add("## 1. Stopping rule\n")
+    add(f"## {next(number)}. Stopping rule\n")
     add(f"Questions with more than {CBD_THRESHOLD:.0%} `{CBD}`, more than "
         f"{NA_THRESHOLD:.0%} `na` or more than {INVALID_THRESHOLD:.0%} `invalid` on an "
         f"entry, over all its samples: **{len(flagged)} (question, entry) pairs, "
@@ -849,7 +928,7 @@ def render(data: PilotData) -> str:
         add(markdown_table(across, {**{c: "pct" for c in across.columns}, "questions": "int"})
             + "\n")
 
-    add("## 2. Integrity\n")
+    add(f"## {next(number)}. Integrity\n")
     add(markdown_table(integrity(data), {"logprob_partial": "pct1"}) + "\n")
     add("`truncated` counts the answers with `finish_reason` equal to `length`; each is also "
         "`invalid`. `logprob_partial`: an admitted answer is missing from the top_logprobs "
@@ -863,7 +942,7 @@ def render(data: PilotData) -> str:
         add(markdown_table(layout_share(records).reindex(data.entries), {
             stage: "pct1" for stage in LAYOUT}) + "\n")
 
-    add("## 3. Stage one\n")
+    add(f"## {next(number)}. Stage one\n")
     add(markdown_table(s1, {"samples": "int", "accuracy": "f2", "unanimous": "pct"}) + "\n")
     add("`accuracy`: of the hard answer. `unanimous`: share of items whose valid samples all "
         "agree, for an entry with several.\n")
@@ -876,7 +955,7 @@ def render(data: PilotData) -> str:
         add(markdown_table(pivot.reindex(columns=data.entries, fill_value=0),
                            {e: "int" for e in data.entries}) + "\n")
 
-    add("## 4. Samples and probabilities\n")
+    add(f"## {next(number)}. Samples and probabilities\n")
     add("Stability of the stage-two answers over the samples (`unanimous`: share of the "
         "questions whose valid samples all agree):\n")
     add(markdown_table(stability(data), {"samples": "int", "unanimous": "pct1"}) + "\n")
@@ -893,7 +972,7 @@ def render(data: PilotData) -> str:
                        {"logprob_extreme": "pct1", "logprob_median_max": "f2",
                         "verbal_extreme": "pct1", "sample_between": "pct1"}) + "\n")
 
-    add("## 5. Verdicts through the diagrams\n")
+    add(f"## {next(number)}. Verdicts through the diagrams\n")
     add(f"Hard answers, {items} items, scored with the canonical scorer (fine space, "
         f"{len(label_space('fine'))} terminals; no verdict counts as wrong). `binary` is "
         "fallacy against good "
@@ -914,15 +993,15 @@ def render(data: PilotData) -> str:
     add(markdown_table(incomplete_traversals(data), {e: "int" for e in data.entries}) + "\n")
 
     overall, by_cq = human_cq_agreement(data)
-    add("## 6. Agreement with the per-CQ human annotation\n")
-    add("Hard answers against the `Annotazione Dumitru` sheets, on the pilot items annotated "
-        "under the same scheme (`idk` compared with `cannot_be_determined`).\n")
+    add(f"## {next(number)}. Agreement with the per-CQ human annotation\n")
+    add("Hard answers against the `Annotazione Dumitru` sheets, on the items of the run "
+        "annotated under the same scheme (`idk` compared with `cannot_be_determined`).\n")
     add(markdown_table(overall, {"items": "int", "answers": "int", "human_idk": "int",
                                  "agreement": "pct"}) + "\n")
     add("`human_idk`: annotated answers that are `idk`.\n")
     add(markdown_table(by_cq, {e: "pct" for e in data.entries}) + "\n")
 
-    add("## 7. Cost\n")
+    add(f"## {next(number)}. Cost\n")
     add("Latency in seconds per call:\n")
     lat = latency(data)
     add(markdown_table(lat, {c: "f1" for c in lat.columns}) + "\n")
@@ -939,19 +1018,19 @@ def render(data: PilotData) -> str:
             "`length`):\n")
         out_tokens = output_tokens(records).reindex(data.entries)
         add(markdown_table(out_tokens, {c: "int" for c in out_tokens.columns}) + "\n")
-    add(f"Projection of the full run: {questions['items']} items at stage one, the CQs of "
-        f"the items with a gold scheme at stage two, gold condition: {questions['stage1']} + "
-        f"{questions['stage2']} questions, times the samples of the entry. Hours estimated as "
-        "calls x mean latency / concurrency, without loading and smoke tests; "
-        "`pilot_hours_estimated` applies the same estimate to the pilot.\n")
-    add(markdown_table(projection(data), {"concurrency": "int", "samples": "int",
-                                          "pilot_hours_estimated": "f1",
-                                          "full_run_hours": "f1"}) + "\n")
+    if data.covers_part_of_test_set:
+        add(f"Projection of the full run: {questions['items']} items at stage one, the CQs "
+            "of the items with a gold scheme at stage two, gold condition: "
+            f"{questions['stage1']} + {questions['stage2']} questions, times the samples of "
+            "the entry. Hours estimated as calls x mean latency / concurrency, without "
+            "loading and smoke tests; `run_hours_estimated` applies the same estimate to "
+            "this run.\n")
+        add(markdown_table(projection(data), {"concurrency": "int", "samples": "int",
+                                              "run_hours_estimated": "f1",
+                                              "full_run_hours": "f1"}) + "\n")
 
-    add("## 8. Reasoning off against reasoning on\n")
-    if not reasoning_pairs(data.entries):
-        add("No model of this run is in both reasoning conditions.\n")
-    else:
+    if pairs:
+        add(f"## {next(number)}. Reasoning off against reasoning on\n")
         add(markdown_table(reasoning_comparison(data, tokens),
                            {"agreement_hard": "pct", "agreement_both_decided": "pct",
                             "stage1_off": "f2", "stage1_on": "f2", "cbd_off": "pct",
@@ -962,7 +1041,7 @@ def render(data: PilotData) -> str:
         add("`agreement_both_decided`: only the questions where both conditions answered on "
             "an arc of the diagram.\n")
 
-    add("## 9. Parser checks\n")
+    add(f"## {next(number)}. Parser checks\n")
     checks = parser_checks(data)
     add(markdown_table(checks, {c: "int" for c in checks.columns}) + "\n")
     add("`hard_not_argmax`: stage-two rows of sample 0 whose answer is not the answer "
@@ -980,10 +1059,13 @@ def render(data: PilotData) -> str:
         add(f"### {entry}\n")
         add(markdown_table(own, {**{c: "pct" for c in ANSWERS}, "n": "int"}) + "\n")
 
-    add("## Appendix B. Per question: extreme logprobs and agreement between conditions\n")
     extreme = logprob_extreme_by_cq(data).add_prefix("extreme_")
-    if reasoning_pairs(data.entries):
+    if pairs:
+        add("## Appendix B. Per question: extreme logprobs and agreement between "
+            "conditions\n")
         extreme = extreme.join(agreement_by_cq(data).add_prefix("on_off_agreement_"))
+    else:
+        add("## Appendix B. Per question: extreme logprobs\n")
     add(markdown_table(extreme, _pct_all(extreme)) + "\n")
 
     add("## Appendix C. Correlation of the three probabilities per question\n")
@@ -993,16 +1075,18 @@ def render(data: PilotData) -> str:
     return "\n".join(out)
 
 
-def write_report(run_dir: str | Path, **kwargs: Any) -> Path:
-    """Compute the report of a run and write ``pilot_report.md`` beside its files."""
-    data = load_pilot(run_dir, **kwargs)
-    path = Path(run_dir) / REPORT_NAME
-    path.write_text(render(data), encoding="utf-8", newline="\n")
+def write_report(run_dir: str | Path, name: str = REPORT_NAME, title: str = "Run report",
+                 **kwargs: Any) -> Path:
+    """Compute the report of a run and write it beside its files, as ``name``."""
+    data = load_run(run_dir, **kwargs)
+    path = Path(run_dir) / name
+    path.write_text(render(data, title), encoding="utf-8", newline="\n")
     return path
 
 
 __all__ = [
-    "PilotData", "load_pilot", "render", "write_report", "REPORT_NAME", "RULES",
+    "RunData", "load_run", "render", "write_report", "REPORT_NAME", "PILOT_REPORT_NAME",
+    "RULES", "left_out",
     "integrity", "stage_one", "stage_one_by_scheme", "cq_shares", "stopping_rule",
     "overall_shares", "answers_where_another_cannot_determine", "stability",
     "probability_correlations", "probability_shape",
