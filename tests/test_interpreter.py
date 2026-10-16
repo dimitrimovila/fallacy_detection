@@ -1,6 +1,6 @@
 """The generic interpreter: what traverse() does when an answer draws no arc.
 
-na is never on a diagram's arcs (schemes/ stays frozen); this is the case the
+na is never on a diagram's arcs (schemes/v1/ stays frozen); this is the case the
 interpreter was already built for, exercised here with na as the example.
 """
 

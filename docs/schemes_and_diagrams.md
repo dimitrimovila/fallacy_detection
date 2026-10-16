@@ -8,7 +8,7 @@ co-supervisor prof. Giovanni Da San Martino. Published version confirmed by the 
 2026, 182 pages, **chapter 3**, §3.1 "Diagrammi degli schemi" [Diagrams of the schemes], printed
 pp. 50-96. The page references below are those of this version.
 
-On 23 September 2026 the scheme cards and the files of `schemes/` (version 1.1) were compared block
+On 23 September 2026 the scheme cards and the files of `schemes/v1/` (version 1.1) were compared block
 by block with it: formal schema, identification question, critical questions, terminals, and all
 eight diagrams on the rendered pages. They coincide with the thesis, except for the corrections of
 ours listed in the Conventions.
@@ -26,7 +26,7 @@ outside the repository.
 ## Conventions
 
 **The critical questions report the words of chapter 3**, with no reformulation. The corrections of
-ours are the only differences from the published version and from the files of `schemes/`. Each is
+ours are the only differences from the published version and from the files of `schemes/v1/`. Each is
 made for an evident error of the thesis, with the reason given here:
 
 1. **Expert opinion CQ3**, `claim` in the infinitive: "Did S really assert (or claim) A as true?".

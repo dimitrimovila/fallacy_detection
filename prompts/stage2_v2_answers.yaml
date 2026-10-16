@@ -49,13 +49,6 @@ per_cq:
       positive: >-
         the opinion expressed about the other person is positive and intended to
         enhance their credibility
-    CQ3:
-      "yes": >-
-        the attack discredits the person through a commitment or personal tie of
-        theirs, or through their belonging to a group, movement or category that is
-        viewed negatively, rather than through what they argue
-      "no": >-
-        the attack does not rest on a commitment, tie or belonging of that kind
 
   cause_to_effect:
     CQ1:

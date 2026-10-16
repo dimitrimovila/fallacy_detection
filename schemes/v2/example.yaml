@@ -31,7 +31,7 @@ critical_questions:
       strongly supported than it actually is?
   - id: CQ2.2
     text: >-
-      Are the observed cases used to support the generalization too few to justify it?
+      Are the cases cited too few to support a conclusion as general as the one drawn?
   - id: CQ2.3
     text: >-
       Was the example chosen as a limit case, deliberately extreme and disproportionate

@@ -96,3 +96,26 @@ def test_no_prompt_built_from_items_csv_says_nan(schemes):
         for prompt in (render_stage1(item, schemes).text,
                        render_stage2(item, scheme, scheme.cq_order[0]).text):
             assert "nan" not in prompt.split()
+
+
+def test_v3_renders_every_cq_of_the_v2_diagrams(vocab):
+    """stage2_v3 goes with schemes/v2: every CQ renders, own definitions match the arcs."""
+    import re
+
+    from argfallacy.paths import SCHEMES_ROOT
+    from argfallacy.schemes import load_all
+
+    schemes = load_all(SCHEMES_ROOT / "v2")
+    meanings = load_answer_meanings("v3")
+    for scheme_id, cqs in meanings["per_cq"].items():
+        for cq_id, options in cqs.items():
+            assert set(options) == set(schemes[scheme_id].answer_space(cq_id))
+    names = {s["label"].lower() for s in vocab["terminals"].values()}
+    for scheme, cq_id in every_cq(schemes):
+        prompt = render_stage2(ITEM, scheme, cq_id, "v3")
+        assert prompt.prompt_version == "stage2_v3"
+        assert scheme.cqs[cq_id].text in prompt.text
+        assert "{{" not in prompt.text
+        block = _answers_block(prompt.text).lower()
+        found = [n for n in names if re.search(rf"\b{re.escape(n)}\b", block)]
+        assert not found, f"{scheme.scheme_id} {cq_id}: {found}"

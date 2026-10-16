@@ -13,7 +13,11 @@ from pathlib import Path
 # src/argfallacy/paths.py -> parents[0]=argfallacy, [1]=src, [2]=repository root
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-SCHEMES_DIR = REPO_ROOT / "schemes"
+SCHEMES_ROOT = REPO_ROOT / "schemes"
+"""One folder per version of the diagrams: v1 (version 1.1), v2 (version 2.0)."""
+
+SCHEMES_DIR = SCHEMES_ROOT / "v1"
+"""The diagrams the pipeline loads by default."""
 LABELS_DIR = REPO_ROOT / "labels"
 
 FALLACIES_FILE = LABELS_DIR / "fallacies.yaml"
@@ -24,6 +28,7 @@ ENV_FILE = REPO_ROOT / ".env"
 
 __all__ = [
     "REPO_ROOT",
+    "SCHEMES_ROOT",
     "SCHEMES_DIR",
     "LABELS_DIR",
     "FALLACIES_FILE",

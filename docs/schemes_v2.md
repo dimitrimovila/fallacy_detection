@@ -1,7 +1,7 @@
 # Classification diagrams, version 2.0
 
 Revised critical questions and diagrams for the eight argumentation schemes, encoded in
-`schemes/v2/` with `version: "2.0"`. The diagrams of version 1.1 stay in `schemes/` and are
+`schemes/v2/` with `version: "2.0"`. The diagrams of version 1.1 are in `schemes/v1/` and are
 described in `schemes_and_diagrams.md`; the runs made so far used them.
 
 **Conventions**
@@ -143,8 +143,8 @@ Was the example selected in a biased way that makes the generalization appear mo
 * yes → **Cherry Picking**
 * no → CQ2.2
 
-**CQ2.2** (was CQ2.2, unchanged)
-Are the observed cases used to support the generalization too few to justify it?
+**CQ2.2** (was CQ2.2, rewritten)
+Are the cases cited too few to support a conclusion as general as the one drawn?
 * yes → **Hasty Generalization**
 * no → CQ2.3
 
@@ -289,11 +289,15 @@ Does the text present A as the only cause of B, while B clearly also depends on 
 
 ---
 
+## Stage 2 prompt
+
+Version 2.0 is asked with the prompt `stage2_v3`: the template is the text of `stage2_v2`, and
+`stage2_v3_answers.yaml` gives definitions of their own only to the CQs that cannot be answered as
+intended without one: ad hominem CQ1 (options positive and negative), expert opinion CQ2.1, analogy
+CQ1.1, example CQ2.3, slippery slope CQ3, cause to effect CQ3 and CQ4, correlation to cause CQ2 and
+CQ6. Every other CQ uses the default definitions. The definitions give no examples.
+
 ## Open points
 
-* **Per-CQ answer definitions in the stage 2 prompt.** Proposed: remove all of them and keep only the ones that are strictly necessary. Until this is
-  settled there is no stage 2 prompt for version 2.0: `stage2_v2_answers.yaml` is keyed on the CQ ids
-  of version 1.1.
-* **Appeal to Extremes (analogy CQ1.1 and example CQ2.3).** Annotation guideline for yes and no still to be written.
 * **Popular opinion CQ1.3.** Both answers lead to Ad Populum: the node does not change the verdict and
   is kept for the explanation of the path.

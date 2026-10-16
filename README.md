@@ -34,7 +34,7 @@ data/             the data: items.csv and annotations.csv
 docs/             specifications per component, data log
 labels/           label dictionaries: fallacies and schemes
 prompts/          versioned prompt templates, JSON Schemas of the answers, answer definitions
-schemes/          the eight scheme diagrams as YAML (version 1.1; the revised version 2.0 in v2/)
+schemes/          the eight scheme diagrams as YAML, one folder per version: v1/ (1.1, the default), v2/ (2.0)
 serving/          the models, how to serve them with vLLM, a smoke test, the cluster jobs
 src/argfallacy/   the Python package: schemes, labels, annotations, prompts, client, parse, eval, CLI
 tests/            pytest suite, with a fake model backend (no network calls)
@@ -133,7 +133,7 @@ argfallacy parse <run_id>                                  # answers.csv and sum
 argfallacy report run <run_id>                             # run_report.md
 ```
 
-The report is computed from the files of the parser, the manifest, `data/` and `schemes/`.
+The report is computed from the files of the parser, the manifest, `data/` and `schemes/v1/`.
 The token counts and the layout of the JSON come from `raw.jsonl`, read one line at a
 time: without it (a copy of the run that has only the tables) the report says so and the
 rest is unchanged, and `--no-raw` skips the reading. The same command reports any run:

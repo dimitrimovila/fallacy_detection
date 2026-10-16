@@ -1,6 +1,6 @@
 """Loading and structural validation of argumentation-scheme decision diagrams.
 
-The diagrams live in ``schemes/*.yaml`` as data, not as code, so that a single
+The diagrams live in ``schemes/<version>/*.yaml`` as data, not as code, so that a single
 generic interpreter can execute any of them and so that the encoding itself is a
 citable artefact.
 
@@ -252,7 +252,7 @@ def load_vocabulary(
     """Read the fallacy vocabulary and check the constraints it declares.
 
     ``check_schemes`` also cross-checks the ``schemes`` list of every terminal
-    against the diagrams in ``schemes/``.  It is off on the hot path (a single
+    against the default diagrams, ``schemes/v1/``.  It is off on the hot path (a single
     label lookup) and on everywhere else, since it is the only check that can
     catch a diagram and the vocabulary drifting apart.
     """

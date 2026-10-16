@@ -1,6 +1,6 @@
 """Argumentation schemes as executable data.
 
-The diagrams live in ``schemes/*.yaml`` at the repository root; ``loader``
+The diagrams live in ``schemes/<version>/*.yaml`` at the repository root; ``loader``
 parses and validates them, ``interpreter`` executes them.
 """
 from .interpreter import Traversal, enumerate_paths, propagate, traverse

@@ -28,7 +28,7 @@ from typing import Any
 
 import yaml
 
-from ..paths import REPO_ROOT
+from ..paths import REPO_ROOT, SCHEMES_DIR
 from ..prompts import (
     DEFAULT_VERSION,
     STAGE1,
@@ -46,7 +46,6 @@ from .call import RawResponse, Request, ask, dumps
 
 SERVING_DIR = REPO_ROOT / "serving"
 MODELS_FILE = SERVING_DIR / "models.yaml"
-SCHEMES_DIR = REPO_ROOT / "schemes"
 
 GOLD, PREDICTED = "gold", "predicted"
 RAW_NAME = "raw.jsonl"

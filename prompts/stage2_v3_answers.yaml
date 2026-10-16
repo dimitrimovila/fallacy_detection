@@ -1,0 +1,122 @@
+# What each admitted answer means, in the stage two prompt. Version v3, for the diagrams of
+# version 2.0 in schemes/v2/; the template stage2_v3.md is the same text as stage2_v2.md.
+#
+# It is part of the prompt as much as stage2_v3.md, and shares its version: after the
+# first run on a real model, every change here creates a new version.
+# The keys yes and no must be quoted: in YAML 1.1 they are booleans.
+#
+# No reference to the fallacy labels: a definition says what the question asks,
+# never where the answer leads in the diagram. The notes of the scheme YAML files
+# stay out of the prompt for the same reason. No examples either: an example would
+# steer the model towards its own surface features.
+
+prompt_version: stage2_v3
+
+# Meaning of yes and no for every CQ that has no entry under `per_cq`. The
+# instructions of the template apply to every CQ.
+default:
+  "yes": for the argument in this text, the answer to the question is yes
+  "no": for the argument in this text, the answer to the question is no
+
+# The third option, a choice of this project. {options} becomes the real alternatives
+# of the question, in the order in which the prompt lists them. No other braces here:
+# the text goes through str.format.
+cannot_be_determined: >-
+  use this only if you have no basis at all for answering {options}, even after
+  using everything listed in the section "What to do". The text not
+  stating the answer explicitly is not, by itself, a reason to use it.
+  If you lean towards one answer, however slightly, give it and lower your confidence.
+
+# The fourth option, added by the code exactly like cannot_be_determined: never in
+# the answer_space of a scheme. It marks something the question takes for granted
+# that the argument does not contain, not a missing mention of what the question asks about.
+na: >-
+  use this answer only if the question takes for granted something that this argument
+  does not contain, not even implicitly, so that none of the other answers makes sense.
+  If the question itself asks whether something exists, answer it normally.
+  If what the question takes for granted is present, answer the question, even if you are unsure how it stands.
+
+# A CQ gets an entry of its own only when the question cannot be answered as intended
+# without it: its options are not yes and no; its key term admits a reading under which
+# almost every argument gets the same answer (conclusive, limit case, stopped, too few,
+# the only cause); or the absence of what it asks about must be told apart from a flaw.
+# Every other CQ uses `default`, so that its rendered prompt changes only with its text.
+# The options are listed in the order written here, and the set must match the
+# answer_space of the diagram, otherwise rendering fails.
+per_cq:
+  ad_hominem:
+    CQ1:
+      negative: >-
+        the opinion expressed about the other person is negative and intended to
+        undermine their credibility
+      positive: >-
+        the opinion expressed about the other person is positive and intended to
+        enhance their credibility
+
+  analogy:
+    CQ1.1:
+      "yes": >-
+        the case used in the comparison is a limit case, clearly disproportionate in
+        gravity to the other case, and the comparison draws its force from that extremity
+      "no": the two cases are proportionate to each other, even if both are severe
+
+  cause_to_effect:
+    CQ3:
+      "yes": >-
+        the text reports observed cases in support of the causal generalization, and
+        they are too few to support it
+      "no": >-
+        the cases the text reports are enough to support the causal generalization, or
+        the text reports no observed cases at all
+    CQ4:
+      "yes": >-
+        the text attributes B entirely to A, explaining B by A alone, while B evidently
+        also depends on other important causes
+      "no": >-
+        the text presents A as a cause that contributes to B or tends to produce it,
+        without claiming that A is the whole explanation of B
+
+  correlation_to_cause:
+    CQ2:
+      "yes": >-
+        the text reports observed cases in support of the correlation, and they are too
+        few to support it
+      "no": >-
+        the cases the text reports are enough to support the correlation, or the text
+        reports no observed cases at all
+    CQ6:
+      "yes": >-
+        the text attributes B entirely to A, explaining B by A alone, while B evidently
+        also depends on other important causes
+      "no": >-
+        the text presents A as a cause that contributes to B or tends to produce it,
+        without claiming that A is the whole explanation of B
+
+  example:
+    CQ2.3:
+      "yes": >-
+        the example is a limit case, clearly disproportionate in gravity to the typical
+        cases the generalization covers, and the argument draws its force from that
+        extremity
+      "no": >-
+        the example is proportionate to the typical cases the generalization covers,
+        even if it is severe
+
+  expert_opinion:
+    CQ2.1:
+      "yes": >-
+        the text draws A from S's word as a certainty, treating the fact that S said it
+        as enough to settle that A is true
+      "no": >-
+        the text draws A from S's word only as a reasonable presumption, leaving room
+        for S being wrong
+
+  slippery_slope:
+    CQ3:
+      "yes": >-
+        there is a realistic point in the chain where it could and plausibly would be
+        stopped or reversed, and the text gives no good reason why it would not be
+      "no": >-
+        the text makes it plausible that, once started, the chain would not
+        realistically be stopped or reversed before Cn; the mere possibility of
+        stopping it in principle is not enough for yes
