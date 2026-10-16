@@ -465,13 +465,18 @@ def summarise(
 
 
 def parse_run(run_dir: str | Path, schemes: Mapping[str, Any] | None = None) -> dict[str, Path]:
-    """Read a run's raw file and write ``answers.csv`` and ``summary.csv`` beside it."""
-    from ..client.run import read_raw
+    """Read a run's raw file and write ``answers.csv`` and ``summary.csv`` beside it.
+
+    The diagrams are those of the folder the manifest of the run names, so the
+    answers are read against the questions they were asked.
+    """
+    from ..client.run import read_manifest, read_raw, schemes_dir_of
 
     run_dir = Path(run_dir)
     if not run_dir.is_dir():
         raise SchemeError(f"no run at {run_dir}")
-    schemes = schemes if schemes is not None else load_all()
+    if schemes is None:
+        schemes = load_all(schemes_dir_of(read_manifest(run_dir)))
 
     answers = parse_answers(read_raw(run_dir), schemes)
     summary = summarise(answers, schemes)

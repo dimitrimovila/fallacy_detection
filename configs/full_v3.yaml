@@ -1,0 +1,20 @@
+# Full run on the schemes of version 2.0 (schemes/v2/), for experiment 2, with the stage two
+# prompt v3 written on their CQs: stage two only, under the gold scheme, for the items of the
+# test set (the others have no gold scheme, so they take no call). The entries and their
+# regimes are those of full_v2.yaml. `argfallacy run plan configs/full_v3.yaml` counts the calls.
+
+name: full_v3
+
+items:
+  # every item: no sample; the items without a gold scheme have no stage two question
+  exclude_none_scheme: false
+
+stages: [stage2]
+scheme_condition: gold
+schemes: v2
+models: [qwen3_8_27b, gemma4_31b, gpt_oss_20b, gpt_oss_120b, k2_horizon_32b_high]
+prompt_version: v3
+
+generation:
+  # for the entries without a max_tokens of their own
+  max_tokens: 512

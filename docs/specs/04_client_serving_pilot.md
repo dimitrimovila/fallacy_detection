@@ -1,6 +1,6 @@
 # Spec 04. Interviewer, serving, minimal parser and pilot
 
-Version 4.15, 11 October 2026 (4.15 makes the pilot report the report of any run, section 4; 4.14 added the zero-shot stage, section 4.2). Components: `src/argfallacy/client/`, `src/argfallacy/parse/` (minimal version), `src/argfallacy/eval/run_report.py` (the report of a run), `serving/` (with `serving/serve_command.py` and the jobs in `serving/slurm/`), `.gitattributes`.
+Version 4.16, 17 October 2026 (4.16 records the folder of the schemes in the manifest, section 2.4; 4.15 makes the pilot report the report of any run, section 4; 4.14 added the zero-shot stage, section 4.2). Components: `src/argfallacy/client/`, `src/argfallacy/parse/` (minimal version), `src/argfallacy/eval/run_report.py` (the report of a run), `serving/` (with `serving/serve_command.py` and the jobs in `serving/slurm/`), `.gitattributes`.
 Depends on: 01, 03 and the data (`docs/data.md`). Produces: `runs/<run_id>/`.
 
 ## 1. Serving on the cluster (`serving/`)
@@ -56,7 +56,7 @@ SQLite in `runs/cache.sqlite`, a table with key = sha256 of (`model_id`, `prompt
 * `predicted` condition: the plan uses the stage-one predictions of the model itself and generates stage-two calls only for the items whose predicted scheme differs from the gold one; for the others the results of the `gold` condition are valid here too, and the parser knows it.
 
 ### 2.4 Manifest
-`manifest.json` with: `run_id`, full configuration, `model_id` and `display_name`, prompt version, schemes version (tag, the `version` that every YAML of `schemes/` declares and that the files must share, and hash of the content of `schemes/`), the `max_tokens` of the configuration, start and end timestamps, number of calls planned, executed, served from the cache, failed, and per model the note `logprobs_available`, `revision`, `tier`, `reasoning`, `max_tokens`, `samples`, `temperature`, `top_p`, `top_k` and `serve_args`.
+`manifest.json` with: `run_id`, full configuration, `model_id` and `display_name`, prompt versions (those of the stages the configuration asks for), schemes version (`folder`, the folder of `schemes/` the configuration names with the key `schemes`, `v1` by default or `v2`; tag, the `version` that every YAML of the folder declares and that the files must share; the files; and hash of their content; a manifest without `folder` was written on `schemes/v1/`, and the parser and the run report read the diagrams of the folder the manifest names), the `max_tokens` of the configuration, start and end timestamps, number of calls planned, executed, served from the cache, failed, and per model the note `logprobs_available`, `revision`, `tier`, `reasoning`, `max_tokens`, `samples`, `temperature`, `top_p`, `top_k` and `serve_args`.
 The manifest describes the whole configuration, whichever entries an invocation executes: the calls planned are those of all the entries; executed, served from the cache and failed are counted over the whole `raw.jsonl` of the run, per entry (`calls_per_model`) and in total; `started_at` is the one of the first invocation, `finished_at` the one of the last. A call counts once: its answered line says executed or served from the cache, and a call with only error lines is failed, so a failure answered on a later try is no longer counted as failed.
 
 ### 2.5 `raw.jsonl`

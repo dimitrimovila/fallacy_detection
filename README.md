@@ -133,7 +133,8 @@ argfallacy parse <run_id>                                  # answers.csv and sum
 argfallacy report run <run_id>                             # run_report.md
 ```
 
-The report is computed from the files of the parser, the manifest, `data/` and `schemes/v1/`.
+The report is computed from the files of the parser, the manifest, `data/` and the folder of
+`schemes/` the run was planned on.
 The token counts and the layout of the JSON come from `raw.jsonl`, read one line at a
 time: without it (a copy of the run that has only the tables) the report says so and the
 rest is unchanged, and `--no-raw` skips the reading. The same command reports any run:
@@ -148,6 +149,14 @@ the critical questions: `configs/zeroshot_v1.yaml` (601 items, the five entries 
 run) and `configs/zeroshot_pilot.yaml` (the 50 pilot items, two entries), run and parsed with
 the same commands. The parser writes the verdict as its terminal id, with the probability of
 the label chosen in `p_label`.
+
+A configuration asks the CQs of `schemes/v1/` (version 1.1) unless it sets `schemes: v2`
+(version 2.0), which goes only with `prompt_version: v3`, and v3 only with it:
+`configs/full_v3.yaml` asks the CQs of version 2.0 at stage two, under the gold scheme, with
+the five entries of the full run. The manifest records the folder, and the parser and the
+report read the diagrams from there; a manifest without it means `schemes/v1/`. On a run of
+version 2.0 the report leaves out the agreement with the per-CQ annotation, which answers the
+CQs of version 1.1.
 
 On the cluster two Slurm jobs do this, launching and stopping the servers themselves
 (preparation in `serving/README.md`):

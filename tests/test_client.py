@@ -344,6 +344,65 @@ def test_the_manifest_is_written_and_updated(tmp_path, items, schemes, cache):
     assert manifest["started_at"] and manifest["finished_at"]
 
 
+@pytest.mark.parametrize("schemes_folder, version", [("v1", "v3"), ("v2", "v2"), ("v9", "v2")])
+def test_the_prompts_v3_go_only_with_the_schemes_v2(schemes_folder, version):
+    with pytest.raises(SchemeError, match="schemes"):
+        RunConfig(name="t", models=[MODEL], prompt_version=version, schemes=schemes_folder)
+
+
+def test_a_run_on_the_schemes_v2_is_planned_parsed_and_traversed_on_them(tmp_path, items, cache):
+    """The folder of the configuration decides the CQs, the manifest records it, and the
+    parser and the report read it back from the manifest, not from the default."""
+    from argfallacy.eval import run_report
+    from argfallacy.parse import parse_run
+    from argfallacy.paths import SCHEMES_ROOT
+
+    v2 = load_all(SCHEMES_ROOT / "v2")
+    config = RunConfig.load(REPO_ROOT / "configs" / "full_v3.yaml")
+    config.models = config.raw["models"] = [MODEL]
+    assert config.schemes == "v2" and config.stages == [STAGE2]
+
+    calls = plan(config, items, with_samples(1))
+    assert {c.stage for c in calls} == {STAGE2}
+    for item in items:
+        asked = [c.cq_id for c in calls if c.item_id == item["item_id"]]
+        assert asked == v2[item["gold_scheme"]].cq_order, item["gold_scheme"]
+
+    manifest = execute(config, items, run_id="v2", runs_dir=tmp_path, backend=FakeBackend(),
+                       cache=cache, models=with_samples(1), sleep=lambda _: None)
+    assert manifest["schemes_version"]["folder"] == "v2"
+    assert manifest["schemes_version"]["tag"] == "2.0"
+    assert manifest["prompt_versions"] == ["stage2_v3"]
+
+    run_dir = tmp_path / "v2"
+    parse_run(run_dir)
+    answers = pd.read_csv(run_dir / "answers.csv")
+    only_v2 = answers[(answers["scheme"] == "expert_opinion") & (answers["cq_id"] == "CQ2.1")]
+    assert len(only_v2) == 1 and only_v2["parse_ok"].all()
+
+    # example CQ1 yes: False Premise in version 2.0, False Attribution in version 1.1
+    summary = pd.read_csv(run_dir / "summary.csv")
+    summary.loc[(summary["scheme"] == "example") & (summary["cq_id"] == "CQ1"), "answer"] = "yes"
+    summary.to_csv(run_dir / "summary.csv", index=False)
+    table = pd.DataFrame(items).assign(in_test_set=True, gold_fallacy="good_argumentation")
+    table.to_csv(tmp_path / "items.csv", index=False)
+
+    def verdict() -> str:
+        data = run_report.load_run(run_dir, items=tmp_path / "items.csv", read_raw=False)
+        rows = run_report.traversals(data).set_index("scheme")
+        return rows.loc["example", "verdict"]
+
+    assert verdict() == "false_premise"
+    data = run_report.load_run(run_dir, items=tmp_path / "items.csv", read_raw=False)
+    text = run_report.render(data)
+    assert "`schemes/v2/`" in text and "Not computed" in text
+
+    # a manifest without the folder is a run made before it was recorded: version 1.1
+    del manifest["schemes_version"]["folder"]
+    (run_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    assert verdict() == "false_attribution"
+
+
 def _raw_line(**overrides):
     line = {
         "run_id": "r", "item_id": "i1", "stage": STAGE2, "scheme_condition": "gold",

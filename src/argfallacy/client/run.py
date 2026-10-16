@@ -28,7 +28,7 @@ from typing import Any
 
 import yaml
 
-from ..paths import REPO_ROOT, SCHEMES_DIR
+from ..paths import REPO_ROOT, SCHEMES_DIR, SCHEMES_ROOT
 from ..prompts import (
     DEFAULT_VERSION,
     STAGE1,
@@ -52,6 +52,12 @@ RAW_NAME = "raw.jsonl"
 MANIFEST_NAME = "manifest.json"
 
 RETRYABLE = ("429", "500", "502", "503", "504", "timeout", "connection")
+
+SCHEMES_FOLDERS = ("v1", "v2")
+"""The folders of ``schemes/`` a run can load: version 1.1 and version 2.0."""
+V2_SCHEMES, V3_PROMPTS = "v2", "v3"
+"""The definitions of ``stage2_v3_answers.yaml`` are written on the CQ ids of version 2.0,
+so the two go together and with nothing else."""
 
 
 # --------------------------------------------------------------------- models
@@ -96,7 +102,20 @@ class RunConfig:
     items: dict[str, Any] = field(default_factory=dict)
     generation: dict[str, Any] = field(default_factory=dict)
     predictions_from: str | None = None
+    schemes: str = SCHEMES_DIR.name
     raw: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.schemes not in SCHEMES_FOLDERS:
+            raise SchemeError(f"{self.name}: schemes must be one of {list(SCHEMES_FOLDERS)}, "
+                              f"not {self.schemes!r}")
+        if (self.prompt_version == V3_PROMPTS) != (self.schemes == V2_SCHEMES):
+            raise SchemeError(
+                f"{self.name}: prompt_version {self.prompt_version!r} with schemes "
+                f"{self.schemes!r}; prompt_version {V3_PROMPTS!r} goes only with schemes "
+                f"{V2_SCHEMES!r}, and schemes {V2_SCHEMES!r} only with prompt_version "
+                f"{V3_PROMPTS!r}"
+            )
 
     @classmethod
     def load(cls, path: str | Path) -> RunConfig:
@@ -109,6 +128,10 @@ class RunConfig:
 
     def max_tokens(self) -> int:
         return int(self.generation.get("max_tokens", 512))
+
+    @property
+    def schemes_dir(self) -> Path:
+        return SCHEMES_ROOT / self.schemes
 
 
 def max_tokens_for(spec: Mapping[str, Any], config: RunConfig) -> int:
@@ -218,7 +241,7 @@ def plan(
     """
     entries = select_models(config, only)
     models = models if models is not None else load_models()
-    schemes = schemes if schemes is not None else load_all()
+    schemes = schemes if schemes is not None else load_all(config.schemes_dir)
     items = list(items)
     calls: list[PlannedCall] = []
 
@@ -363,6 +386,24 @@ def schemes_tag(directory: str | Path = SCHEMES_DIR) -> str:
     return str(tags.pop())
 
 
+def schemes_dir_of(manifest: Mapping[str, Any] | None) -> Path:
+    """The folder of ``schemes/`` a run was planned on, as its manifest records it.
+
+    A manifest written before the folder was recorded, or none at all, means
+    ``schemes/v1/``: every run made until then used version 1.1.
+    """
+    folder = ((manifest or {}).get("schemes_version") or {}).get("folder", SCHEMES_DIR.name)
+    if folder not in SCHEMES_FOLDERS:
+        raise SchemeError(f"the manifest names the schemes folder {folder!r}, "
+                          f"not one of {list(SCHEMES_FOLDERS)}")
+    return SCHEMES_ROOT / folder
+
+
+def read_manifest(run_dir: str | Path) -> dict[str, Any] | None:
+    path = Path(run_dir) / MANIFEST_NAME
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+
+
 def make_run_id(config_name: str, when: datetime | None = None) -> str:
     when = when or datetime.now(UTC)
     return f"{when.strftime('%Y%m%dT%H%M%SZ')}_{config_name}"
@@ -398,14 +439,14 @@ def build_manifest(
             }
             for name in sorted(used)
         },
-        "prompt_versions": sorted({c.prompt_version for c in calls}) or [
-            prompt_version(STAGE1, config.prompt_version),
-            prompt_version(STAGE2, config.prompt_version),
-        ],
+        "prompt_versions": sorted({c.prompt_version for c in calls}) or sorted(
+            prompt_version(stage, config.prompt_version) for stage in config.stages
+        ),
         "schemes_version": {
-            "tag": schemes_tag(),
-            "files": sorted(p.name for p in SCHEMES_DIR.glob("*.yaml")),
-            "content_sha256": schemes_hash(),
+            "folder": config.schemes,
+            "tag": schemes_tag(config.schemes_dir),
+            "files": sorted(p.name for p in config.schemes_dir.glob("*.yaml")),
+            "content_sha256": schemes_hash(config.schemes_dir),
         },
         "generation": {"max_tokens": config.max_tokens()},
         "scheme_condition": config.scheme_condition,
@@ -552,7 +593,7 @@ def execute(
     entries = select_models(config, only)
     sleep = sleep or time.sleep
     models = models if models is not None else load_models()
-    schemes = schemes if schemes is not None else load_all()
+    schemes = schemes if schemes is not None else load_all(config.schemes_dir)
 
     calls = plan(config, items, models, schemes, predictions)
     run_id = run_id or make_run_id(config.name)
