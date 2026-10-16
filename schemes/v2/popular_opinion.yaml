@@ -1,0 +1,66 @@
+scheme_id: popular_opinion
+name: Argument from popular opinion
+version: "2.0"
+
+schema: |
+  If a large majority of some reference group accept A as true, then there is a
+  presumption in favour of A.
+  A large majority of the reference group accept A as true.
+  Therefore there is a presumption in favour of A.
+
+identification_question: >-
+  Does this text use the fact that the conclusion is supported by a relatively
+  large number of people as its main argument in favour of that conclusion?
+
+variables:
+  A: the proposition held to be true by the group
+
+default_answer_space: ["yes", "no"]
+
+critical_questions:
+  - id: CQ1
+    text: >-
+      Is the reference group in a position to know whether A is true (for example
+      through direct experience), or does A concern a convention or shared preference
+      for which the group's agreement is a reasonable basis for accepting A?
+  - id: CQ1.1
+    text: >-
+      Does the majority of the reference group rely on the concept of tradition to
+      assert A?
+  - id: CQ1.2
+    text: >-
+      Does the majority of the reference group rely on the concept of nature to assert
+      A?
+  - id: CQ1.3
+    text: >-
+      Is the presumption in favour of A based solely on the fact that it is accepted by
+      a large majority of the reference group?
+  - id: CQ2
+    text: >-
+      Does the argument rely on a subgroup likely to support A, while drawing a
+      conclusion that applies to a broader population?
+  - id: CQ3
+    text: >-
+      Does the text refer to a group that is clearly too small to support A?
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "yes": {node: CQ2}
+      "no":  {node: CQ1.1}
+    CQ1.1:
+      "yes": {terminal: appeal_to_tradition}
+      "no":  {node: CQ1.2}
+    CQ1.2:
+      "yes": {terminal: appeal_to_nature}
+      "no":  {node: CQ1.3}
+    CQ1.3:
+      "yes": {terminal: ad_populum}
+      "no":  {terminal: ad_populum, reconvergence: true}
+    CQ2:
+      "yes": {terminal: cherry_picking}
+      "no":  {node: CQ3}
+    CQ3:
+      "yes": {terminal: hasty_generalization}
+      "no":  {terminal: good_argumentation}

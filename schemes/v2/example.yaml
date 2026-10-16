@@ -1,0 +1,65 @@
+scheme_id: example
+name: Argument from example
+version: "2.0"
+
+schema: |
+  In this particular case, the individual a has property F and also property G.
+  a is typical of things that have F and may or may not also have G.
+  Therefore, generally, if x has property F then x also has property G.
+
+identification_question: >-
+  Does the text use an example that is considered appropriate to draw a
+  conclusion on the main topic?
+
+variables:
+  a: the individual case cited as example
+  F: the property shared with the domain of the generalization
+  G: the property transferred to the conclusion
+  x: any individual the generalization ranges over
+
+default_answer_space: ["yes", "no"]
+
+critical_questions:
+  - id: CQ1
+    text: Is the case reported as the example clearly false or unrealistic?
+  - id: CQ2
+    text: >-
+      Is the example typical of the kinds of cases that the generalization ranges over?
+  - id: CQ2.1
+    text: >-
+      Was the example selected in a biased way that makes the generalization appear more
+      strongly supported than it actually is?
+  - id: CQ2.2
+    text: >-
+      Are the observed cases used to support the generalization too few to justify it?
+  - id: CQ2.3
+    text: >-
+      Was the example chosen as a limit case, deliberately extreme and disproportionate
+      to the typical cases covered by the generalization, in order to influence the
+      audience?
+  - id: CQ3
+    text: >-
+      Does the example cited have characteristics that make it too different from the
+      generalization drawn in the conclusion?
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "yes": {terminal: false_premise}
+      "no":  {node: CQ2}
+    CQ2:
+      "yes": {node: CQ3}
+      "no":  {node: CQ2.1}
+    CQ2.1:
+      "yes": {terminal: cherry_picking}
+      "no":  {node: CQ2.2}
+    CQ2.2:
+      "yes": {terminal: hasty_generalization}
+      "no":  {node: CQ2.3}
+    CQ2.3:
+      "yes": {terminal: appeal_to_extremes}
+      "no":  {node: CQ3, reconvergence: true}
+    CQ3:
+      "yes": {terminal: weak_analogy}
+      "no":  {terminal: good_argumentation}

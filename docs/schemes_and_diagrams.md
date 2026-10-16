@@ -13,6 +13,9 @@ by block with it: formal schema, identification question, critical questions, te
 eight diagrams on the rendered pages. They coincide with the thesis, except for the corrections of
 ours listed in the Conventions.
 
+This document describes version 1.1. The revised diagrams of version 2.0 are in `schemes/v2/`,
+described in `schemes_v2.md`.
+
 **What this document contains.** Only the schemes: argumentation scheme, identification question,
 critical questions, diagram, terminals, and the structural properties that follow from them. Dataset
 and annotation method are in `data.md`. Prompts, runs and results are in `diagnosi_pipeline_cq.md`,

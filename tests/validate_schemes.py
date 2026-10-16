@@ -31,10 +31,23 @@ SNAPSHOT = {
     "slippery_slope":       (6, 6,  8, True),
 }
 
+# the same facts for the revised diagrams of ``schemes/v2/`` (version 2.0)
+SNAPSHOT_V2 = {
+    "ad_hominem":           (6, 6,  7, False),
+    "analogy":              (5, 4,  7, True),
+    "cause_to_effect":      (6, 6,  7, True),
+    "correlation_to_cause": (6, 6,  7, True),
+    "example":              (6, 6,  8, True),
+    "expert_opinion":       (8, 7, 13, True),
+    "popular_opinion":      (6, 4,  7, True),
+    "slippery_slope":       (3, 3,  4, True),
+}
 
-def check(schemes=None, vocab=None) -> list[str]:
+
+def check(schemes=None, vocab=None, snapshot=None) -> list[str]:
     """The snapshot comparison alone, without the report.  Empty list means fine."""
     schemes = load_all() if schemes is None else schemes
+    SNAPSHOT = globals()["SNAPSHOT"] if snapshot is None else snapshot
     vocab = load_vocabulary() if vocab is None else vocab
     known = set(vocab["terminals"])
     failures: list[str] = []

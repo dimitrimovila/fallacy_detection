@@ -34,7 +34,7 @@ data/             the data: items.csv and annotations.csv
 docs/             specifications per component, data log
 labels/           label dictionaries: fallacies and schemes
 prompts/          versioned prompt templates, JSON Schemas of the answers, answer definitions
-schemes/          the eight scheme diagrams as YAML
+schemes/          the eight scheme diagrams as YAML (version 1.1; the revised version 2.0 in v2/)
 serving/          the models, how to serve them with vLLM, a smoke test, the cluster jobs
 src/argfallacy/   the Python package: schemes, labels, annotations, prompts, client, parse, eval, CLI
 tests/            pytest suite, with a fake model backend (no network calls)

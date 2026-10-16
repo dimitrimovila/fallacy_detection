@@ -9,6 +9,7 @@ import below finds it there.
 from __future__ import annotations
 
 import validate_schemes
+from argfallacy.schemes import SCHEMES_DIR, load_all
 
 
 def test_snapshot_unchanged(schemes, vocab):
@@ -17,3 +18,16 @@ def test_snapshot_unchanged(schemes, vocab):
 
 def test_every_scheme_is_in_the_snapshot(schemes):
     assert set(schemes) == set(validate_schemes.SNAPSHOT)
+
+
+def test_v2_snapshot_unchanged(vocab):
+    assert validate_schemes.check(
+        load_all(SCHEMES_DIR / "v2"), vocab, validate_schemes.SNAPSHOT_V2
+    ) == []
+
+
+def test_v2_declares_one_version():
+    from argfallacy.client.run import schemes_tag
+
+    assert schemes_tag(SCHEMES_DIR / "v2") == "2.0"
+    assert schemes_tag() == "1.1"

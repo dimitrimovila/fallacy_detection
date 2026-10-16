@@ -1,0 +1,50 @@
+scheme_id: slippery_slope
+name: Slippery slope argument
+version: "2.0"
+
+schema: |
+  Case C0 is tentatively acceptable as an initial presumption.
+  There exists a series of cases, C0, C1,..., Cn-1, where each case leads to the next
+  by a combination of causal, precedent, and/or analogy steps.
+  There is a climate of social opinion such that once people come to accept each
+  step as plausible (or as accepted practice), they will then be led to accept the
+  next step.
+  The penultimate step Cn-1 leads to a horrible outcome, Cn, which is not acceptable.
+  Therefore, C0 is not acceptable (contrary to the presumption of the initial premise).
+
+identification_question: >-
+  Does the text put forward the argument that, if a particular action is permitted
+  or carried out (even if it is minor or seemingly harmless), it will inevitably
+  lead (through a chain of intermediate consequences) to an extreme or catastrophic
+  final outcome?
+
+variables:
+  C0: the initial case, tentatively acceptable
+  "C1, ..., Cn-1": the intermediate cases, each leading to the next
+  Cn: the horrible outcome that is not acceptable
+
+default_answer_space: ["yes", "no"]
+
+critical_questions:
+  - id: CQ1
+    text: >-
+      Is there at least one link in the chain that is implausible, potentially depending
+      on unstated intermediate steps that are doubtful?
+  - id: CQ2
+    text: Is the final outcome Cn as bad as the text suggests?
+  - id: CQ3
+    text: >-
+      Could the chain of events be stopped or reversed at some point before reaching Cn?
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "yes": {terminal: slippery_slope}
+      "no":  {node: CQ2}
+    CQ2:
+      "yes": {node: CQ3}
+      "no":  {terminal: slippery_slope, reconvergence: true}
+    CQ3:
+      "yes": {terminal: slippery_slope, reconvergence: true}
+      "no":  {terminal: good_argumentation}

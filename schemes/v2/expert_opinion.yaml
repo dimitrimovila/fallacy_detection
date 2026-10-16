@@ -1,0 +1,82 @@
+scheme_id: expert_opinion
+name: Argument from expert opinion
+version: "2.0"
+
+schema: |
+  S is an authoritative source (whether individual or collective) in the domain D.
+  S asserts that A is known to be true.
+  A is in D.
+  (A implies the conclusion C)
+  Therefore A (and/or C) may (plausibly) be taken as true.
+
+identification_question: >-
+  Does this text use the opinion of a (supposedly) authoritative source as
+  evidence to support a claim?
+
+variables:
+  S: the source
+  D: the domain
+  A: the assertion made by the source
+  C: the conclusion drawn by the arguer
+
+default_answer_space: ["yes", "no"]
+
+critical_questions:
+  - id: CQ1
+    text: >-
+      Does S have competence, expertise or direct knowledge relevant to the domain D of
+      the claim?
+  - id: CQ2
+    text: >-
+      Does the argument rest only on S's word, with no evidence or reasoning for A given
+      by S or by the arguer?
+  - id: CQ2.1
+    text: Does the text present S's word as conclusive for A?
+  - id: CQ2.2
+    text: Does A clearly contradict the prevailing view of experts in D?
+  - id: CQ3
+    text: Did S really assert (or claim) A as true?
+  - id: CQ3.1
+    text: >-
+      Has S expressed a position of their own on the issue under discussion, in this
+      exchange or elsewhere?
+  - id: CQ4
+    text: >-
+      Is there a conclusion C that differs from A but uses A to justify itself?
+  - id: CQ4.1
+    text: >-
+      Assuming that A is true, does the conclusion C follow from it without an
+      unjustified leap?
+    note: >-
+      C is never reconstructed from context. When C is left implicit (enthymeme)
+      the diagram gives no rule, so the case is out of scope rather than answered
+      — judging an inferential step nobody wrote would manufacture Non Sequitur
+      verdicts out of reconstruction error.
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "yes": {node: CQ2}
+      "no":  {terminal: irrelevant_authority}
+    CQ2:
+      "yes": {node: CQ2.1}
+      "no":  {node: CQ3}
+    CQ2.1:
+      "yes": {terminal: appeal_to_authority}
+      "no":  {node: CQ2.2}
+    CQ2.2:
+      "yes": {terminal: appeal_to_authority, reconvergence: true}
+      "no":  {node: CQ3, reconvergence: true}
+    CQ3:
+      "yes": {node: CQ4}
+      "no":  {node: CQ3.1}
+    CQ3.1:
+      "yes": {terminal: strawman}
+      "no":  {terminal: false_attribution}
+    CQ4:
+      "yes": {node: CQ4.1}
+      "no":  {terminal: good_argumentation}
+    CQ4.1:
+      "yes": {terminal: good_argumentation, reconvergence: true}
+      "no":  {terminal: non_sequitur}

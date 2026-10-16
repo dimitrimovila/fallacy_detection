@@ -1,0 +1,77 @@
+scheme_id: ad_hominem
+name: Argument ad hominem
+version: "2.0"
+
+schema: |
+  a is a person of bad character.
+  Therefore, a's argument A should not be accepted.
+
+identification_question: >-
+  Does the text shift the focus from arguments to personal judgments about the
+  other person?
+
+variables:
+  a: the person whose character is judged
+  A: the argument put forward by a
+
+default_answer_space: ["yes", "no"]
+
+scheme_flags: [no_good_argumentation_terminal]
+scheme_note: >-
+  The only scheme with no Good Argumentation terminal: every path ends in a fallacy.
+  On this scheme the accuracy of the non-fallacious class is undefined, and any
+  macro-averaged metric that includes it must say so.
+
+critical_questions:
+  - id: CQ1
+    text: >-
+      Is the opinion expressed about the other person negative (and intended to
+      undermine their credibility) or positive (and intended to enhance their
+      credibility)?
+    answer_space: ["positive", "negative"]
+    note: >-
+      The positive branch leaves the ad hominem cluster and shares the
+      appeal_to_authority label with expert_opinion CQ2.1 and CQ2.2. The two are not
+      the same situation: here the argument leverages moral character, there domain
+      competence. Record (scheme, exit CQ), not just the terminal label.
+  - id: CQ2
+    text: >-
+      Does the attack accuse the other person of being influenced by personal interests
+      that compromise the objectivity of their judgment?
+  - id: CQ3
+    text: >-
+      Does the attack discredit the other person through a commitment or tie of theirs
+      to a person, group, movement or cause (for example political, religious or
+      ideological) that is viewed negatively?
+  - id: CQ4
+    text: Is the direct attack on the other person an accusation of hypocrisy?
+  - id: CQ5
+    text: >-
+      Is the direct attack on the other person intended to undermine their
+      self-confidence?
+  - id: CQ6
+    text: >-
+      Is the attack made before the other person has presented their argument, to make
+      the audience distrust in advance anything they say?
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "positive": {terminal: appeal_to_authority}
+      "negative": {node: CQ2}
+    CQ2:
+      "yes": {terminal: ad_hominem_circumstantial}
+      "no":  {node: CQ3}
+    CQ3:
+      "yes": {terminal: ad_hominem_guilt_by_association}
+      "no":  {node: CQ4}
+    CQ4:
+      "yes": {terminal: ad_hominem_tu_quoque}
+      "no":  {node: CQ5}
+    CQ5:
+      "yes": {terminal: ad_fidentia}
+      "no":  {node: CQ6}
+    CQ6:
+      "yes": {terminal: poisoning_the_well}
+      "no":  {terminal: ad_hominem_abusive}
