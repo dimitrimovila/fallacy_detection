@@ -16,7 +16,7 @@ item_id,annotator,sheet,row,field,value,raw
 006fc3d81e7b1a67,dumitru,Annotazione Dumitru example,10,CQ2.2,na,na
 006fc3d81e7b1a67,dumitru,Annotazione Dumitru example,10,CQ2.3,na,na
 006fc3d81e7b1a67,dumitru,Annotazione Dumitru example,10,CQ3,na,na
-006fc3d81e7b1a67,dumitru,Annotazione Dumitru example,10,note,proposes a remedy for an unstated problem,proposes a remedy for an unstated problem
+006fc3d81e7b1a67,dumitru,Annotazione Dumitru example,10,note,No case: the text proposes a remedy (requiring cameras) for an unstated problem; no instance supports a generalization.,No case: the text proposes a remedy (requiring cameras) for an unstated problem; no instance supports a generalization.
 006fc3d81e7b1a67,dumitru,Annotazione Dumitru example,10,scheme,none,NO
 006fc3d81e7b1a67,enrico,Copia di example_final_Enrico,10,comment,manca materiale?,manca materiale?
 006fc3d81e7b1a67,enrico,Copia di example_final_Enrico,10,scheme,example,YES
@@ -126,9 +126,11 @@ item_id,annotator,sheet,row,field,value,raw
 04a250e81e408ad2,enrico,Copia di new_ad_populum_Enrico,42,scheme,popular_opinion,YES
 04a250e81e408ad2,enrico,Copia di new_ad_populum_Enrico,42,verdict,good_argumentation,no fallacy
 04a250e81e408ad2,enrico,new_ad_populum,42,scheme,popular_opinion,YES
+04d1dc9b3f390d60,dumitru,Annotazione Dumitru hasty_gener,85,scheme,none,none
 04d1dc9b3f390d60,enrico,Copia di hasty_generalization_E,85,scheme,none,none
 04d1dc9b3f390d60,enrico,Copia di hasty_generalization_E,85,verdict,hasty_generalization,hasty generalization
 04d1dc9b3f390d60,base,hasty_generalization,85,starting_label,hasty_generalization,Hasty Generalization
+04e91eb615480976,dumitru,Annotazione Dumitru cause_effec,46,scheme,cause_to_effect,YES
 04e91eb615480976,enrico,Copia di cause_to_effect_Enrico,46,difficulty,2,2
 04e91eb615480976,enrico,Copia di cause_to_effect_Enrico,46,scheme,cause_to_effect,Cause to effect
 04e91eb615480976,enrico,Copia di cause_to_effect_Enrico,46,verdict,cherry_picking,Cherry picking
@@ -211,6 +213,7 @@ item_id,annotator,sheet,row,field,value,raw
 0777b2bf4a11d8ca,enrico,new_expert_opinion,112,verdict,strawman,straw man
 0777b2bf4a11d8ca,unknown,new_expert_opinion,112,doubt,s,s
 07870c60f29ce3a4,base,Slippery slope,97,starting_label,slippery_slope,slippery slope
+07e200e13ec112f7,dumitru,Annotazione Dumitru hasty_gener,41,scheme,example,example
 07e200e13ec112f7,enrico,Copia di hasty_generalization_E,41,scheme,example,Example
 07e200e13ec112f7,enrico,Copia di hasty_generalization_E,41,verdict,hasty_generalization,hasty generalization
 07e200e13ec112f7,base,hasty_generalization,41,starting_label,hasty_generalization,hasty generalization
@@ -398,10 +401,12 @@ item_id,annotator,sheet,row,field,value,raw
 0ad10f5a5c3b23ff,dumitru,Annotazione Dumitru ad hominem,10,verdict,ad_hominem_tu_quoque,Tu Quoque
 0ad10f5a5c3b23ff,enrico,ad hominem,10,scheme,ad_hominem,Ad Hominem
 0ad10f5a5c3b23ff,enrico,ad hominem,10,verdict,ad_hominem_tu_quoque,Tu Quoque
+0ae615d527c68bc4,dumitru,Annotazione Dumitru cause_effec,48,scheme,expert_opinion,expert opinion
 0ae615d527c68bc4,enrico,Copia di cause_to_effect_Enrico,48,comment,non vedo lo schema,non vedo lo schema
 0ae615d527c68bc4,enrico,Copia di cause_to_effect_Enrico,48,scheme,cause_to_effect,Cause to effect
 0ae615d527c68bc4,enrico,Copia di cause_to_effect_Enrico,48,verdict,idk,?
 0ae615d527c68bc4,enrico,cause_to_effect,48,scheme,cause_to_effect,YES
+0b26101c2f5d9d4c,dumitru,Annotazione Dumitru hasty_gener,20,scheme,example,example
 0b26101c2f5d9d4c,enrico,Copia di hasty_generalization_E,20,scheme,none,none
 0b26101c2f5d9d4c,enrico,Copia di hasty_generalization_E,20,verdict,hasty_generalization,hasty generalization
 0b26101c2f5d9d4c,base,hasty_generalization,20,starting_label,hasty_generalization,hasty generalization
@@ -528,6 +533,7 @@ item_id,annotator,sheet,row,field,value,raw
 0eadc08a4fb3a5de,enrico,Copia di new_ad_populum_Enrico,65,scheme,idk,?
 0eadc08a4fb3a5de,enrico,Copia di new_ad_populum_Enrico,65,verdict,ad_populum,ad populum
 0eadc08a4fb3a5de,base,new_ad_populum,65,starting_label,ad_populum,ad populum
+0efa2d5b5d00505a,dumitru,Annotazione Dumitru hasty_gener,3,scheme,none,none
 0efa2d5b5d00505a,enrico,Copia di hasty_generalization_E,3,scheme,none,none
 0efa2d5b5d00505a,enrico,Copia di hasty_generalization_E,3,verdict,hasty_generalization,hasty generalization
 0efa2d5b5d00505a,base,hasty_generalization,3,starting_label,hasty_generalization,hasty generalization
@@ -605,6 +611,7 @@ item_id,annotator,sheet,row,field,value,raw
 11436c3e2fd4fc62,eleni,new_analogy,8,verdict,good_argumentation,NO
 11436c3e2fd4fc62,enrico,new_analogy,8,scheme,analogy,YES
 11436c3e2fd4fc62,enrico,new_analogy,8,verdict,good_argumentation,no
+114e42287788da49,dumitru,Annotazione Dumitru cause_effec,35,scheme,cause_to_effect,YES
 114e42287788da49,enrico,Copia di cause_to_effect_Enrico,35,comment,non credo sia quello il punto,non credo sia quello il punto
 114e42287788da49,enrico,Copia di cause_to_effect_Enrico,35,difficulty,5,5
 114e42287788da49,enrico,Copia di cause_to_effect_Enrico,35,scheme,cause_to_effect,Cause to effect
@@ -615,10 +622,10 @@ item_id,annotator,sheet,row,field,value,raw
 1170f6d68f9e0afa,dumitru,Annotazione Dumitru example,46,CQ2.1,no,no
 1170f6d68f9e0afa,dumitru,Annotazione Dumitru example,46,CQ2.2,no,no
 1170f6d68f9e0afa,dumitru,Annotazione Dumitru example,46,CQ2.3,no,no
-1170f6d68f9e0afa,dumitru,Annotazione Dumitru example,46,CQ3,no,no
+1170f6d68f9e0afa,dumitru,Annotazione Dumitru example,46,CQ3,yes,yes
 1170f6d68f9e0afa,dumitru,Annotazione Dumitru example,46,scheme,example,YES
-1170f6d68f9e0afa,dumitru,Annotazione Dumitru example,46,uncertainty,CQ2.2:SUBJ,CQ2.2:SUBJ
-1170f6d68f9e0afa,dumitru,Annotazione Dumitru example,46,verdict,good_argumentation,Good Argumentation
+1170f6d68f9e0afa,dumitru,Annotazione Dumitru example,46,uncertainty,CQ2.2:SUBJ;CQ3:SUBJ,CQ2.2:SUBJ;CQ3:SUBJ
+1170f6d68f9e0afa,dumitru,Annotazione Dumitru example,46,verdict,weak_analogy,Weak Analogy
 1170f6d68f9e0afa,enrico,Copia di example_final_Enrico,46,comment,un diritto può essere usato come no,un diritto può essere usato come no
 1170f6d68f9e0afa,enrico,Copia di example_final_Enrico,46,difficulty,3,3
 1170f6d68f9e0afa,enrico,Copia di example_final_Enrico,46,scheme,example,YES
@@ -664,9 +671,12 @@ item_id,annotator,sheet,row,field,value,raw
 12aadb374141fefb,base,Slippery slope,19,starting_label,slippery_slope,slippery slope
 12ddcb7d05456073,base,Slippery slope,58,starting_label,slippery_slope,slippery slope
 12e1e43c8c5d6c3e,base,Slippery slope,44,starting_label,slippery_slope,slippery slope
+12f7bc86cfe286f9,dumitru,Annotazione Dumitru hasty_gener,43,scheme,none,none
 12f7bc86cfe286f9,enrico,Copia di hasty_generalization_E,43,scheme,none,none
 12f7bc86cfe286f9,enrico,Copia di hasty_generalization_E,43,verdict,hasty_generalization,hasty generalization
 12f7bc86cfe286f9,base,hasty_generalization,43,starting_label,hasty_generalization,hasty generalization
+14438e4df2070f0c,dumitru,Annotazione Dumitru hasty_gener,7,scheme,example,example
+14438e4df2070f0c,dumitru,Annotazione Dumitru hasty_gener,8,scheme,example,example
 14438e4df2070f0c,enrico,Copia di hasty_generalization_E,7,scheme,example,Example
 14438e4df2070f0c,enrico,Copia di hasty_generalization_E,7,verdict,hasty_generalization,hasty generalization
 14438e4df2070f0c,enrico,Copia di hasty_generalization_E,8,comment,doppia,doppia
@@ -674,6 +684,7 @@ item_id,annotator,sheet,row,field,value,raw
 14438e4df2070f0c,enrico,Copia di hasty_generalization_E,8,verdict,hasty_generalization,hasty generalization
 14438e4df2070f0c,base,hasty_generalization,7,starting_label,hasty_generalization,hasty generalization
 14438e4df2070f0c,base,hasty_generalization,8,starting_label,hasty_generalization,hasty generalization
+149816935fe8a1ff,dumitru,Annotazione Dumitru cause_effec,53,scheme,correlation_to_cause,correlation_to_cause
 149816935fe8a1ff,enrico,Copia di cause_to_effect_Enrico,53,scheme,correlation_to_cause,Correlation to effect
 149816935fe8a1ff,enrico,Copia di cause_to_effect_Enrico,53,verdict,questionable_cause,Questionable cause
 149816935fe8a1ff,base,cause_to_effect,53,starting_label,post_hoc,post hoc ergo propter hoc
@@ -748,6 +759,7 @@ item_id,annotator,sheet,row,field,value,raw
 199b7a1d1afc130f,eleni,new_analogy,47,verdict,any_fallacy,YES
 199b7a1d1afc130f,enrico,new_analogy,47,scheme,analogy,YES
 199b7a1d1afc130f,enrico,new_analogy,47,verdict,weak_analogy,weak analogy
+19a44cd00b030ffd,dumitru,Annotazione Dumitru hasty_gener,10,scheme,cause_to_effect,cause_to_effect
 19a44cd00b030ffd,enrico,Copia di hasty_generalization_E,10,scheme,cause_to_effect,Cause to effect
 19a44cd00b030ffd,enrico,Copia di hasty_generalization_E,10,verdict,hasty_generalization,hasty generalization
 19a44cd00b030ffd,base,hasty_generalization,10,starting_label,hasty_generalization,hasty generalization
@@ -779,6 +791,7 @@ item_id,annotator,sheet,row,field,value,raw
 1a621ac1a873829f,enrico,new_analogy,49,comment,analogia valida,analogia valida
 1a621ac1a873829f,enrico,new_analogy,49,scheme,analogy,YES
 1a621ac1a873829f,enrico,new_analogy,49,verdict,good_argumentation,no
+1a9131ebb799515f,dumitru,Annotazione Dumitru hasty_gener,56,scheme,example,example
 1a9131ebb799515f,enrico,Copia di hasty_generalization_E,56,scheme,example,Example
 1a9131ebb799515f,enrico,Copia di hasty_generalization_E,56,verdict,hasty_generalization,hasty generalization
 1a9131ebb799515f,base,hasty_generalization,56,starting_label,hasty_generalization,hasty generalization
@@ -818,6 +831,7 @@ item_id,annotator,sheet,row,field,value,raw
 1b167adada8b9234,eleni,new_analogy,52,verdict,good_argumentation,NO
 1b167adada8b9234,enrico,new_analogy,52,scheme,analogy,YES
 1b167adada8b9234,enrico,new_analogy,52,verdict,good_argumentation,no
+1b26169d6593b318,dumitru,Annotazione Dumitru cause_effec,11,scheme,cause_to_effect,YES
 1b26169d6593b318,enrico,Copia di cause_to_effect_Enrico,11,difficulty,1,1
 1b26169d6593b318,enrico,Copia di cause_to_effect_Enrico,11,scheme,cause_to_effect,Cause to effect
 1b26169d6593b318,enrico,Copia di cause_to_effect_Enrico,11,verdict,good_argumentation,no fallacy
@@ -837,14 +851,17 @@ item_id,annotator,sheet,row,field,value,raw
 1be0ebd6de42ccd6,enrico,Copia di new_ad_populum_Enrico,2,scheme,popular_opinion,YES
 1be0ebd6de42ccd6,enrico,Copia di new_ad_populum_Enrico,2,verdict,ad_populum,ad populum
 1be0ebd6de42ccd6,enrico,new_ad_populum,2,scheme,popular_opinion,YES
+1c3710a6a0b932b8,dumitru,Annotazione Dumitru cause_effec,34,scheme,cause_to_effect,YES
 1c3710a6a0b932b8,enrico,Copia di cause_to_effect_Enrico,34,difficulty,4,4
 1c3710a6a0b932b8,enrico,Copia di cause_to_effect_Enrico,34,scheme,cause_to_effect,Cause to effect
 1c3710a6a0b932b8,enrico,Copia di cause_to_effect_Enrico,34,verdict,false_premise,false premise
 1c3710a6a0b932b8,enrico,cause_to_effect,34,scheme,cause_to_effect,YES
 1c532f36108dcf0d,base,Slippery slope,49,starting_label,slippery_slope,slippery slope
+1c649aa58862c23a,dumitru,Annotazione Dumitru hasty_gener,81,scheme,example,example
 1c649aa58862c23a,enrico,Copia di hasty_generalization_E,81,scheme,none,none
 1c649aa58862c23a,enrico,Copia di hasty_generalization_E,81,verdict,hasty_generalization,hasty generalization
 1c649aa58862c23a,base,hasty_generalization,81,starting_label,hasty_generalization,Hasty Generalization
+1d51720f046faaa5,dumitru,Annotazione Dumitru hasty_gener,21,scheme,none,none
 1d51720f046faaa5,enrico,Copia di hasty_generalization_E,21,scheme,none,none
 1d51720f046faaa5,enrico,Copia di hasty_generalization_E,21,verdict,hasty_generalization,hasty generalization
 1d51720f046faaa5,base,hasty_generalization,21,starting_label,hasty_generalization,hasty generalization
@@ -906,6 +923,7 @@ item_id,annotator,sheet,row,field,value,raw
 1edea9566b9c0e97,eleni,new_analogy,50,verdict,good_argumentation,NO
 1edea9566b9c0e97,enrico,new_analogy,50,scheme,analogy,YES
 1edea9566b9c0e97,enrico,new_analogy,50,verdict,good_argumentation,no
+1f4c08d150f17d64,dumitru,Annotazione Dumitru cause_effec,41,scheme,cause_to_effect,YES
 1f4c08d150f17d64,enrico,Copia di cause_to_effect_Enrico,41,difficulty,2,2
 1f4c08d150f17d64,enrico,Copia di cause_to_effect_Enrico,41,scheme,cause_to_effect,Cause to effect
 1f4c08d150f17d64,enrico,Copia di cause_to_effect_Enrico,41,verdict,cherry_picking,Cherry picking
@@ -999,24 +1017,28 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 2124eb08e06521c9,enrico,new_analogy,75,scheme,analogy,YES
 2124eb08e06521c9,enrico,new_analogy,75,verdict,good_argumentation,no
 22311482545d0362,dumitru,Annotazione Dumitru example,4,CQ1,no,no
-22311482545d0362,dumitru,Annotazione Dumitru example,4,CQ2,yes,yes
-22311482545d0362,dumitru,Annotazione Dumitru example,4,CQ2.1,no,no
-22311482545d0362,dumitru,Annotazione Dumitru example,4,CQ2.2,no,no
+22311482545d0362,dumitru,Annotazione Dumitru example,4,CQ2,idk,idk
+22311482545d0362,dumitru,Annotazione Dumitru example,4,CQ2.1,idk,idk
+22311482545d0362,dumitru,Annotazione Dumitru example,4,CQ2.2,idk,idk
 22311482545d0362,dumitru,Annotazione Dumitru example,4,CQ2.3,no,no
-22311482545d0362,dumitru,Annotazione Dumitru example,4,CQ3,no,no
+22311482545d0362,dumitru,Annotazione Dumitru example,4,CQ3,idk,idk
+22311482545d0362,dumitru,Annotazione Dumitru example,4,note,"idk: the referent of 'this' is not given, so the generalization the examples illustrate cannot be reconstructed.","idk: the referent of 'this' is not given, so the generalization the examples illustrate cannot be reconstructed."
 22311482545d0362,dumitru,Annotazione Dumitru example,4,scheme,example,YES
-22311482545d0362,dumitru,Annotazione Dumitru example,4,uncertainty,CQ2:AMB,CQ2:AMB
-22311482545d0362,dumitru,Annotazione Dumitru example,4,verdict,good_argumentation,Good Argumentation
+22311482545d0362,dumitru,Annotazione Dumitru example,4,uncertainty,CQ2:AMB;CQ2.1:AMB;CQ2.2:AMB;CQ3:AMB,CQ2:AMB;CQ2.1:AMB;CQ2.2:AMB;CQ3:AMB
+22311482545d0362,dumitru,Annotazione Dumitru example,4,verdict,idk,indeterminato
 22311482545d0362,enrico,Copia di example_final_Enrico,4,difficulty,2,2
 22311482545d0362,enrico,Copia di example_final_Enrico,4,scheme,example,YES
 22311482545d0362,enrico,Copia di example_final_Enrico,4,verdict,cherry_picking,Cherry picking
+2245c10230d603ab,dumitru,Annotazione Dumitru cause_effec,43,scheme,cause_to_effect,YES
 2245c10230d603ab,enrico,Copia di cause_to_effect_Enrico,43,difficulty,3,3
 2245c10230d603ab,enrico,Copia di cause_to_effect_Enrico,43,scheme,cause_to_effect,Cause to effect
 2245c10230d603ab,enrico,Copia di cause_to_effect_Enrico,43,verdict,cherry_picking,Cherry picking
 2245c10230d603ab,enrico,cause_to_effect,43,scheme,cause_to_effect,YES
+22d6f107dad856b8,dumitru,Annotazione Dumitru cause_effec,66,scheme,correlation_to_cause,correlation_to_cause
 22d6f107dad856b8,enrico,Copia di cause_to_effect_Enrico,66,scheme,none,NO
 22d6f107dad856b8,enrico,Copia di cause_to_effect_Enrico,66,verdict,false_cause,false causality
 22d6f107dad856b8,base,cause_to_effect,66,starting_label,false_cause,false causality
+232b1663e0aa78f0,dumitru,Annotazione Dumitru hasty_gener,32,scheme,correlation_to_cause,correlation_to_cause
 232b1663e0aa78f0,enrico,Copia di hasty_generalization_E,32,scheme,example,Example
 232b1663e0aa78f0,enrico,Copia di hasty_generalization_E,32,verdict,hasty_generalization,hasty generalization
 232b1663e0aa78f0,base,hasty_generalization,32,starting_label,hasty_generalization,hasty generalization
@@ -1199,7 +1221,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 2cbdc98872e242f5,enrico,new_expert_opinion,89,scheme,expert_opinion,YES
 2cbdc98872e242f5,enrico,new_expert_opinion,89,verdict,irrelevant_authority,false authority
 2ddff5c9053774cc,dumitru,Annotazione Dumitru example,9,CQ1,no,no
-2ddff5c9053774cc,dumitru,Annotazione Dumitru example,9,CQ2,yes,yes
+2ddff5c9053774cc,dumitru,Annotazione Dumitru example,9,CQ2,no,no
 2ddff5c9053774cc,dumitru,Annotazione Dumitru example,9,CQ2.1,no,no
 2ddff5c9053774cc,dumitru,Annotazione Dumitru example,9,CQ2.2,no,no
 2ddff5c9053774cc,dumitru,Annotazione Dumitru example,9,CQ2.3,no,no
@@ -1210,6 +1232,8 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 2ddff5c9053774cc,enrico,Copia di example_final_Enrico,9,difficulty,4,4
 2ddff5c9053774cc,enrico,Copia di example_final_Enrico,9,scheme,example,YES
 2ddff5c9053774cc,enrico,Copia di example_final_Enrico,9,verdict,cherry_picking,Cherry picking
+2dfb3e37b2f5708b,dumitru,Annotazione Dumitru hasty_gener,48,scheme,none,none
+2dfb3e37b2f5708b,dumitru,Annotazione Dumitru hasty_gener,49,scheme,none,none
 2dfb3e37b2f5708b,enrico,Copia di hasty_generalization_E,48,scheme,none,none
 2dfb3e37b2f5708b,enrico,Copia di hasty_generalization_E,48,verdict,hasty_generalization,hasty generalization
 2dfb3e37b2f5708b,enrico,Copia di hasty_generalization_E,49,comment,doppia,doppia
@@ -1282,6 +1306,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 2f22cb61772bf692,eleni,new_expert_opinion,114,verdict,strawman,straw man
 2f22cb61772bf692,enrico,new_expert_opinion,114,scheme,none,NO
 2f22cb61772bf692,enrico,new_expert_opinion,114,verdict,strawman,straw man
+2f84699004696926,dumitru,Annotazione Dumitru hasty_gener,51,scheme,example,example
 2f84699004696926,enrico,Copia di hasty_generalization_E,51,scheme,none,none
 2f84699004696926,enrico,Copia di hasty_generalization_E,51,verdict,hasty_generalization,hasty generalization
 2f84699004696926,base,hasty_generalization,51,starting_label,hasty_generalization,hasty generalization
@@ -1338,6 +1363,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 312bfd2ce258caa6,enrico,Copia di example_final_Enrico,52,difficulty,4,4
 312bfd2ce258caa6,enrico,Copia di example_final_Enrico,52,scheme,example,YES
 312bfd2ce258caa6,enrico,Copia di example_final_Enrico,52,verdict,good_argumentation,no fallacy
+314cbdd5a7a887c8,dumitru,Annotazione Dumitru cause_effec,54,scheme,correlation_to_cause,correlation_to_cause
 314cbdd5a7a887c8,enrico,Copia di cause_to_effect_Enrico,54,scheme,correlation_to_cause,Correlation to effect
 314cbdd5a7a887c8,enrico,Copia di cause_to_effect_Enrico,54,verdict,post_hoc,post hoc
 314cbdd5a7a887c8,base,cause_to_effect,54,starting_label,post_hoc,post hoc ergo propter hoc
@@ -1353,6 +1379,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 31a2d253330d2956,enrico,Copia di new_ad_populum_Enrico,92,scheme,idk,SNI
 31a2d253330d2956,enrico,Copia di new_ad_populum_Enrico,92,verdict,ad_populum,ad populum
 31a2d253330d2956,base,new_ad_populum,92,starting_label,ad_populum,ad populum
+321adb837b2f9581,dumitru,Annotazione Dumitru hasty_gener,63,scheme,none,none
 321adb837b2f9581,enrico,Copia di hasty_generalization_E,63,scheme,none,none
 321adb837b2f9581,enrico,Copia di hasty_generalization_E,63,verdict,hasty_generalization,hasty generalization
 321adb837b2f9581,base,hasty_generalization,63,starting_label,hasty_generalization,hasty generalization
@@ -1382,6 +1409,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 3286aad2158311a8,enrico,Copia di new_ad_populum_Enrico,119,scheme,none,NO
 3286aad2158311a8,enrico,Copia di new_ad_populum_Enrico,119,verdict,ad_populum,ad populum
 3286aad2158311a8,base,new_ad_populum,119,starting_label,ad_populum,ad populum
+3338c1f261e5c129,dumitru,Annotazione Dumitru cause_effec,58,scheme,correlation_to_cause,correlation_to_cause
 3338c1f261e5c129,enrico,Copia di cause_to_effect_Enrico,58,scheme,correlation_to_cause,Correlation to effect
 3338c1f261e5c129,enrico,Copia di cause_to_effect_Enrico,58,verdict,post_hoc,post hoc
 3338c1f261e5c129,base,cause_to_effect,58,starting_label,false_cause,false causality
@@ -1401,9 +1429,12 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 334ba2aa84bcaa05,enrico,new_expert_opinion,62,scheme,expert_opinion,YES
 334ba2aa84bcaa05,enrico,new_expert_opinion,62,verdict,irrelevant_authority,false authority
 337ec34c7fd71259,base,Slippery slope,17,starting_label,slippery_slope,slippery slope
+33b8f29b4f0d2854,dumitru,Annotazione Dumitru hasty_gener,36,scheme,example,example
 33b8f29b4f0d2854,enrico,Copia di hasty_generalization_E,36,scheme,example,Example
 33b8f29b4f0d2854,enrico,Copia di hasty_generalization_E,36,verdict,hasty_generalization,hasty generalization
 33b8f29b4f0d2854,base,hasty_generalization,36,starting_label,hasty_generalization,hasty generalization
+33f6dfaf9c4e41f1,dumitru,Annotazione Dumitru hasty_gener,16,scheme,popular_opinion,popular_opinion
+33f6dfaf9c4e41f1,dumitru,Annotazione Dumitru hasty_gener,59,scheme,popular_opinion,popular_opinion
 33f6dfaf9c4e41f1,enrico,Copia di hasty_generalization_E,16,comment,doppia,doppia
 33f6dfaf9c4e41f1,enrico,Copia di hasty_generalization_E,16,scheme,popular_opinion,Popular opinion
 33f6dfaf9c4e41f1,enrico,Copia di hasty_generalization_E,16,verdict,hasty_generalization,hasty generalization
@@ -1426,9 +1457,11 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 34663014f2b4e416,enrico,Copia di new_ad_populum_Enrico,34,scheme,popular_opinion,YES
 34663014f2b4e416,enrico,Copia di new_ad_populum_Enrico,34,verdict,ad_populum,ad populum
 34663014f2b4e416,enrico,new_ad_populum,34,scheme,popular_opinion,YES
+349aad7f228e0293,dumitru,Annotazione Dumitru hasty_gener,83,scheme,none,none
 349aad7f228e0293,enrico,Copia di hasty_generalization_E,83,scheme,none,none
 349aad7f228e0293,enrico,Copia di hasty_generalization_E,83,verdict,hasty_generalization,hasty generalization
 349aad7f228e0293,base,hasty_generalization,83,starting_label,hasty_generalization,Hasty Generalization
+34bdeea8b07daf95,dumitru,Annotazione Dumitru cause_effec,62,scheme,correlation_to_cause,correlation_to_cause
 34bdeea8b07daf95,enrico,Copia di cause_to_effect_Enrico,62,scheme,cause_to_effect,Cause to effect
 34bdeea8b07daf95,enrico,Copia di cause_to_effect_Enrico,62,verdict,causal_reductionism,Casual reductionism
 34bdeea8b07daf95,base,cause_to_effect,62,starting_label,false_cause,false causality
@@ -1507,6 +1540,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 378e1e7149cc919b,dumitru,Annotazione Dumitru ad hominem,60,verdict,ad_hominem_abusive,Abusive
 378e1e7149cc919b,enrico,ad hominem,60,scheme,ad_hominem,Ad Hominem
 378e1e7149cc919b,enrico,ad hominem,60,verdict,idk,?
+379193668ed3d2df,dumitru,Annotazione Dumitru cause_effec,12,scheme,cause_to_effect,YES
 379193668ed3d2df,enrico,Copia di cause_to_effect_Enrico,12,difficulty,1,1
 379193668ed3d2df,enrico,Copia di cause_to_effect_Enrico,12,scheme,cause_to_effect,Cause to effect
 379193668ed3d2df,enrico,Copia di cause_to_effect_Enrico,12,verdict,good_argumentation,no fallacy
@@ -1620,6 +1654,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 3bcd98fc869b7721,enrico,Copia di new_ad_populum_Enrico,89,scheme,popular_opinion,YES
 3bcd98fc869b7721,enrico,Copia di new_ad_populum_Enrico,89,verdict,ad_populum,ad populum
 3bcd98fc869b7721,base,new_ad_populum,89,starting_label,ad_populum,ad populum
+3c158f7cbc5ab82d,dumitru,Annotazione Dumitru hasty_gener,44,scheme,none,none
 3c158f7cbc5ab82d,enrico,Copia di hasty_generalization_E,44,scheme,none,none
 3c158f7cbc5ab82d,enrico,Copia di hasty_generalization_E,44,verdict,hasty_generalization,hasty generalization
 3c158f7cbc5ab82d,base,hasty_generalization,44,starting_label,hasty_generalization,hasty generalization
@@ -1645,6 +1680,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 3cc98e568c1a2021,dumitru,Annotazione Dumitru ad hominem,32,verdict,ad_hominem_abusive,Abusive
 3cc98e568c1a2021,enrico,ad hominem,32,scheme,ad_hominem,Ad Hominem
 3cc98e568c1a2021,enrico,ad hominem,32,verdict,poisoning_the_well,Poisoning the Well
+3d22579d9f2e0340,dumitru,Annotazione Dumitru cause_effec,26,scheme,cause_to_effect,YES
 3d22579d9f2e0340,enrico,Copia di cause_to_effect_Enrico,26,difficulty,1,1
 3d22579d9f2e0340,enrico,Copia di cause_to_effect_Enrico,26,scheme,cause_to_effect,Cause to effect
 3d22579d9f2e0340,enrico,Copia di cause_to_effect_Enrico,26,verdict,good_argumentation,no fallacy
@@ -1786,6 +1822,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 4000a372e40713ec,enrico,new_expert_opinion,22,comment,"AD HOMINEM, non viene neanche chiarita quale sia la teoria","AD HOMINEM, non viene neanche chiarita quale sia la teoria"
 4000a372e40713ec,enrico,new_expert_opinion,22,scheme,idk,SNI
 4000a372e40713ec,enrico,new_expert_opinion,22,verdict,appeal_to_authority,appeal to authority
+401dd4ed5526c992,dumitru,Annotazione Dumitru hasty_gener,78,scheme,example,example
 401dd4ed5526c992,enrico,Copia di hasty_generalization_E,78,comment,molto difficile,molto difficile
 401dd4ed5526c992,enrico,Copia di hasty_generalization_E,78,scheme,example,Example
 401dd4ed5526c992,enrico,Copia di hasty_generalization_E,78,verdict,hasty_generalization,hasty generalization
@@ -1803,6 +1840,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 40391bab17c0f93e,eleni,new_expert_opinion,21,verdict,appeal_to_authority,appeal to authority
 40391bab17c0f93e,enrico,new_expert_opinion,21,scheme,expert_opinion,YES
 40391bab17c0f93e,enrico,new_expert_opinion,21,verdict,appeal_to_authority,appeal to authority
+40c976a8a3504c2a,dumitru,Annotazione Dumitru hasty_gener,57,scheme,example,example
 40c976a8a3504c2a,enrico,Copia di hasty_generalization_E,57,scheme,example,Example
 40c976a8a3504c2a,enrico,Copia di hasty_generalization_E,57,verdict,hasty_generalization,hasty generalization
 40c976a8a3504c2a,base,hasty_generalization,57,starting_label,hasty_generalization,hasty generalization
@@ -1905,6 +1943,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 43f964c56095edda,enrico,Copia di new_ad_populum_Enrico,43,scheme,popular_opinion,YES
 43f964c56095edda,enrico,Copia di new_ad_populum_Enrico,43,verdict,good_argumentation,no fallacy
 43f964c56095edda,enrico,new_ad_populum,43,scheme,popular_opinion,YES
+4406788bef796844,dumitru,Annotazione Dumitru hasty_gener,84,scheme,example,example
 4406788bef796844,enrico,Copia di hasty_generalization_E,84,scheme,example,Example
 4406788bef796844,enrico,Copia di hasty_generalization_E,84,verdict,hasty_generalization,hasty generalization
 4406788bef796844,base,hasty_generalization,84,starting_label,hasty_generalization,Hasty Generalization
@@ -2026,14 +2065,17 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 46cd653595d4382d,enrico,Copia di example_final_Enrico,18,verdict,good_argumentation,no fallacy
 47b38049b0f78722,base,Slippery slope,22,starting_label,slippery_slope,slippery slope
 47e7125b46c3872f,base,Slippery slope,86,starting_label,slippery_slope,slippery slope
+481669a0aee759a0,dumitru,Annotazione Dumitru cause_effec,8,scheme,cause_to_effect,YES
 481669a0aee759a0,enrico,Copia di cause_to_effect_Enrico,8,comment,dato che le premesse siano vere,dato che le premesse siano vere
 481669a0aee759a0,enrico,Copia di cause_to_effect_Enrico,8,difficulty,1,1
 481669a0aee759a0,enrico,Copia di cause_to_effect_Enrico,8,scheme,cause_to_effect,Cause to effect
 481669a0aee759a0,enrico,Copia di cause_to_effect_Enrico,8,verdict,good_argumentation,no fallacy
 481669a0aee759a0,enrico,cause_to_effect,8,scheme,cause_to_effect,YES
+483dbeceee357f34,dumitru,Annotazione Dumitru hasty_gener,33,scheme,none,none
 483dbeceee357f34,enrico,Copia di hasty_generalization_E,33,scheme,none,none
 483dbeceee357f34,enrico,Copia di hasty_generalization_E,33,verdict,hasty_generalization,hasty generalization
 483dbeceee357f34,base,hasty_generalization,33,starting_label,hasty_generalization,hasty generalization
+486274c5ef3a8d10,dumitru,Annotazione Dumitru cause_effec,5,scheme,cause_to_effect,YES
 486274c5ef3a8d10,enrico,Copia di cause_to_effect_Enrico,5,difficulty,1,1
 486274c5ef3a8d10,enrico,Copia di cause_to_effect_Enrico,5,scheme,cause_to_effect,Cause to effect
 486274c5ef3a8d10,enrico,Copia di cause_to_effect_Enrico,5,verdict,good_argumentation,no fallacy
@@ -2093,6 +2135,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 49abc356a7d647f8,dumitru,Annotazione Dumitru Slippery Sl,3,scheme,slippery_slope,YES
 49abc356a7d647f8,dumitru,Annotazione Dumitru Slippery Sl,3,verdict,slippery_slope,Slippery Slope
 49abc356a7d647f8,base,Slippery slope,3,starting_label,slippery_slope,slippery slope
+4a35db2297c66685,dumitru,Annotazione Dumitru cause_effec,73,scheme,cause_to_effect,cause_to_effect
 4a35db2297c66685,enrico,Copia di cause_to_effect_Enrico,73,scheme,none,NO
 4a35db2297c66685,enrico,Copia di cause_to_effect_Enrico,73,verdict,false_cause,false causality
 4a35db2297c66685,base,cause_to_effect,73,starting_label,false_cause,false causality
@@ -2109,6 +2152,14 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 4af47a7a36347289,enrico,Copia di new_ad_populum_Enrico,112,scheme,none,NO
 4af47a7a36347289,enrico,Copia di new_ad_populum_Enrico,112,verdict,ad_populum,ad populum
 4af47a7a36347289,base,new_ad_populum,112,starting_label,ad_populum,ad populum
+4b28ba0b0e01abe7,dumitru,Annotazione Dumitru cause_effec,2,CQ1,yes,yes
+4b28ba0b0e01abe7,dumitru,Annotazione Dumitru cause_effec,2,CQ2,yes,yes
+4b28ba0b0e01abe7,dumitru,Annotazione Dumitru cause_effec,2,CQ2.1,no,no
+4b28ba0b0e01abe7,dumitru,Annotazione Dumitru cause_effec,2,CQ2.2,no,no
+4b28ba0b0e01abe7,dumitru,Annotazione Dumitru cause_effec,2,CQ3,no,no
+4b28ba0b0e01abe7,dumitru,Annotazione Dumitru cause_effec,2,CQ4,no,no
+4b28ba0b0e01abe7,dumitru,Annotazione Dumitru cause_effec,2,scheme,cause_to_effect,YES
+4b28ba0b0e01abe7,dumitru,Annotazione Dumitru cause_effec,2,verdict,good_argumentation,Good Argumentation
 4b28ba0b0e01abe7,enrico,Copia di cause_to_effect_Enrico,2,difficulty,1,1
 4b28ba0b0e01abe7,enrico,Copia di cause_to_effect_Enrico,2,scheme,cause_to_effect,Cause to effect
 4b28ba0b0e01abe7,enrico,Copia di cause_to_effect_Enrico,2,verdict,good_argumentation,no fallacy
@@ -2193,6 +2244,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 4d31e79bb2460b78,eleni,new_expert_opinion,5,verdict,appeal_to_authority,appeal to authority
 4d31e79bb2460b78,enrico,new_expert_opinion,5,scheme,expert_opinion,YES
 4d31e79bb2460b78,enrico,new_expert_opinion,5,verdict,appeal_to_authority,appeal to authority
+4dbfbda62261e36a,dumitru,Annotazione Dumitru hasty_gener,35,scheme,none,none
 4dbfbda62261e36a,enrico,Copia di hasty_generalization_E,35,scheme,none,none
 4dbfbda62261e36a,enrico,Copia di hasty_generalization_E,35,verdict,hasty_generalization,hasty generalization
 4dbfbda62261e36a,base,hasty_generalization,35,starting_label,hasty_generalization,hasty generalization
@@ -2210,6 +2262,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 4e2b80d1397839c0,enrico,new_expert_opinion,109,scheme,none,NO
 4e2b80d1397839c0,enrico,new_expert_opinion,109,verdict,strawman,straw man
 4e2b80d1397839c0,unknown,new_expert_opinion,109,doubt,s,s
+4f8de83752cd60b4,dumitru,Annotazione Dumitru cause_effec,42,scheme,example,example
 4f8de83752cd60b4,enrico,Copia di cause_to_effect_Enrico,42,comment,non vedo lo schema,non vedo lo schema
 4f8de83752cd60b4,enrico,Copia di cause_to_effect_Enrico,42,difficulty,2,2
 4f8de83752cd60b4,enrico,Copia di cause_to_effect_Enrico,42,scheme,cause_to_effect,Cause to effect
@@ -2279,6 +2332,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 506e097560ae43ae,enrico,new_expert_opinion,50,scheme,expert_opinion,YES
 506e097560ae43ae,enrico,new_expert_opinion,50,verdict,idk,?
 506e097560ae43ae,unknown,new_expert_opinion,50,doubt,x,x
+5094b03cda4c08ed,dumitru,Annotazione Dumitru cause_effec,30,scheme,cause_to_effect,YES
 5094b03cda4c08ed,enrico,Copia di cause_to_effect_Enrico,30,difficulty,2,2
 5094b03cda4c08ed,enrico,Copia di cause_to_effect_Enrico,30,scheme,cause_to_effect,Cause to effect
 5094b03cda4c08ed,enrico,Copia di cause_to_effect_Enrico,30,verdict,good_argumentation,no fallacy
@@ -2360,6 +2414,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 538dbbccf7342c2f,enrico,Copia di new_ad_populum_Enrico,86,scheme,popular_opinion,YES
 538dbbccf7342c2f,enrico,Copia di new_ad_populum_Enrico,86,verdict,ad_populum,ad populum
 538dbbccf7342c2f,base,new_ad_populum,86,starting_label,ad_populum,ad populum
+53b42dd7c63c2bda,dumitru,Annotazione Dumitru hasty_gener,54,scheme,example,example
 53b42dd7c63c2bda,enrico,Copia di hasty_generalization_E,54,scheme,example,Example
 53b42dd7c63c2bda,enrico,Copia di hasty_generalization_E,54,verdict,hasty_generalization,hasty generalization
 53b42dd7c63c2bda,base,hasty_generalization,54,starting_label,hasty_generalization,hasty generalization
@@ -2374,6 +2429,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 53e55e300e3ded46,enrico,Copia di example_final_Enrico,15,difficulty,3,3
 53e55e300e3ded46,enrico,Copia di example_final_Enrico,15,scheme,example,YES
 53e55e300e3ded46,enrico,Copia di example_final_Enrico,15,verdict,cherry_picking,Cherry picking
+540788b71b00fab7,dumitru,Annotazione Dumitru cause_effec,21,scheme,cause_to_effect,YES
 540788b71b00fab7,enrico,Copia di cause_to_effect_Enrico,21,difficulty,1,1
 540788b71b00fab7,enrico,Copia di cause_to_effect_Enrico,21,scheme,cause_to_effect,Cause to effect
 540788b71b00fab7,enrico,Copia di cause_to_effect_Enrico,21,verdict,good_argumentation,no fallacy
@@ -2479,6 +2535,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 56ed61184509ffa2,enrico,new_expert_opinion,54,scheme,expert_opinion,YES
 56ed61184509ffa2,enrico,new_expert_opinion,54,verdict,idk,?
 56ed61184509ffa2,unknown,new_expert_opinion,54,doubt,f,f
+56eded7624bb99e0,dumitru,Annotazione Dumitru cause_effec,44,scheme,cause_to_effect,YES
 56eded7624bb99e0,enrico,Copia di cause_to_effect_Enrico,44,difficulty,3,3
 56eded7624bb99e0,enrico,Copia di cause_to_effect_Enrico,44,scheme,cause_to_effect,Cause to effect
 56eded7624bb99e0,enrico,Copia di cause_to_effect_Enrico,44,verdict,cherry_picking,Cherry picking
@@ -2494,6 +2551,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 5772a0e3e1914591,dumitru,Annotazione Dumitru ad hominem,96,verdict,ad_hominem_circumstantial,Circumstantial
 5772a0e3e1914591,enrico,ad hominem,96,scheme,ad_hominem,Ad Hominem
 5772a0e3e1914591,enrico,ad hominem,96,verdict,ad_hominem_tu_quoque,Tu Quoque
+579a2e83b3554b69,dumitru,Annotazione Dumitru hasty_gener,50,scheme,cause_to_effect,cause_to_effect
 579a2e83b3554b69,enrico,Copia di hasty_generalization_E,50,scheme,popular_opinion,Popular opinion
 579a2e83b3554b69,enrico,Copia di hasty_generalization_E,50,verdict,hasty_generalization,hasty generalization
 579a2e83b3554b69,base,hasty_generalization,50,starting_label,hasty_generalization,hasty generalization
@@ -2508,6 +2566,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 57b5e1a21874b226,dumitru,Annotazione Dumitru ad hominem,75,verdict,ad_hominem_guilt_by_association,Guilt by Association
 57b5e1a21874b226,enrico,ad hominem,75,scheme,ad_hominem,Ad Hominem
 57b5e1a21874b226,enrico,ad hominem,75,verdict,ad_hominem_abusive,Abusive
+57df90e878a69523,dumitru,Annotazione Dumitru hasty_gener,60,scheme,example,example
 57df90e878a69523,enrico,Copia di hasty_generalization_E,60,scheme,example,Example
 57df90e878a69523,enrico,Copia di hasty_generalization_E,60,verdict,hasty_generalization,hasty generalization
 57df90e878a69523,base,hasty_generalization,60,starting_label,hasty_generalization,hasty generalization
@@ -2535,6 +2594,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 581ecfb8f5738b05,dumitru,Annotazione Dumitru ad hominem,34,verdict,ad_hominem_abusive,Abusive
 581ecfb8f5738b05,enrico,ad hominem,34,scheme,ad_hominem,Ad Hominem
 581ecfb8f5738b05,enrico,ad hominem,34,verdict,ad_hominem_tu_quoque,Tu Quoque
+5901029a3e840cc4,dumitru,Annotazione Dumitru hasty_gener,29,scheme,none,none
 5901029a3e840cc4,enrico,Copia di hasty_generalization_E,29,scheme,correlation_to_cause,Correlation to cause
 5901029a3e840cc4,enrico,Copia di hasty_generalization_E,29,verdict,hasty_generalization,hasty generalization
 5901029a3e840cc4,base,hasty_generalization,29,starting_label,hasty_generalization,hasty generalization
@@ -2608,11 +2668,13 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 5c3a82867bd37e0e,enrico,Copia di new_ad_populum_Enrico,37,scheme,popular_opinion,YES
 5c3a82867bd37e0e,enrico,Copia di new_ad_populum_Enrico,37,verdict,ad_populum,ad populum
 5c3a82867bd37e0e,enrico,new_ad_populum,37,scheme,popular_opinion,YES
+5c726a4ef4cfb6f7,dumitru,Annotazione Dumitru cause_effec,47,scheme,cause_to_effect,YES
 5c726a4ef4cfb6f7,enrico,Copia di cause_to_effect_Enrico,47,comment,non vedo lo schema,non vedo lo schema
 5c726a4ef4cfb6f7,enrico,Copia di cause_to_effect_Enrico,47,difficulty,2,2
 5c726a4ef4cfb6f7,enrico,Copia di cause_to_effect_Enrico,47,scheme,cause_to_effect,Cause to effect
 5c726a4ef4cfb6f7,enrico,Copia di cause_to_effect_Enrico,47,verdict,idk,?
 5c726a4ef4cfb6f7,enrico,cause_to_effect,47,scheme,cause_to_effect,YES
+5ce0b0fdd717b387,dumitru,Annotazione Dumitru hasty_gener,72,scheme,expert_opinion,expert_opinion
 5ce0b0fdd717b387,enrico,Copia di hasty_generalization_E,72,scheme,none,none
 5ce0b0fdd717b387,enrico,Copia di hasty_generalization_E,72,verdict,hasty_generalization,hasty generalization
 5ce0b0fdd717b387,base,hasty_generalization,72,starting_label,hasty_generalization,hasty generalization
@@ -2667,6 +2729,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 5f4e3b92648e23a5,dumitru,Annotazione Dumitru ad hominem,29,verdict,ad_hominem_abusive,Abusive
 5f4e3b92648e23a5,enrico,ad hominem,29,scheme,ad_hominem,Ad Hominem
 5f4e3b92648e23a5,enrico,ad hominem,29,verdict,ad_hominem_abusive,Abusive
+5f57c752fd8c82c3,dumitru,Annotazione Dumitru cause_effec,15,scheme,cause_to_effect,YES
 5f57c752fd8c82c3,enrico,Copia di cause_to_effect_Enrico,15,difficulty,4,4
 5f57c752fd8c82c3,enrico,Copia di cause_to_effect_Enrico,15,scheme,cause_to_effect,Cause to effect
 5f57c752fd8c82c3,enrico,Copia di cause_to_effect_Enrico,15,verdict,good_argumentation,no fallacy
@@ -2760,6 +2823,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 62a34637fc59d7bd,dumitru,Annotazione Dumitru ad hominem,72,verdict,ad_hominem_abusive,Abusive
 62a34637fc59d7bd,enrico,ad hominem,72,scheme,ad_hominem,Ad Hominem
 62a34637fc59d7bd,enrico,ad hominem,72,verdict,ad_hominem_abusive,Abusive
+636106d3071316ac,dumitru,Annotazione Dumitru cause_effec,49,scheme,cause_to_effect,YES
 636106d3071316ac,enrico,Copia di cause_to_effect_Enrico,49,difficulty,4,4
 636106d3071316ac,enrico,Copia di cause_to_effect_Enrico,49,scheme,cause_to_effect,Cause to effect
 636106d3071316ac,enrico,Copia di cause_to_effect_Enrico,49,verdict,cherry_picking,Cherry picking
@@ -2821,6 +2885,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 651bcd3ecc151320,enrico,Copia di example_final_Enrico,13,difficulty,2,2
 651bcd3ecc151320,enrico,Copia di example_final_Enrico,13,scheme,example,YES
 651bcd3ecc151320,enrico,Copia di example_final_Enrico,13,verdict,cherry_picking,Cherry picking
+65f7fe9ddaca2673,dumitru,Annotazione Dumitru hasty_gener,24,scheme,example,example
 65f7fe9ddaca2673,enrico,Copia di hasty_generalization_E,24,scheme,example,Example
 65f7fe9ddaca2673,enrico,Copia di hasty_generalization_E,24,verdict,hasty_generalization,hasty generalization
 65f7fe9ddaca2673,base,hasty_generalization,24,starting_label,hasty_generalization,hasty generalization
@@ -2860,6 +2925,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 66ff844c59ea1f3b,eleni,new_analogy,18,verdict,good_argumentation,NO
 66ff844c59ea1f3b,enrico,new_analogy,18,scheme,analogy,YES
 66ff844c59ea1f3b,enrico,new_analogy,18,verdict,good_argumentation,no
+686a58b34900f285,dumitru,Annotazione Dumitru hasty_gener,92,scheme,example,example
 686a58b34900f285,enrico,Copia di hasty_generalization_E,92,scheme,none,none
 686a58b34900f285,enrico,Copia di hasty_generalization_E,92,verdict,hasty_generalization,hasty generalization
 686a58b34900f285,base,hasty_generalization,92,starting_label,hasty_generalization,Hasty Generalization
@@ -2904,6 +2970,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 68edefa2dc788a16,enrico,new_expert_opinion,37,comment,"è un campo in cui ci sono molte teorie e non c'è assoluto accordo. sebbene non condivisibile e non rappresenti un'argoemtnezione schiacciante, non mi pare neanche fallace","è un campo in cui ci sono molte teorie e non c'è assoluto accordo. sebbene non condivisibile e non rappresenti un'argoemtnezione schiacciante, non mi pare neanche fallace"
 68edefa2dc788a16,enrico,new_expert_opinion,37,scheme,expert_opinion,YES
 68edefa2dc788a16,enrico,new_expert_opinion,37,verdict,good_argumentation,no
+68f61a7a8b5128dc,dumitru,Annotazione Dumitru hasty_gener,12,scheme,none,none
 68f61a7a8b5128dc,enrico,Copia di hasty_generalization_E,12,scheme,none,none
 68f61a7a8b5128dc,enrico,Copia di hasty_generalization_E,12,verdict,hasty_generalization,hasty generalization
 68f61a7a8b5128dc,base,hasty_generalization,12,starting_label,hasty_generalization,hasty generalization
@@ -2970,6 +3037,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 6a72e8cca08dd861,enrico,new_expert_opinion,91,comment,difficile capire se è davvero presa come autorità,difficile capire se è davvero presa come autorità
 6a72e8cca08dd861,enrico,new_expert_opinion,91,scheme,idk,SNI
 6a72e8cca08dd861,enrico,new_expert_opinion,91,verdict,irrelevant_authority,false authority
+6b1f87d8d74427aa,dumitru,Annotazione Dumitru cause_effec,16,scheme,cause_to_effect,YES
 6b1f87d8d74427aa,enrico,Copia di cause_to_effect_Enrico,16,difficulty,1,1
 6b1f87d8d74427aa,enrico,Copia di cause_to_effect_Enrico,16,scheme,cause_to_effect,Cause to effect
 6b1f87d8d74427aa,enrico,Copia di cause_to_effect_Enrico,16,verdict,good_argumentation,no fallacy
@@ -3012,6 +3080,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 6c04b6b62c0738dd,enrico,Copia di new_ad_populum_Enrico,76,scheme,popular_opinion,YES
 6c04b6b62c0738dd,enrico,Copia di new_ad_populum_Enrico,76,verdict,ad_populum,ad populum
 6c04b6b62c0738dd,base,new_ad_populum,76,starting_label,ad_populum,ad populum
+6c24c50ffa84f87d,dumitru,Annotazione Dumitru cause_effec,33,scheme,cause_to_effect,YES
 6c24c50ffa84f87d,enrico,Copia di cause_to_effect_Enrico,33,difficulty,2,2
 6c24c50ffa84f87d,enrico,Copia di cause_to_effect_Enrico,33,scheme,cause_to_effect,Cause to effect
 6c24c50ffa84f87d,enrico,Copia di cause_to_effect_Enrico,33,verdict,cherry_picking,Cherry picking
@@ -3051,6 +3120,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 6cd1bbc92769446a,eleni,new_analogy,93,verdict,cherry_picking,cherry picking
 6cd1bbc92769446a,enrico,new_analogy,93,scheme,none,NO
 6cd1bbc92769446a,enrico,new_analogy,93,verdict,cherry_picking,cherry picking
+6d949919e5e188c1,dumitru,Annotazione Dumitru hasty_gener,47,scheme,example,example
 6d949919e5e188c1,enrico,Copia di hasty_generalization_E,47,scheme,none,none
 6d949919e5e188c1,enrico,Copia di hasty_generalization_E,47,verdict,hasty_generalization,hasty generalization
 6d949919e5e188c1,base,hasty_generalization,47,starting_label,hasty_generalization,hasty generalization
@@ -3064,6 +3134,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 6d98a6845362e81b,dumitru,Annotazione Dumitru ad hominem,55,verdict,ad_hominem_abusive,Abusive
 6d98a6845362e81b,enrico,ad hominem,55,scheme,ad_hominem,Ad Hominem
 6d98a6845362e81b,enrico,ad hominem,55,verdict,ad_hominem_abusive,Abusive
+6ecaa4492d97fa85,dumitru,Annotazione Dumitru hasty_gener,39,scheme,cause_to_effect,cause_to_effect
 6ecaa4492d97fa85,enrico,Copia di hasty_generalization_E,39,scheme,example,Example
 6ecaa4492d97fa85,enrico,Copia di hasty_generalization_E,39,verdict,hasty_generalization,hasty generalization
 6ecaa4492d97fa85,base,hasty_generalization,39,starting_label,hasty_generalization,hasty generalization
@@ -3114,6 +3185,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 6fb91cb4d62c140c,dumitru,Annotazione Dumitru ad hominem,4,verdict,ad_hominem_tu_quoque,Tu Quoque
 6fb91cb4d62c140c,enrico,ad hominem,4,scheme,ad_hominem,Ad Hominem
 6fb91cb4d62c140c,enrico,ad hominem,4,verdict,ad_hominem_tu_quoque,Tu Quoque
+70696891b482eab2,dumitru,Annotazione Dumitru cause_effec,69,scheme,cause_to_effect,cause_to_effect
 70696891b482eab2,enrico,Copia di cause_to_effect_Enrico,69,scheme,none,NO
 70696891b482eab2,enrico,Copia di cause_to_effect_Enrico,69,verdict,false_cause,false causality
 70696891b482eab2,base,cause_to_effect,69,starting_label,false_cause,false causality
@@ -3129,6 +3201,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 71663118e8c33fbf,enrico,Copia di new_ad_populum_Enrico,90,scheme,idk,?
 71663118e8c33fbf,enrico,Copia di new_ad_populum_Enrico,90,verdict,ad_populum,ad populum
 71663118e8c33fbf,base,new_ad_populum,90,starting_label,ad_populum,ad populum
+719252b57dca6de0,dumitru,Annotazione Dumitru cause_effec,10,scheme,cause_to_effect,YES
 719252b57dca6de0,enrico,Copia di cause_to_effect_Enrico,10,difficulty,1,1
 719252b57dca6de0,enrico,Copia di cause_to_effect_Enrico,10,scheme,cause_to_effect,Cause to effect
 719252b57dca6de0,enrico,Copia di cause_to_effect_Enrico,10,verdict,good_argumentation,no fallacy
@@ -3193,6 +3266,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 72e2e48beda30f6b,enrico,Copia di new_ad_populum_Enrico,33,scheme,popular_opinion,YES
 72e2e48beda30f6b,enrico,Copia di new_ad_populum_Enrico,33,verdict,ad_populum,ad populum
 72e2e48beda30f6b,enrico,new_ad_populum,33,scheme,popular_opinion,YES
+73c05e299601dd47,dumitru,Annotazione Dumitru hasty_gener,19,scheme,none,none
 73c05e299601dd47,enrico,Copia di hasty_generalization_E,19,scheme,none,none
 73c05e299601dd47,enrico,Copia di hasty_generalization_E,19,verdict,hasty_generalization,hasty generalization
 73c05e299601dd47,base,hasty_generalization,19,starting_label,hasty_generalization,hasty generalization
@@ -3247,6 +3321,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 74cd5204be4e2993,dumitru,Annotazione Dumitru ad hominem,31,verdict,ad_hominem_abusive,Abusive
 74cd5204be4e2993,enrico,ad hominem,31,scheme,ad_hominem,Ad Hominem
 74cd5204be4e2993,enrico,ad hominem,31,verdict,poisoning_the_well,Poisoning the Well
+74fb573039aeaf58,dumitru,Annotazione Dumitru cause_effec,74,scheme,correlation_to_cause,correlation_to_cause
 74fb573039aeaf58,enrico,Copia di cause_to_effect_Enrico,74,scheme,cause_to_effect,Cause to effect
 74fb573039aeaf58,enrico,Copia di cause_to_effect_Enrico,74,verdict,post_hoc,post hoc
 74fb573039aeaf58,base,cause_to_effect,74,starting_label,false_cause,false causality
@@ -3540,9 +3615,11 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 7e7ede193e1df14d,enrico,Copia di new_ad_populum_Enrico,98,scheme,popular_opinion,YES
 7e7ede193e1df14d,enrico,Copia di new_ad_populum_Enrico,98,verdict,ad_populum,ad populum
 7e7ede193e1df14d,base,new_ad_populum,98,starting_label,ad_populum,ad populum
+7e91f26938867c25,dumitru,Annotazione Dumitru cause_effec,61,scheme,example,example
 7e91f26938867c25,enrico,Copia di cause_to_effect_Enrico,61,scheme,example,Example
 7e91f26938867c25,enrico,Copia di cause_to_effect_Enrico,61,verdict,hasty_generalization,Hasty generalization
 7e91f26938867c25,base,cause_to_effect,61,starting_label,false_cause,false causality
+7f28d7ccd6cb7c22,dumitru,Annotazione Dumitru cause_effec,4,scheme,cause_to_effect,YES
 7f28d7ccd6cb7c22,enrico,Copia di cause_to_effect_Enrico,4,difficulty,1,1
 7f28d7ccd6cb7c22,enrico,Copia di cause_to_effect_Enrico,4,scheme,cause_to_effect,Cause to effect
 7f28d7ccd6cb7c22,enrico,Copia di cause_to_effect_Enrico,4,verdict,good_argumentation,no fallacy
@@ -3583,20 +3660,22 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 7f6e726816c24e73,enrico,ad hominem,21,scheme,ad_hominem,Ad Hominem
 7f6e726816c24e73,enrico,ad hominem,21,verdict,ad_hominem_guilt_by_association,Guilt by Association
 7f77911577d51306,base,Slippery slope,84,starting_label,slippery_slope,slippery slope
+7f7f964c3c8d6a6d,dumitru,Annotazione Dumitru hasty_gener,40,scheme,expert_opinion,expert_opinion
 7f7f964c3c8d6a6d,enrico,Copia di hasty_generalization_E,40,comment,EXPERT OPINION ?,EXPERT OPINION ?
 7f7f964c3c8d6a6d,enrico,Copia di hasty_generalization_E,40,scheme,expert_opinion,Expert opinion
 7f7f964c3c8d6a6d,enrico,Copia di hasty_generalization_E,40,verdict,irrelevant_authority,irrelevant authority
 7f7f964c3c8d6a6d,base,hasty_generalization,40,starting_label,hasty_generalization,hasty generalization
 7fc69b6870ab2cfb,base,Slippery slope,65,starting_label,slippery_slope,slippery slope
 80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,CQ1,no,no
-80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,CQ2,yes,yes
-80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,CQ2.1,no,no
-80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,CQ2.2,no,no
+80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,CQ2,idk,idk
+80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,CQ2.1,idk,idk
+80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,CQ2.2,idk,idk
 80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,CQ2.3,no,no
-80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,CQ3,no,no
+80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,CQ3,idk,idk
+80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,note,"idk: the text does not state what the Florida case is meant to show, so the generalization cannot be reconstructed.","idk: the text does not state what the Florida case is meant to show, so the generalization cannot be reconstructed."
 80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,scheme,example,YES
-80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,uncertainty,CQ2:AMB;CQ3:AMB,CQ2:AMB;CQ3:AMB
-80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,verdict,good_argumentation,Good Argumentation
+80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,uncertainty,CQ2:AMB;CQ2.1:AMB;CQ2.2:AMB;CQ3:AMB,CQ2:AMB;CQ2.1:AMB;CQ2.2:AMB;CQ3:AMB
+80c79f0daa954d98,dumitru,Annotazione Dumitru example,27,verdict,idk,indeterminato
 80c79f0daa954d98,enrico,Copia di example_final_Enrico,27,comment,conclusione non chiara,conclusione non chiara
 80c79f0daa954d98,enrico,Copia di example_final_Enrico,27,scheme,example,YES
 80c79f0daa954d98,enrico,Copia di example_final_Enrico,27,verdict,idk,?
@@ -3637,14 +3716,14 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 81fe3d0388bb49a3,enrico,ad hominem,24,scheme,ad_hominem,Ad Hominem
 81fe3d0388bb49a3,enrico,ad hominem,24,verdict,ad_hominem_abusive,Abusive
 820887044e5f59ca,dumitru,Annotazione Dumitru example,35,CQ1,no,no
-820887044e5f59ca,dumitru,Annotazione Dumitru example,35,CQ2,no,no
+820887044e5f59ca,dumitru,Annotazione Dumitru example,35,CQ2,yes,yes
 820887044e5f59ca,dumitru,Annotazione Dumitru example,35,CQ2.1,no,no
-820887044e5f59ca,dumitru,Annotazione Dumitru example,35,CQ2.2,yes,yes
+820887044e5f59ca,dumitru,Annotazione Dumitru example,35,CQ2.2,no,no
 820887044e5f59ca,dumitru,Annotazione Dumitru example,35,CQ2.3,no,no
 820887044e5f59ca,dumitru,Annotazione Dumitru example,35,CQ3,yes,yes
 820887044e5f59ca,dumitru,Annotazione Dumitru example,35,scheme,example,YES
 820887044e5f59ca,dumitru,Annotazione Dumitru example,35,uncertainty,CQ1:DIFF;CQ2:AMB;CQ3:AMB,CQ1:DIFF;CQ2:AMB;CQ3:AMB
-820887044e5f59ca,dumitru,Annotazione Dumitru example,35,verdict,hasty_generalization,Hasty Generalization
+820887044e5f59ca,dumitru,Annotazione Dumitru example,35,verdict,weak_analogy,Weak Analogy
 820887044e5f59ca,enrico,Copia di example_final_Enrico,35,comment,AD POPULUM?,AD POPULUM?
 820887044e5f59ca,enrico,Copia di example_final_Enrico,35,scheme,example,YES
 820887044e5f59ca,enrico,Copia di example_final_Enrico,35,verdict,idk,?
@@ -3707,9 +3786,11 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 846b9f91cd7bd9e3,eleni,new_analogy,80,verdict,good_argumentation,NO
 846b9f91cd7bd9e3,enrico,new_analogy,80,scheme,analogy,YES
 846b9f91cd7bd9e3,enrico,new_analogy,80,verdict,good_argumentation,no
+8475f3134468e058,dumitru,Annotazione Dumitru hasty_gener,25,scheme,popular_opinion,popular_opinion
 8475f3134468e058,enrico,Copia di hasty_generalization_E,25,scheme,popular_opinion,Popular opinion
 8475f3134468e058,enrico,Copia di hasty_generalization_E,25,verdict,hasty_generalization,hasty generalization
 8475f3134468e058,base,hasty_generalization,25,starting_label,hasty_generalization,hasty generalization
+847757459f4474a0,dumitru,Annotazione Dumitru hasty_gener,65,scheme,none,none
 847757459f4474a0,enrico,Copia di hasty_generalization_E,65,scheme,none,none
 847757459f4474a0,enrico,Copia di hasty_generalization_E,65,verdict,hasty_generalization,hasty generalization
 847757459f4474a0,base,hasty_generalization,65,starting_label,hasty_generalization,hasty generalization
@@ -3752,6 +3833,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 869c43f5ad3ce327,dumitru,Annotazione Dumitru example,61,CQ2.3,no,no
 869c43f5ad3ce327,dumitru,Annotazione Dumitru example,61,CQ3,no,no
 869c43f5ad3ce327,dumitru,Annotazione Dumitru example,61,scheme,example,YES
+869c43f5ad3ce327,dumitru,Annotazione Dumitru example,61,uncertainty,CQ2:SUBJ,CQ2:SUBJ
 869c43f5ad3ce327,dumitru,Annotazione Dumitru example,61,verdict,good_argumentation,Good Argumentation
 869c43f5ad3ce327,enrico,Copia di example_final_Enrico,61,comment,c'è il condizionale,c'è il condizionale
 869c43f5ad3ce327,enrico,Copia di example_final_Enrico,61,difficulty,4,4
@@ -3797,6 +3879,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 873f1549143f210e,enrico,new_expert_opinion,78,exit_cq,CQ4,CQ4
 873f1549143f210e,enrico,new_expert_opinion,78,scheme,expert_opinion,YES
 873f1549143f210e,enrico,new_expert_opinion,78,verdict,non_sequitur,non sequitur
+8804b2cf6f1666d8,dumitru,Annotazione Dumitru hasty_gener,52,scheme,example,example
 8804b2cf6f1666d8,enrico,Copia di hasty_generalization_E,52,scheme,popular_opinion,Popular opinion
 8804b2cf6f1666d8,enrico,Copia di hasty_generalization_E,52,verdict,hasty_generalization,hasty generalization
 8804b2cf6f1666d8,base,hasty_generalization,52,starting_label,hasty_generalization,hasty generalization
@@ -3834,25 +3917,28 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 88eaaf87a59e959a,enrico,Copia di example_final_Enrico,23,difficulty,4,4
 88eaaf87a59e959a,enrico,Copia di example_final_Enrico,23,scheme,example,YES
 88eaaf87a59e959a,enrico,Copia di example_final_Enrico,23,verdict,good_argumentation,no fallacy
+88fe5eaff0e28d5f,dumitru,Annotazione Dumitru cause_effec,17,scheme,cause_to_effect,YES
 88fe5eaff0e28d5f,enrico,Copia di cause_to_effect_Enrico,17,difficulty,1,1
 88fe5eaff0e28d5f,enrico,Copia di cause_to_effect_Enrico,17,scheme,cause_to_effect,Cause to effect
 88fe5eaff0e28d5f,enrico,Copia di cause_to_effect_Enrico,17,verdict,good_argumentation,no fallacy
 88fe5eaff0e28d5f,enrico,cause_to_effect,17,scheme,cause_to_effect,YES
 8919246b269b6806,dumitru,Annotazione Dumitru example,17,CQ1,no,no
-8919246b269b6806,dumitru,Annotazione Dumitru example,17,CQ2,no,no
+8919246b269b6806,dumitru,Annotazione Dumitru example,17,CQ2,yes,yes
 8919246b269b6806,dumitru,Annotazione Dumitru example,17,CQ2.1,no,no
 8919246b269b6806,dumitru,Annotazione Dumitru example,17,CQ2.2,no,no
 8919246b269b6806,dumitru,Annotazione Dumitru example,17,CQ2.3,no,no
 8919246b269b6806,dumitru,Annotazione Dumitru example,17,CQ3,yes,yes
 8919246b269b6806,dumitru,Annotazione Dumitru example,17,scheme,example,YES
-8919246b269b6806,dumitru,Annotazione Dumitru example,17,uncertainty,CQ2:SUBJ;CQ2.2:AMB;CQ3:AMB,CQ2:SUBJ;CQ2.2:AMB;CQ3:AMB
+8919246b269b6806,dumitru,Annotazione Dumitru example,17,uncertainty,CQ2:AMB;CQ2.2:AMB,CQ2:AMB;CQ2.2:AMB
 8919246b269b6806,dumitru,Annotazione Dumitru example,17,verdict,weak_analogy,Weak Analogy
 8919246b269b6806,enrico,Copia di example_final_Enrico,17,difficulty,2,2
 8919246b269b6806,enrico,Copia di example_final_Enrico,17,scheme,example,YES
 8919246b269b6806,enrico,Copia di example_final_Enrico,17,verdict,weak_analogy,Weak analogy
+896580e58edd66db,dumitru,Annotazione Dumitru hasty_gener,31,scheme,example,example
 896580e58edd66db,enrico,Copia di hasty_generalization_E,31,scheme,example,Example
 896580e58edd66db,enrico,Copia di hasty_generalization_E,31,verdict,hasty_generalization,hasty generalization
 896580e58edd66db,base,hasty_generalization,31,starting_label,hasty_generalization,hasty generalization
+897bcbe0b4535170,dumitru,Annotazione Dumitru cause_effec,13,scheme,cause_to_effect,YES
 897bcbe0b4535170,enrico,Copia di cause_to_effect_Enrico,13,comment,forse la conclusione non è così scontata,forse la conclusione non è così scontata
 897bcbe0b4535170,enrico,Copia di cause_to_effect_Enrico,13,difficulty,4,4
 897bcbe0b4535170,enrico,Copia di cause_to_effect_Enrico,13,scheme,cause_to_effect,Cause to effect
@@ -3884,6 +3970,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 8addbef70c890f0e,enrico,Copia di new_ad_populum_Enrico,44,scheme,popular_opinion,YES
 8addbef70c890f0e,enrico,Copia di new_ad_populum_Enrico,44,verdict,good_argumentation,no fallacy
 8addbef70c890f0e,enrico,new_ad_populum,44,scheme,popular_opinion,YES
+8b90d475f5139eea,dumitru,Annotazione Dumitru hasty_gener,23,scheme,example,example
 8b90d475f5139eea,enrico,Copia di hasty_generalization_E,23,scheme,none,none
 8b90d475f5139eea,enrico,Copia di hasty_generalization_E,23,verdict,hasty_generalization,hasty generalization
 8b90d475f5139eea,base,hasty_generalization,23,starting_label,hasty_generalization,hasty generalization
@@ -3901,11 +3988,13 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 8b9928f7f1d19782,enrico,Copia di new_ad_populum_Enrico,27,scheme,popular_opinion,YES
 8b9928f7f1d19782,enrico,Copia di new_ad_populum_Enrico,27,verdict,good_argumentation,no fallacy
 8b9928f7f1d19782,enrico,new_ad_populum,27,scheme,popular_opinion,YES
+8bacd04cc2fde79b,dumitru,Annotazione Dumitru cause_effec,27,scheme,cause_to_effect,YES
 8bacd04cc2fde79b,enrico,Copia di cause_to_effect_Enrico,27,comment,immaginado il contesto della sanità americana,immaginado il contesto della sanità americana
 8bacd04cc2fde79b,enrico,Copia di cause_to_effect_Enrico,27,difficulty,3,3
 8bacd04cc2fde79b,enrico,Copia di cause_to_effect_Enrico,27,scheme,cause_to_effect,Cause to effect
 8bacd04cc2fde79b,enrico,Copia di cause_to_effect_Enrico,27,verdict,good_argumentation,no fallacy
 8bacd04cc2fde79b,enrico,cause_to_effect,27,scheme,cause_to_effect,YES
+8bbe8806b3a18040,dumitru,Annotazione Dumitru hasty_gener,61,scheme,example,example
 8bbe8806b3a18040,enrico,Copia di hasty_generalization_E,61,scheme,example,Example
 8bbe8806b3a18040,enrico,Copia di hasty_generalization_E,61,verdict,hasty_generalization,hasty generalization
 8bbe8806b3a18040,base,hasty_generalization,61,starting_label,hasty_generalization,hasty generalization
@@ -3960,13 +4049,16 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 8c2556a2ea17384b,enrico,new_expert_opinion,45,scheme,expert_opinion,YES
 8c2556a2ea17384b,enrico,new_expert_opinion,45,verdict,appeal_to_authority,appeal to authority
 8c269dcf7721afb9,base,Slippery slope,30,starting_label,slippery_slope,slippery slope
+8c40842d1ae3e454,dumitru,Annotazione Dumitru cause_effec,37,scheme,cause_to_effect,YES
 8c40842d1ae3e454,enrico,Copia di cause_to_effect_Enrico,37,difficulty,3,3
 8c40842d1ae3e454,enrico,Copia di cause_to_effect_Enrico,37,scheme,cause_to_effect,Cause to effect
 8c40842d1ae3e454,enrico,Copia di cause_to_effect_Enrico,37,verdict,false_premise,false premise
 8c40842d1ae3e454,enrico,cause_to_effect,37,scheme,cause_to_effect,YES
+8c75bc80b5fd17a0,dumitru,Annotazione Dumitru hasty_gener,64,scheme,popular_opinion,popular_opinion
 8c75bc80b5fd17a0,enrico,Copia di hasty_generalization_E,64,scheme,popular_opinion,Popular opinion
 8c75bc80b5fd17a0,enrico,Copia di hasty_generalization_E,64,verdict,hasty_generalization,hasty generalization
 8c75bc80b5fd17a0,base,hasty_generalization,64,starting_label,hasty_generalization,hasty generalization
+8cd08d00d48ee8c4,dumitru,Annotazione Dumitru cause_effec,45,scheme,cause_to_effect,YES
 8cd08d00d48ee8c4,enrico,Copia di cause_to_effect_Enrico,45,difficulty,2,2
 8cd08d00d48ee8c4,enrico,Copia di cause_to_effect_Enrico,45,scheme,cause_to_effect,Cause to effect
 8cd08d00d48ee8c4,enrico,Copia di cause_to_effect_Enrico,45,verdict,good_argumentation,no fallacy
@@ -4010,6 +4102,8 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 8dab1ff77b609c7e,enrico,Copia di new_ad_populum_Enrico,7,scheme,popular_opinion,YES
 8dab1ff77b609c7e,enrico,Copia di new_ad_populum_Enrico,7,verdict,good_argumentation,no fallacy
 8dab1ff77b609c7e,enrico,new_ad_populum,7,scheme,popular_opinion,YES
+8dff4d982083a15c,dumitru,Annotazione Dumitru hasty_gener,22,scheme,none,none
+8dff4d982083a15c,dumitru,Annotazione Dumitru hasty_gener,58,scheme,none,none
 8dff4d982083a15c,enrico,Copia di hasty_generalization_E,22,scheme,none,none
 8dff4d982083a15c,enrico,Copia di hasty_generalization_E,22,verdict,hasty_generalization,hasty generalization
 8dff4d982083a15c,enrico,Copia di hasty_generalization_E,58,comment,doppia,doppia
@@ -4040,6 +4134,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 8ebbd3b485d0d35c,enrico,Copia di example_final_Enrico,20,difficulty,5,5
 8ebbd3b485d0d35c,enrico,Copia di example_final_Enrico,20,scheme,example,YES
 8ebbd3b485d0d35c,enrico,Copia di example_final_Enrico,20,verdict,cherry_picking,Cherry picking
+8efb2a75a3a0dba7,dumitru,Annotazione Dumitru cause_effec,56,scheme,correlation_to_cause,correlation_to_cause
 8efb2a75a3a0dba7,enrico,Copia di cause_to_effect_Enrico,56,scheme,correlation_to_cause,Correlation to effect
 8efb2a75a3a0dba7,enrico,Copia di cause_to_effect_Enrico,56,verdict,questionable_cause,Questionable cause
 8efb2a75a3a0dba7,base,cause_to_effect,56,starting_label,post_hoc,post hoc ergo propter hoc
@@ -4080,6 +4175,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 8fa5e87243de2b4f,enrico,Copia di new_ad_populum_Enrico,64,scheme,popular_opinion,YES
 8fa5e87243de2b4f,enrico,Copia di new_ad_populum_Enrico,64,verdict,ad_populum,ad populum
 8fa5e87243de2b4f,base,new_ad_populum,64,starting_label,ad_populum,ad populum
+8fbdf5e66209126d,dumitru,Annotazione Dumitru cause_effec,24,scheme,cause_to_effect,YES
 8fbdf5e66209126d,enrico,Copia di cause_to_effect_Enrico,24,difficulty,2,2
 8fbdf5e66209126d,enrico,Copia di cause_to_effect_Enrico,24,scheme,cause_to_effect,Cause to effect
 8fbdf5e66209126d,enrico,Copia di cause_to_effect_Enrico,24,verdict,good_argumentation,no fallacy
@@ -4137,6 +4233,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 9086a45356ffbfcf,enrico,Copia di new_ad_populum_Enrico,135,scheme,none,NO
 9086a45356ffbfcf,enrico,Copia di new_ad_populum_Enrico,135,verdict,appeal_to_nature,appeal to nature
 9086a45356ffbfcf,base,new_ad_populum,135,starting_label,appeal_to_nature,appeal to nature
+90b2d983dfa96e41,dumitru,Annotazione Dumitru cause_effec,40,scheme,cause_to_effect,YES
 90b2d983dfa96e41,enrico,Copia di cause_to_effect_Enrico,40,comment,non vedo lo schema,non vedo lo schema
 90b2d983dfa96e41,enrico,Copia di cause_to_effect_Enrico,40,scheme,cause_to_effect,Cause to effect
 90b2d983dfa96e41,enrico,Copia di cause_to_effect_Enrico,40,verdict,idk,?
@@ -4153,6 +4250,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 90c911fc269da4ce,enrico,Copia di example_final_Enrico,69,difficulty,2,2
 90c911fc269da4ce,enrico,Copia di example_final_Enrico,69,scheme,example,YES
 90c911fc269da4ce,enrico,Copia di example_final_Enrico,69,verdict,good_argumentation,no fallacy
+91402432aa9b4412,dumitru,Annotazione Dumitru cause_effec,29,scheme,cause_to_effect,YES
 91402432aa9b4412,enrico,Copia di cause_to_effect_Enrico,29,difficulty,4,4
 91402432aa9b4412,enrico,Copia di cause_to_effect_Enrico,29,scheme,cause_to_effect,Cause to effect
 91402432aa9b4412,enrico,Copia di cause_to_effect_Enrico,29,verdict,good_argumentation,no fallacy
@@ -4170,10 +4268,12 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 916b58c5a69b7a6a,enrico,Copia di new_ad_populum_Enrico,13,verdict,ad_populum,ad populum
 916b58c5a69b7a6a,enrico,new_ad_populum,13,scheme,popular_opinion,YES
 917e881399bf20ba,base,Slippery slope,38,starting_label,slippery_slope,slippery slope
+9181808711505b5e,dumitru,Annotazione Dumitru cause_effec,38,scheme,cause_to_effect,YES
 9181808711505b5e,enrico,Copia di cause_to_effect_Enrico,38,difficulty,3,3
 9181808711505b5e,enrico,Copia di cause_to_effect_Enrico,38,scheme,cause_to_effect,Cause to effect
 9181808711505b5e,enrico,Copia di cause_to_effect_Enrico,38,verdict,cherry_picking,Cherry picking
 9181808711505b5e,enrico,cause_to_effect,38,scheme,cause_to_effect,YES
+91e76a1cdfc3b577,dumitru,Annotazione Dumitru hasty_gener,80,scheme,none,none
 91e76a1cdfc3b577,enrico,Copia di hasty_generalization_E,80,scheme,none,none
 91e76a1cdfc3b577,enrico,Copia di hasty_generalization_E,80,verdict,hasty_generalization,hasty generalization
 91e76a1cdfc3b577,base,hasty_generalization,80,starting_label,hasty_generalization,Hasty Generalization
@@ -4194,6 +4294,8 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 92326ae961e877d3,unknown,new_expert_opinion,110,doubt,s,s
 93f10255bd486dfd,base,Slippery slope,16,starting_label,slippery_slope,slippery slope
 93f28cc6fa0e4304,base,Slippery slope,67,starting_label,slippery_slope,slippery slope
+943f9884ee99ca74,dumitru,Annotazione Dumitru cause_effec,70,scheme,analogy,analogy
+943f9884ee99ca74,dumitru,Annotazione Dumitru cause_effec,72,scheme,analogy,analogy
 943f9884ee99ca74,enrico,Copia di cause_to_effect_Enrico,70,scheme,none,NO
 943f9884ee99ca74,enrico,Copia di cause_to_effect_Enrico,70,verdict,false_cause,false causality
 943f9884ee99ca74,enrico,Copia di cause_to_effect_Enrico,72,scheme,none,NO
@@ -4279,6 +4381,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 982972efca9fea89,enrico,Copia di new_ad_populum_Enrico,83,scheme,idk,SNI
 982972efca9fea89,enrico,Copia di new_ad_populum_Enrico,83,verdict,appeal_to_tradition,appeal to tradition
 982972efca9fea89,base,new_ad_populum,83,starting_label,appeal_to_tradition,appeal to tradition
+985679abf9ef21d4,dumitru,Annotazione Dumitru cause_effec,18,scheme,cause_to_effect,YES
 985679abf9ef21d4,enrico,Copia di cause_to_effect_Enrico,18,difficulty,1,1
 985679abf9ef21d4,enrico,Copia di cause_to_effect_Enrico,18,scheme,cause_to_effect,Cause to effect
 985679abf9ef21d4,enrico,Copia di cause_to_effect_Enrico,18,verdict,good_argumentation,no fallacy
@@ -4344,6 +4447,7 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 9a3ccd6bcd93546b,dumitru,Annotazione Dumitru ad hominem,37,verdict,ad_hominem_circumstantial,Circumstantial
 9a3ccd6bcd93546b,enrico,ad hominem,37,scheme,ad_hominem,Ad Hominem
 9a3ccd6bcd93546b,enrico,ad hominem,37,verdict,ad_hominem_circumstantial,Circumstantial
+9a4f11aa172d3108,dumitru,Annotazione Dumitru hasty_gener,17,scheme,example,example
 9a4f11aa172d3108,enrico,Copia di hasty_generalization_E,17,scheme,example,Example
 9a4f11aa172d3108,enrico,Copia di hasty_generalization_E,17,verdict,hasty_generalization,hasty generalization
 9a4f11aa172d3108,base,hasty_generalization,17,starting_label,hasty_generalization,hasty generalization
@@ -4390,12 +4494,13 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 9ae158ed50483854,enrico,Copia di new_ad_populum_Enrico,81,verdict,ad_populum,ad populum
 9ae158ed50483854,base,new_ad_populum,81,starting_label,ad_populum,ad populum
 9b269d921b1a9fdb,dumitru,Annotazione Dumitru example,7,CQ1,no,no
-9b269d921b1a9fdb,dumitru,Annotazione Dumitru example,7,CQ2,yes,yes
+9b269d921b1a9fdb,dumitru,Annotazione Dumitru example,7,CQ2,no,no
 9b269d921b1a9fdb,dumitru,Annotazione Dumitru example,7,CQ2.1,no,no
 9b269d921b1a9fdb,dumitru,Annotazione Dumitru example,7,CQ2.2,no,no
 9b269d921b1a9fdb,dumitru,Annotazione Dumitru example,7,CQ2.3,no,no
 9b269d921b1a9fdb,dumitru,Annotazione Dumitru example,7,CQ3,no,no
 9b269d921b1a9fdb,dumitru,Annotazione Dumitru example,7,scheme,example,YES
+9b269d921b1a9fdb,dumitru,Annotazione Dumitru example,7,uncertainty,CQ2:SUBJ;CQ3:AMB,CQ2:SUBJ;CQ3:AMB
 9b269d921b1a9fdb,dumitru,Annotazione Dumitru example,7,verdict,good_argumentation,Good Argumentation
 9b269d921b1a9fdb,enrico,Copia di example_final_Enrico,7,difficulty,2,2
 9b269d921b1a9fdb,enrico,Copia di example_final_Enrico,7,scheme,example,YES
@@ -4467,9 +4572,11 @@ paying for moral behavior = encouraging good actions. Different intent and outco
 9dc75f95ecdc5dea,enrico,Copia di new_ad_populum_Enrico,124,verdict,ad_populum,ad populum
 9dc75f95ecdc5dea,base,new_ad_populum,124,starting_label,ad_populum,ad populum
 9ede7cb26b5bc4f7,base,Slippery slope,13,starting_label,slippery_slope,slippery slope
+a0381e4e47831e0e,dumitru,Annotazione Dumitru hasty_gener,14,scheme,example,example
 a0381e4e47831e0e,enrico,Copia di hasty_generalization_E,14,scheme,example,Example
 a0381e4e47831e0e,enrico,Copia di hasty_generalization_E,14,verdict,hasty_generalization,hasty generalization
 a0381e4e47831e0e,base,hasty_generalization,14,starting_label,hasty_generalization,hasty generalization
+a0e99b8e603491b0,dumitru,Annotazione Dumitru hasty_gener,90,scheme,example,example
 a0e99b8e603491b0,enrico,Copia di hasty_generalization_E,90,scheme,example,Example
 a0e99b8e603491b0,enrico,Copia di hasty_generalization_E,90,verdict,hasty_generalization,hasty generalization
 a0e99b8e603491b0,base,hasty_generalization,90,starting_label,hasty_generalization,Hasty Generalization
@@ -4509,6 +4616,7 @@ a122bba5789304c0,dumitru,Annotazione Dumitru ad_populum,24,verdict,ad_populum,Ad
 a122bba5789304c0,enrico,Copia di new_ad_populum_Enrico,24,scheme,popular_opinion,YES
 a122bba5789304c0,enrico,Copia di new_ad_populum_Enrico,24,verdict,non_sequitur,non sequitur
 a122bba5789304c0,enrico,new_ad_populum,24,scheme,popular_opinion,YES
+a155e657b6c4e8d7,dumitru,Annotazione Dumitru cause_effec,23,scheme,cause_to_effect,YES
 a155e657b6c4e8d7,enrico,Copia di cause_to_effect_Enrico,23,comment,affermazione del conseguente,affermazione del conseguente
 a155e657b6c4e8d7,enrico,Copia di cause_to_effect_Enrico,23,difficulty,4,4
 a155e657b6c4e8d7,enrico,Copia di cause_to_effect_Enrico,23,scheme,cause_to_effect,Cause to effect
@@ -4539,13 +4647,14 @@ a2eae3eb108fe198,dumitru,Annotazione Dumitru example,65,CQ2,yes,yes
 a2eae3eb108fe198,dumitru,Annotazione Dumitru example,65,CQ2.1,no,no
 a2eae3eb108fe198,dumitru,Annotazione Dumitru example,65,CQ2.2,no,no
 a2eae3eb108fe198,dumitru,Annotazione Dumitru example,65,CQ2.3,no,no
-a2eae3eb108fe198,dumitru,Annotazione Dumitru example,65,CQ3,no,no
+a2eae3eb108fe198,dumitru,Annotazione Dumitru example,65,CQ3,yes,yes
 a2eae3eb108fe198,dumitru,Annotazione Dumitru example,65,scheme,example,YES
 a2eae3eb108fe198,dumitru,Annotazione Dumitru example,65,uncertainty,CQ3:SUBJ,CQ3:SUBJ
-a2eae3eb108fe198,dumitru,Annotazione Dumitru example,65,verdict,good_argumentation,Good Argumentation
+a2eae3eb108fe198,dumitru,Annotazione Dumitru example,65,verdict,weak_analogy,Weak Analogy
 a2eae3eb108fe198,enrico,Copia di example_final_Enrico,65,difficulty,2,2
 a2eae3eb108fe198,enrico,Copia di example_final_Enrico,65,scheme,example,YES
 a2eae3eb108fe198,enrico,Copia di example_final_Enrico,65,verdict,cherry_picking,Cherry picking
+a31b47e754989b03,dumitru,Annotazione Dumitru cause_effec,64,scheme,correlation_to_cause,correlation_to_cause
 a31b47e754989b03,enrico,Copia di cause_to_effect_Enrico,64,scheme,cause_to_effect,Cause to effect
 a31b47e754989b03,enrico,Copia di cause_to_effect_Enrico,64,verdict,post_hoc,post hoc
 a31b47e754989b03,base,cause_to_effect,64,starting_label,post_hoc,post hoc ergo propter hoc
@@ -4649,11 +4758,13 @@ a91ff6e605f42041,eleni,new_expert_opinion,59,scheme,expert_opinion,YES
 a91ff6e605f42041,eleni,new_expert_opinion,59,verdict,good_argumentation,NO
 a91ff6e605f42041,enrico,new_expert_opinion,59,scheme,expert_opinion,YES
 a91ff6e605f42041,enrico,new_expert_opinion,59,verdict,good_argumentation,no
+a92b70dd1eb7d22f,dumitru,Annotazione Dumitru cause_effec,31,scheme,cause_to_effect,YES
 a92b70dd1eb7d22f,enrico,Copia di cause_to_effect_Enrico,31,difficulty,2,2
 a92b70dd1eb7d22f,enrico,Copia di cause_to_effect_Enrico,31,scheme,cause_to_effect,Cause to effect
 a92b70dd1eb7d22f,enrico,Copia di cause_to_effect_Enrico,31,verdict,good_argumentation,no fallacy
 a92b70dd1eb7d22f,enrico,cause_to_effect,31,scheme,cause_to_effect,YES
 a94ab31a0401dad7,base,Slippery slope,21,starting_label,slippery_slope,slippery slope
+a96eeb734fd68c86,dumitru,Annotazione Dumitru hasty_gener,86,scheme,correlation_to_cause,correlation_to_cause
 a96eeb734fd68c86,enrico,Copia di hasty_generalization_E,86,scheme,popular_opinion,Popular opinion
 a96eeb734fd68c86,enrico,Copia di hasty_generalization_E,86,verdict,hasty_generalization,hasty generalization
 a96eeb734fd68c86,base,hasty_generalization,86,starting_label,hasty_generalization,Hasty Generalization
@@ -4707,6 +4818,7 @@ aac5fabbd044893f,dumitru,Annotazione Dumitru Analogy,88,verdict,weak_analogy,Wea
 aac5fabbd044893f,eleni,new_analogy,88,verdict,weak_analogy,weak analogy
 aac5fabbd044893f,enrico,new_analogy,88,scheme,analogy,YES
 aac5fabbd044893f,enrico,new_analogy,88,verdict,weak_analogy,weak analogy
+aadda1c8a0c86e52,dumitru,Annotazione Dumitru hasty_gener,70,scheme,example,example
 aadda1c8a0c86e52,enrico,Copia di hasty_generalization_E,70,scheme,popular_opinion,Popular opinion
 aadda1c8a0c86e52,enrico,Copia di hasty_generalization_E,70,verdict,hasty_generalization,hasty generalization
 aadda1c8a0c86e52,base,hasty_generalization,70,starting_label,hasty_generalization,hasty generalization
@@ -4738,6 +4850,7 @@ aaee0a2a9371ad84,eleni,new_expert_opinion,69,scheme,expert_opinion,YES
 aaee0a2a9371ad84,eleni,new_expert_opinion,69,verdict,good_argumentation,NO
 aaee0a2a9371ad84,enrico,new_expert_opinion,69,scheme,expert_opinion,YES
 aaee0a2a9371ad84,enrico,new_expert_opinion,69,verdict,good_argumentation,no
+ab82c7321f35c1d1,dumitru,Annotazione Dumitru cause_effec,19,scheme,cause_to_effect,YES
 ab82c7321f35c1d1,enrico,Copia di cause_to_effect_Enrico,19,difficulty,1,1
 ab82c7321f35c1d1,enrico,Copia di cause_to_effect_Enrico,19,scheme,cause_to_effect,Cause to effect
 ab82c7321f35c1d1,enrico,Copia di cause_to_effect_Enrico,19,verdict,good_argumentation,no fallacy
@@ -4785,6 +4898,7 @@ acd742253ca02772,dumitru,Annotazione Dumitru example,42,CQ2.2,no,no
 acd742253ca02772,dumitru,Annotazione Dumitru example,42,CQ2.3,no,no
 acd742253ca02772,dumitru,Annotazione Dumitru example,42,CQ3,no,no
 acd742253ca02772,dumitru,Annotazione Dumitru example,42,scheme,example,YES
+acd742253ca02772,dumitru,Annotazione Dumitru example,42,uncertainty,CQ2:SUBJ;CQ3:SUBJ,CQ2:SUBJ;CQ3:SUBJ
 acd742253ca02772,dumitru,Annotazione Dumitru example,42,verdict,good_argumentation,Good Argumentation
 acd742253ca02772,enrico,Copia di example_final_Enrico,42,difficulty,4,4
 acd742253ca02772,enrico,Copia di example_final_Enrico,42,scheme,example,YES
@@ -4800,6 +4914,7 @@ ad5276acba947f2b,dumitru,Annotazione Dumitru ad hominem,78,uncertainty,CQ2:AMB,C
 ad5276acba947f2b,dumitru,Annotazione Dumitru ad hominem,78,verdict,poisoning_the_well,Poisoning the Well
 ad5276acba947f2b,enrico,ad hominem,78,scheme,ad_hominem,Ad Hominem
 ad5276acba947f2b,enrico,ad hominem,78,verdict,ad_hominem_abusive,Abusive
+ada09d3ac943eec5,dumitru,Annotazione Dumitru hasty_gener,62,scheme,example,example
 ada09d3ac943eec5,enrico,Copia di hasty_generalization_E,62,scheme,example,Example
 ada09d3ac943eec5,enrico,Copia di hasty_generalization_E,62,verdict,hasty_generalization,hasty generalization
 ada09d3ac943eec5,base,hasty_generalization,62,starting_label,hasty_generalization,hasty generalization
@@ -4827,6 +4942,7 @@ aebc22fdb67aff55,dumitru,Annotazione Dumitru example,2,verdict,weak_analogy,Weak
 aebc22fdb67aff55,enrico,Copia di example_final_Enrico,2,comment,non capisco,non capisco
 aebc22fdb67aff55,enrico,Copia di example_final_Enrico,2,scheme,example,YES
 aebc22fdb67aff55,enrico,Copia di example_final_Enrico,2,verdict,idk,?
+af129dd9ac41b7d4,dumitru,Annotazione Dumitru hasty_gener,4,scheme,example,example
 af129dd9ac41b7d4,enrico,Copia di hasty_generalization_E,4,scheme,example,Example
 af129dd9ac41b7d4,enrico,Copia di hasty_generalization_E,4,verdict,hasty_generalization,hasty generalization
 af129dd9ac41b7d4,base,hasty_generalization,4,starting_label,hasty_generalization,hasty generalization
@@ -4874,14 +4990,17 @@ b124e6cc0cbd0470,dumitru,Annotazione Dumitru ad hominem,89,uncertainty,CQ2:AMB,C
 b124e6cc0cbd0470,dumitru,Annotazione Dumitru ad hominem,89,verdict,ad_hominem_circumstantial,Circumstantial
 b124e6cc0cbd0470,enrico,ad hominem,89,scheme,ad_hominem,Ad Hominem
 b124e6cc0cbd0470,enrico,ad hominem,89,verdict,poisoning_the_well,Poisoning the Well
+b142d5f615c0cb03,dumitru,Annotazione Dumitru cause_effec,39,scheme,cause_to_effect,YES
 b142d5f615c0cb03,enrico,Copia di cause_to_effect_Enrico,39,comment,non vedo lo schema,non vedo lo schema
 b142d5f615c0cb03,enrico,Copia di cause_to_effect_Enrico,39,difficulty,4,4
 b142d5f615c0cb03,enrico,Copia di cause_to_effect_Enrico,39,scheme,cause_to_effect,Cause to effect
 b142d5f615c0cb03,enrico,Copia di cause_to_effect_Enrico,39,verdict,idk,?
 b142d5f615c0cb03,enrico,cause_to_effect,39,scheme,cause_to_effect,YES
+b15272cf96dfae53,dumitru,Annotazione Dumitru hasty_gener,67,scheme,example,example
 b15272cf96dfae53,enrico,Copia di hasty_generalization_E,67,scheme,example,Example
 b15272cf96dfae53,enrico,Copia di hasty_generalization_E,67,verdict,hasty_generalization,hasty generalization
 b15272cf96dfae53,base,hasty_generalization,67,starting_label,hasty_generalization,hasty generalization
+b1721d022e47df55,dumitru,Annotazione Dumitru hasty_gener,66,scheme,analogy,analogy
 b1721d022e47df55,enrico,Copia di hasty_generalization_E,66,scheme,none,none
 b1721d022e47df55,enrico,Copia di hasty_generalization_E,66,verdict,hasty_generalization,hasty generalization
 b1721d022e47df55,base,hasty_generalization,66,starting_label,hasty_generalization,hasty generalization
@@ -4895,6 +5014,7 @@ b1a10ac81b84ac4f,dumitru,Annotazione Dumitru ad hominem,56,scheme,ad_hominem,YES
 b1a10ac81b84ac4f,dumitru,Annotazione Dumitru ad hominem,56,verdict,ad_hominem_abusive,Abusive
 b1a10ac81b84ac4f,enrico,ad hominem,56,scheme,ad_hominem,Ad Hominem
 b1a10ac81b84ac4f,enrico,ad hominem,56,verdict,poisoning_the_well,Poisoning the Well
+b1a3a8c9459565e4,dumitru,Annotazione Dumitru hasty_gener,46,scheme,example,example
 b1a3a8c9459565e4,enrico,Copia di hasty_generalization_E,46,scheme,example,Example
 b1a3a8c9459565e4,enrico,Copia di hasty_generalization_E,46,verdict,hasty_generalization,hasty generalization
 b1a3a8c9459565e4,base,hasty_generalization,46,starting_label,hasty_generalization,hasty generalization
@@ -4932,10 +5052,12 @@ b279c8dcc1a0aa32,eleni,new_analogy,62,scheme,analogy,YES
 b279c8dcc1a0aa32,eleni,new_analogy,62,verdict,any_fallacy,YES
 b279c8dcc1a0aa32,enrico,new_analogy,62,scheme,analogy,YES
 b279c8dcc1a0aa32,enrico,new_analogy,62,verdict,weak_analogy,weak analogy
+b35cbb7acabccb25,dumitru,Annotazione Dumitru cause_effec,14,scheme,cause_to_effect,YES
 b35cbb7acabccb25,enrico,Copia di cause_to_effect_Enrico,14,difficulty,5,5
 b35cbb7acabccb25,enrico,Copia di cause_to_effect_Enrico,14,scheme,cause_to_effect,Cause to effect
 b35cbb7acabccb25,enrico,Copia di cause_to_effect_Enrico,14,verdict,false_premise,false premise
 b35cbb7acabccb25,enrico,cause_to_effect,14,scheme,cause_to_effect,YES
+b3fcba25b1146708,dumitru,Annotazione Dumitru hasty_gener,28,scheme,example,example
 b3fcba25b1146708,enrico,Copia di hasty_generalization_E,28,scheme,example,Example
 b3fcba25b1146708,enrico,Copia di hasty_generalization_E,28,verdict,hasty_generalization,hasty generalization
 b3fcba25b1146708,base,hasty_generalization,28,starting_label,hasty_generalization,hasty generalization
@@ -5029,6 +5151,7 @@ b6dd74606579c87e,eleni,new_analogy,77,scheme,analogy,YES
 b6dd74606579c87e,eleni,new_analogy,77,verdict,good_argumentation,NO
 b6dd74606579c87e,enrico,new_analogy,77,scheme,analogy,YES
 b6dd74606579c87e,enrico,new_analogy,77,verdict,good_argumentation,no
+b7102b05f46cfa8f,dumitru,Annotazione Dumitru hasty_gener,73,scheme,none,none
 b7102b05f46cfa8f,enrico,Copia di hasty_generalization_E,73,scheme,none,none
 b7102b05f46cfa8f,enrico,Copia di hasty_generalization_E,73,verdict,hasty_generalization,hasty generalization
 b7102b05f46cfa8f,base,hasty_generalization,73,starting_label,hasty_generalization,Hasty Generalization
@@ -5137,13 +5260,13 @@ b9c9ea88cc95b0ae,enrico,Copia di example_final_Enrico,58,difficulty,3,3
 b9c9ea88cc95b0ae,enrico,Copia di example_final_Enrico,58,scheme,example,YES
 b9c9ea88cc95b0ae,enrico,Copia di example_final_Enrico,58,verdict,good_argumentation,no fallacy
 ba0bd5bcfb87d88e,dumitru,Annotazione Dumitru example,19,CQ1,no,no
-ba0bd5bcfb87d88e,dumitru,Annotazione Dumitru example,19,CQ2,yes,yes
+ba0bd5bcfb87d88e,dumitru,Annotazione Dumitru example,19,CQ2,no,no
 ba0bd5bcfb87d88e,dumitru,Annotazione Dumitru example,19,CQ2.1,no,no
 ba0bd5bcfb87d88e,dumitru,Annotazione Dumitru example,19,CQ2.2,no,no
 ba0bd5bcfb87d88e,dumitru,Annotazione Dumitru example,19,CQ2.3,no,no
 ba0bd5bcfb87d88e,dumitru,Annotazione Dumitru example,19,CQ3,no,no
 ba0bd5bcfb87d88e,dumitru,Annotazione Dumitru example,19,scheme,example,YES
-ba0bd5bcfb87d88e,dumitru,Annotazione Dumitru example,19,uncertainty,CQ2.3:SUBJ,CQ2.3:SUBJ
+ba0bd5bcfb87d88e,dumitru,Annotazione Dumitru example,19,uncertainty,CQ2:SUBJ;CQ2.3:SUBJ,CQ2:SUBJ;CQ2.3:SUBJ
 ba0bd5bcfb87d88e,dumitru,Annotazione Dumitru example,19,verdict,good_argumentation,Good Argumentation
 ba0bd5bcfb87d88e,enrico,Copia di example_final_Enrico,19,difficulty,2,2
 ba0bd5bcfb87d88e,enrico,Copia di example_final_Enrico,19,scheme,example,YES
@@ -5233,6 +5356,7 @@ bd6db2c5d1b67e7f,enrico,Copia di new_ad_populum_Enrico,78,difficulty,1,1
 bd6db2c5d1b67e7f,enrico,Copia di new_ad_populum_Enrico,78,scheme,none,NO
 bd6db2c5d1b67e7f,enrico,Copia di new_ad_populum_Enrico,78,verdict,appeal_to_nature,appeal to nature
 bd6db2c5d1b67e7f,base,new_ad_populum,78,starting_label,appeal_to_nature,appeal to nature
+be4358bcf952d009,dumitru,Annotazione Dumitru hasty_gener,74,scheme,none,none
 be4358bcf952d009,enrico,Copia di hasty_generalization_E,74,scheme,none,none
 be4358bcf952d009,enrico,Copia di hasty_generalization_E,74,verdict,hasty_generalization,hasty generalization
 be4358bcf952d009,base,hasty_generalization,74,starting_label,hasty_generalization,Hasty Generalization
@@ -5249,6 +5373,7 @@ be83598e5062d38b,enrico,Copia di new_ad_populum_Enrico,123,difficulty,2,2
 be83598e5062d38b,enrico,Copia di new_ad_populum_Enrico,123,scheme,popular_opinion,YES
 be83598e5062d38b,enrico,Copia di new_ad_populum_Enrico,123,verdict,ad_populum,ad populum
 be83598e5062d38b,base,new_ad_populum,123,starting_label,ad_populum,ad populum
+bec28e4c1dd3b8c8,dumitru,Annotazione Dumitru hasty_gener,18,scheme,example,example
 bec28e4c1dd3b8c8,enrico,Copia di hasty_generalization_E,18,scheme,example,Example
 bec28e4c1dd3b8c8,enrico,Copia di hasty_generalization_E,18,verdict,hasty_generalization,hasty generalization
 bec28e4c1dd3b8c8,base,hasty_generalization,18,starting_label,hasty_generalization,hasty generalization
@@ -5263,6 +5388,7 @@ bf13dbd0e3e008d1,dumitru,Annotazione Dumitru ad hominem,71,note,semplice insulto
 bf13dbd0e3e008d1,dumitru,Annotazione Dumitru ad hominem,71,scheme,none,NO
 bf13dbd0e3e008d1,enrico,ad hominem,71,scheme,ad_hominem,Ad Hominem
 bf13dbd0e3e008d1,enrico,ad hominem,71,verdict,ad_hominem_abusive,Abusive
+bf802accc586425f,dumitru,Annotazione Dumitru hasty_gener,69,scheme,example,example
 bf802accc586425f,enrico,Copia di hasty_generalization_E,69,comment,simile a quella in popular opinion,simile a quella in popular opinion
 bf802accc586425f,enrico,Copia di hasty_generalization_E,69,scheme,popular_opinion,Popular opinion
 bf802accc586425f,enrico,Copia di hasty_generalization_E,69,verdict,hasty_generalization,hasty generalization
@@ -5355,6 +5481,7 @@ c15fd158beb2e93f,enrico,new_expert_opinion,28,comment,diritto legge e raccomanda
 c15fd158beb2e93f,enrico,new_expert_opinion,28,exit_cq,CQ2,CQ2
 c15fd158beb2e93f,enrico,new_expert_opinion,28,scheme,expert_opinion,YES
 c15fd158beb2e93f,enrico,new_expert_opinion,28,verdict,appeal_to_authority,appeal to authority
+c199bd5e307fb121,dumitru,Annotazione Dumitru hasty_gener,89,scheme,example,example
 c199bd5e307fb121,enrico,Copia di hasty_generalization_E,89,scheme,example,Example
 c199bd5e307fb121,enrico,Copia di hasty_generalization_E,89,verdict,hasty_generalization,hasty generalization
 c199bd5e307fb121,base,hasty_generalization,89,starting_label,hasty_generalization,Hasty Generalization
@@ -5369,6 +5496,7 @@ c1aff2d867d5a732,dumitru,Annotazione Dumitru ad hominem,85,uncertainty,CQ2:AMB,C
 c1aff2d867d5a732,dumitru,Annotazione Dumitru ad hominem,85,verdict,ad_hominem_circumstantial,Circumstantial
 c1aff2d867d5a732,enrico,ad hominem,85,scheme,ad_hominem,Ad Hominem
 c1aff2d867d5a732,enrico,ad hominem,85,verdict,poisoning_the_well,Poisoning the Well
+c24a066f476b770b,dumitru,Annotazione Dumitru hasty_gener,5,scheme,none,none
 c24a066f476b770b,enrico,Copia di hasty_generalization_E,5,scheme,none,none
 c24a066f476b770b,enrico,Copia di hasty_generalization_E,5,verdict,hasty_generalization,hasty generalization
 c24a066f476b770b,base,hasty_generalization,5,starting_label,hasty_generalization,hasty generalization
@@ -5397,10 +5525,12 @@ c3c766353b12a250,enrico,Copia di new_ad_populum_Enrico,38,difficulty,2,2
 c3c766353b12a250,enrico,Copia di new_ad_populum_Enrico,38,scheme,popular_opinion,YES
 c3c766353b12a250,enrico,Copia di new_ad_populum_Enrico,38,verdict,ad_populum,ad populum
 c3c766353b12a250,enrico,new_ad_populum,38,scheme,popular_opinion,YES
+c3d23bb104ed4f29,dumitru,Annotazione Dumitru cause_effec,7,scheme,cause_to_effect,YES
 c3d23bb104ed4f29,enrico,Copia di cause_to_effect_Enrico,7,difficulty,1,1
 c3d23bb104ed4f29,enrico,Copia di cause_to_effect_Enrico,7,scheme,cause_to_effect,Cause to effect
 c3d23bb104ed4f29,enrico,Copia di cause_to_effect_Enrico,7,verdict,good_argumentation,no fallacy
 c3d23bb104ed4f29,enrico,cause_to_effect,7,scheme,cause_to_effect,YES
+c3d59e9f25e5d012,dumitru,Annotazione Dumitru hasty_gener,79,scheme,none,none
 c3d59e9f25e5d012,enrico,Copia di hasty_generalization_E,79,scheme,none,none
 c3d59e9f25e5d012,enrico,Copia di hasty_generalization_E,79,verdict,hasty_generalization,hasty generalization
 c3d59e9f25e5d012,base,hasty_generalization,79,starting_label,hasty_generalization,Hasty Generalization
@@ -5442,9 +5572,11 @@ c76a92fa00502b7a,enrico,Copia di new_ad_populum_Enrico,138,difficulty,4,4
 c76a92fa00502b7a,enrico,Copia di new_ad_populum_Enrico,138,scheme,none,NO
 c76a92fa00502b7a,enrico,Copia di new_ad_populum_Enrico,138,verdict,appeal_to_nature,appeal to nature
 c76a92fa00502b7a,base,new_ad_populum,138,starting_label,appeal_to_nature,appeal to nature
+c78850217c95d156,dumitru,Annotazione Dumitru hasty_gener,75,scheme,example,example
 c78850217c95d156,enrico,Copia di hasty_generalization_E,75,scheme,none,none
 c78850217c95d156,enrico,Copia di hasty_generalization_E,75,verdict,hasty_generalization,hasty generalization
 c78850217c95d156,base,hasty_generalization,75,starting_label,hasty_generalization,Hasty Generalization
+c788cf08154b5e62,dumitru,Annotazione Dumitru cause_effec,32,scheme,cause_to_effect,YES
 c788cf08154b5e62,enrico,Copia di cause_to_effect_Enrico,32,difficulty,4,4
 c788cf08154b5e62,enrico,Copia di cause_to_effect_Enrico,32,scheme,cause_to_effect,Cause to effect
 c788cf08154b5e62,enrico,Copia di cause_to_effect_Enrico,32,verdict,false_premise,false premise
@@ -5594,6 +5726,7 @@ cd59af0c3b86375d,enrico,new_expert_opinion,115,comment,forse altra fallacia?,for
 cd59af0c3b86375d,enrico,new_expert_opinion,115,scheme,none,NO
 cd59af0c3b86375d,enrico,new_expert_opinion,115,verdict,strawman,straw man
 cd65d99bbe26e242,base,Slippery slope,96,starting_label,slippery_slope,slippery slope
+ce452afac86fd24a,dumitru,Annotazione Dumitru hasty_gener,77,scheme,example,example
 ce452afac86fd24a,enrico,Copia di hasty_generalization_E,77,scheme,example,Example
 ce452afac86fd24a,enrico,Copia di hasty_generalization_E,77,verdict,hasty_generalization,hasty generalization
 ce452afac86fd24a,base,hasty_generalization,77,starting_label,hasty_generalization,Hasty Generalization
@@ -5673,14 +5806,14 @@ d0547e63ffd79ced,dumitru,Annotazione Dumitru ad hominem,47,verdict,ad_hominem_ab
 d0547e63ffd79ced,enrico,ad hominem,47,scheme,ad_hominem,Ad Hominem
 d0547e63ffd79ced,enrico,ad hominem,47,verdict,ad_hominem_abusive,Abusive
 d0655b3e4209b5a2,dumitru,Annotazione Dumitru example,30,CQ1,no,no
-d0655b3e4209b5a2,dumitru,Annotazione Dumitru example,30,CQ2,no,no
+d0655b3e4209b5a2,dumitru,Annotazione Dumitru example,30,CQ2,yes,yes
 d0655b3e4209b5a2,dumitru,Annotazione Dumitru example,30,CQ2.1,no,no
-d0655b3e4209b5a2,dumitru,Annotazione Dumitru example,30,CQ2.2,yes,yes
+d0655b3e4209b5a2,dumitru,Annotazione Dumitru example,30,CQ2.2,no,no
 d0655b3e4209b5a2,dumitru,Annotazione Dumitru example,30,CQ2.3,no,no
 d0655b3e4209b5a2,dumitru,Annotazione Dumitru example,30,CQ3,yes,yes
 d0655b3e4209b5a2,dumitru,Annotazione Dumitru example,30,scheme,example,YES
-d0655b3e4209b5a2,dumitru,Annotazione Dumitru example,30,uncertainty,CQ2.2:SUBJ;CQ3:SUBJ,CQ2.2:SUBJ;CQ3:SUBJ
-d0655b3e4209b5a2,dumitru,Annotazione Dumitru example,30,verdict,hasty_generalization,Hasty Generalization
+d0655b3e4209b5a2,dumitru,Annotazione Dumitru example,30,uncertainty,CQ2:SUBJ;CQ3:SUBJ,CQ2:SUBJ;CQ3:SUBJ
+d0655b3e4209b5a2,dumitru,Annotazione Dumitru example,30,verdict,weak_analogy,Weak Analogy
 d0655b3e4209b5a2,enrico,Copia di example_final_Enrico,30,difficulty,3,3
 d0655b3e4209b5a2,enrico,Copia di example_final_Enrico,30,scheme,example,YES
 d0655b3e4209b5a2,enrico,Copia di example_final_Enrico,30,verdict,cherry_picking,Cherry picking
@@ -5706,6 +5839,7 @@ d20eff27b913c518,dumitru,Annotazione Dumitru ad hominem,3,scheme,ad_hominem,YES
 d20eff27b913c518,dumitru,Annotazione Dumitru ad hominem,3,verdict,ad_hominem_tu_quoque,Tu Quoque
 d20eff27b913c518,enrico,ad hominem,3,scheme,ad_hominem,Ad Hominem
 d20eff27b913c518,enrico,ad hominem,3,verdict,ad_hominem_tu_quoque,Tu Quoque
+d25278a250ff35ad,dumitru,Annotazione Dumitru hasty_gener,9,scheme,example,example
 d25278a250ff35ad,enrico,Copia di hasty_generalization_E,9,scheme,example,Example
 d25278a250ff35ad,enrico,Copia di hasty_generalization_E,9,verdict,hasty_generalization,hasty generalization
 d25278a250ff35ad,base,hasty_generalization,9,starting_label,hasty_generalization,hasty generalization
@@ -5722,7 +5856,7 @@ d253ff396893b1de,eleni,new_expert_opinion,31,verdict,any_fallacy,YES
 d253ff396893b1de,enrico,new_expert_opinion,31,scheme,expert_opinion,YES
 d253ff396893b1de,enrico,new_expert_opinion,31,verdict,good_argumentation,no
 d28653eb6661c9da,dumitru,Annotazione Dumitru example,22,CQ1,no,no
-d28653eb6661c9da,dumitru,Annotazione Dumitru example,22,CQ2,yes,yes
+d28653eb6661c9da,dumitru,Annotazione Dumitru example,22,CQ2,no,no
 d28653eb6661c9da,dumitru,Annotazione Dumitru example,22,CQ2.1,no,no
 d28653eb6661c9da,dumitru,Annotazione Dumitru example,22,CQ2.2,no,no
 d28653eb6661c9da,dumitru,Annotazione Dumitru example,22,CQ2.3,no,no
@@ -5733,12 +5867,15 @@ d28653eb6661c9da,dumitru,Annotazione Dumitru example,22,verdict,weak_analogy,Wea
 d28653eb6661c9da,enrico,Copia di example_final_Enrico,22,difficulty,3,3
 d28653eb6661c9da,enrico,Copia di example_final_Enrico,22,scheme,example,YES
 d28653eb6661c9da,enrico,Copia di example_final_Enrico,22,verdict,appeal_to_extremes,appelal to extremes
+d2eefe13c73ec89d,dumitru,Annotazione Dumitru hasty_gener,13,scheme,example,example
 d2eefe13c73ec89d,enrico,Copia di hasty_generalization_E,13,scheme,popular_opinion,Popular opinion
 d2eefe13c73ec89d,enrico,Copia di hasty_generalization_E,13,verdict,cherry_picking,cherry picking
 d2eefe13c73ec89d,base,hasty_generalization,13,starting_label,hasty_generalization,hasty generalization
+d3348444f772f782,dumitru,Annotazione Dumitru cause_effec,55,scheme,correlation_to_cause,correlation_to_cause
 d3348444f772f782,enrico,Copia di cause_to_effect_Enrico,55,scheme,correlation_to_cause,Correlation to effect
 d3348444f772f782,enrico,Copia di cause_to_effect_Enrico,55,verdict,questionable_cause,Questionable cause
 d3348444f772f782,base,cause_to_effect,55,starting_label,post_hoc,post hoc ergo propter hoc
+d3a46de185a50878,dumitru,Annotazione Dumitru cause_effec,36,scheme,cause_to_effect,YES
 d3a46de185a50878,enrico,Copia di cause_to_effect_Enrico,36,comment,non vedo lo schema,non vedo lo schema
 d3a46de185a50878,enrico,Copia di cause_to_effect_Enrico,36,scheme,cause_to_effect,Cause to effect
 d3a46de185a50878,enrico,Copia di cause_to_effect_Enrico,36,verdict,idk,?
@@ -5766,13 +5903,13 @@ d3ca1867c37aa71f,eleni,new_expert_opinion,90,verdict,appeal_to_authority,appeal 
 d3ca1867c37aa71f,enrico,new_expert_opinion,90,scheme,expert_opinion,YES
 d3ca1867c37aa71f,enrico,new_expert_opinion,90,verdict,appeal_to_authority,appeal to authority
 d3e9fac3596efc53,dumitru,Annotazione Dumitru example,8,CQ1,no,no
-d3e9fac3596efc53,dumitru,Annotazione Dumitru example,8,CQ2,yes,yes
+d3e9fac3596efc53,dumitru,Annotazione Dumitru example,8,CQ2,no,no
 d3e9fac3596efc53,dumitru,Annotazione Dumitru example,8,CQ2.1,no,no
 d3e9fac3596efc53,dumitru,Annotazione Dumitru example,8,CQ2.2,no,no
 d3e9fac3596efc53,dumitru,Annotazione Dumitru example,8,CQ2.3,no,no
 d3e9fac3596efc53,dumitru,Annotazione Dumitru example,8,CQ3,no,no
 d3e9fac3596efc53,dumitru,Annotazione Dumitru example,8,scheme,example,YES
-d3e9fac3596efc53,dumitru,Annotazione Dumitru example,8,uncertainty,CQ2:AMB,CQ2:AMB
+d3e9fac3596efc53,dumitru,Annotazione Dumitru example,8,uncertainty,CQ2:AMB;CQ2.3:SUBJ,CQ2:AMB;CQ2.3:SUBJ
 d3e9fac3596efc53,dumitru,Annotazione Dumitru example,8,verdict,good_argumentation,Good Argumentation
 d3e9fac3596efc53,enrico,Copia di example_final_Enrico,8,comment,diritto,diritto
 d3e9fac3596efc53,enrico,Copia di example_final_Enrico,8,difficulty,2,2
@@ -5845,6 +5982,7 @@ d4b8c6c309f41e27,eleni,new_expert_opinion,12,verdict,appeal_to_authority,appeal 
 d4b8c6c309f41e27,enrico,new_expert_opinion,12,comment,anche se non è chiaro neanche qui l'intento,anche se non è chiaro neanche qui l'intento
 d4b8c6c309f41e27,enrico,new_expert_opinion,12,scheme,expert_opinion,YES
 d4b8c6c309f41e27,enrico,new_expert_opinion,12,verdict,appeal_to_authority,appeal to authority
+d4f47f7ae0509e0c,dumitru,Annotazione Dumitru cause_effec,22,scheme,cause_to_effect,YES
 d4f47f7ae0509e0c,enrico,Copia di cause_to_effect_Enrico,22,difficulty,1,1
 d4f47f7ae0509e0c,enrico,Copia di cause_to_effect_Enrico,22,scheme,cause_to_effect,Cause to effect
 d4f47f7ae0509e0c,enrico,Copia di cause_to_effect_Enrico,22,verdict,good_argumentation,no fallacy
@@ -5877,24 +6015,30 @@ d5b9e52743630bf3,enrico,Copia di example_final_Enrico,56,comment,non si valutano
 d5b9e52743630bf3,enrico,Copia di example_final_Enrico,56,difficulty,3,3
 d5b9e52743630bf3,enrico,Copia di example_final_Enrico,56,scheme,example,YES
 d5b9e52743630bf3,enrico,Copia di example_final_Enrico,56,verdict,weak_analogy,Weak analogy
+d5c6221d54375f95,dumitru,Annotazione Dumitru cause_effec,63,scheme,cause_to_effect,cause_to_effect
 d5c6221d54375f95,enrico,Copia di cause_to_effect_Enrico,63,comment,?,?
 d5c6221d54375f95,enrico,Copia di cause_to_effect_Enrico,63,scheme,none,NO
 d5c6221d54375f95,enrico,Copia di cause_to_effect_Enrico,63,verdict,false_cause,false causality
 d5c6221d54375f95,base,cause_to_effect,63,starting_label,false_cause,false cause
+d6294ced9ce1c938,dumitru,Annotazione Dumitru cause_effec,67,scheme,cause_to_effect,cause_to_effect
 d6294ced9ce1c938,enrico,Copia di cause_to_effect_Enrico,67,scheme,none,NO
 d6294ced9ce1c938,enrico,Copia di cause_to_effect_Enrico,67,verdict,false_cause,false causality
 d6294ced9ce1c938,base,cause_to_effect,67,starting_label,false_cause,false causality
+d63a16ccaa0d11ab,dumitru,Annotazione Dumitru hasty_gener,15,scheme,popular_opinion,popular_opinion
 d63a16ccaa0d11ab,enrico,Copia di hasty_generalization_E,15,scheme,popular_opinion,Popular opinion
 d63a16ccaa0d11ab,enrico,Copia di hasty_generalization_E,15,verdict,hasty_generalization,hasty generalization
 d63a16ccaa0d11ab,base,hasty_generalization,15,starting_label,hasty_generalization,hasty generalization
 d650b4d871478c65,base,Slippery slope,90,starting_label,slippery_slope,slippery slope
+d666da3f367846db,dumitru,Annotazione Dumitru hasty_gener,30,scheme,none,none
 d666da3f367846db,enrico,Copia di hasty_generalization_E,30,scheme,none,none
 d666da3f367846db,enrico,Copia di hasty_generalization_E,30,verdict,hasty_generalization,hasty generalization
 d666da3f367846db,base,hasty_generalization,30,starting_label,hasty_generalization,hasty generalization
 d6a50c3488e19738,base,Slippery slope,18,starting_label,slippery_slope,slippery slope
+d7161d0ebd0f5910,dumitru,Annotazione Dumitru cause_effec,60,scheme,correlation_to_cause,correlation_to_cause
 d7161d0ebd0f5910,enrico,Copia di cause_to_effect_Enrico,60,scheme,correlation_to_cause,Correlation to effect
 d7161d0ebd0f5910,enrico,Copia di cause_to_effect_Enrico,60,verdict,causal_reductionism,Casual reductionism
 d7161d0ebd0f5910,base,cause_to_effect,60,starting_label,false_cause,false causality
+d7616f9f478bc4eb,dumitru,Annotazione Dumitru hasty_gener,26,scheme,example,example
 d7616f9f478bc4eb,enrico,Copia di hasty_generalization_E,26,comment,EXPERT OPINION?,EXPERT OPINION?
 d7616f9f478bc4eb,enrico,Copia di hasty_generalization_E,26,scheme,expert_opinion,Expert opinion
 d7616f9f478bc4eb,enrico,Copia di hasty_generalization_E,26,verdict,irrelevant_authority,irrelevant authority
@@ -5925,6 +6069,7 @@ d9788250a6e3dde7,eleni,new_expert_opinion,35,verdict,any_fallacy,YES
 d9788250a6e3dde7,enrico,new_expert_opinion,35,comment,"è un campo in cui ci sono molte teorie e non c'è assoluto accordo. sebbene non condivisibile e non rappresenti un'argoemtnezione schiacciante, non mi pare neanche fallace","è un campo in cui ci sono molte teorie e non c'è assoluto accordo. sebbene non condivisibile e non rappresenti un'argoemtnezione schiacciante, non mi pare neanche fallace"
 d9788250a6e3dde7,enrico,new_expert_opinion,35,scheme,expert_opinion,YES
 d9788250a6e3dde7,enrico,new_expert_opinion,35,verdict,good_argumentation,no
+da2c5406f82201d7,dumitru,Annotazione Dumitru cause_effec,57,scheme,correlation_to_cause,correlation_to_cause
 da2c5406f82201d7,enrico,Copia di cause_to_effect_Enrico,57,scheme,correlation_to_cause,Correlation to effect
 da2c5406f82201d7,enrico,Copia di cause_to_effect_Enrico,57,verdict,causal_reductionism,Casual reductionism
 da2c5406f82201d7,base,cause_to_effect,57,starting_label,false_cause,false causality
@@ -5967,6 +6112,7 @@ db2d2815b640a8e6,enrico,Copia di new_ad_populum_Enrico,47,difficulty,4,4
 db2d2815b640a8e6,enrico,Copia di new_ad_populum_Enrico,47,scheme,popular_opinion,YES
 db2d2815b640a8e6,enrico,Copia di new_ad_populum_Enrico,47,verdict,good_argumentation,no fallacy
 db2d2815b640a8e6,enrico,new_ad_populum,47,scheme,popular_opinion,YES
+db2f98c7cf4a1220,dumitru,Annotazione Dumitru hasty_gener,42,scheme,example,example
 db2f98c7cf4a1220,enrico,Copia di hasty_generalization_E,42,scheme,none,none
 db2f98c7cf4a1220,enrico,Copia di hasty_generalization_E,42,verdict,hasty_generalization,hasty generalization
 db2f98c7cf4a1220,base,hasty_generalization,42,starting_label,hasty_generalization,hasty generalization
@@ -6046,6 +6192,7 @@ dda53fd72a430d71,dumitru,Annotazione Dumitru ad hominem,36,scheme,ad_hominem,YES
 dda53fd72a430d71,dumitru,Annotazione Dumitru ad hominem,36,verdict,ad_hominem_circumstantial,Circumstantial
 dda53fd72a430d71,enrico,ad hominem,36,scheme,ad_hominem,Ad Hominem
 dda53fd72a430d71,enrico,ad hominem,36,verdict,ad_hominem_guilt_by_association,Guilt by Association
+ddf99e8f09adea4a,dumitru,Annotazione Dumitru hasty_gener,87,scheme,example,example
 ddf99e8f09adea4a,enrico,Copia di hasty_generalization_E,87,scheme,example,Example
 ddf99e8f09adea4a,enrico,Copia di hasty_generalization_E,87,verdict,hasty_generalization,hasty generalization
 ddf99e8f09adea4a,base,hasty_generalization,87,starting_label,hasty_generalization,Hasty Generalization
@@ -6080,12 +6227,15 @@ de76bd6679882821,enrico,new_expert_opinion,27,comment,davvero carente dal punto 
 de76bd6679882821,enrico,new_expert_opinion,27,exit_cq,CQ2,CQ2
 de76bd6679882821,enrico,new_expert_opinion,27,scheme,expert_opinion,YES
 de76bd6679882821,enrico,new_expert_opinion,27,verdict,appeal_to_authority,appeal to authority
+de7d5dc95ab744ab,dumitru,Annotazione Dumitru cause_effec,52,scheme,correlation_to_cause,correlation_to_cause
 de7d5dc95ab744ab,enrico,Copia di cause_to_effect_Enrico,52,scheme,correlation_to_cause,Correlation to effect
 de7d5dc95ab744ab,enrico,Copia di cause_to_effect_Enrico,52,verdict,post_hoc,post hoc
 de7d5dc95ab744ab,base,cause_to_effect,52,starting_label,post_hoc,post hoc ergo propter hoc
+dec11e6a5c40d7dc,dumitru,Annotazione Dumitru hasty_gener,91,scheme,example,example
 dec11e6a5c40d7dc,enrico,Copia di hasty_generalization_E,91,scheme,none,none
 dec11e6a5c40d7dc,enrico,Copia di hasty_generalization_E,91,verdict,hasty_generalization,hasty generalization
 dec11e6a5c40d7dc,base,hasty_generalization,91,starting_label,hasty_generalization,Hasty Generalization
+def56b6cc3311d0a,dumitru,Annotazione Dumitru hasty_gener,6,scheme,example,example
 def56b6cc3311d0a,enrico,Copia di hasty_generalization_E,6,scheme,example,Example
 def56b6cc3311d0a,enrico,Copia di hasty_generalization_E,6,verdict,hasty_generalization,hasty generalization
 def56b6cc3311d0a,base,hasty_generalization,6,starting_label,hasty_generalization,hasty generalization
@@ -6102,6 +6252,7 @@ df5d52b4204fb15e,dumitru,Annotazione Dumitru Expert Opin,101,verdict,non_sequitu
 df5d52b4204fb15e,eleni,new_expert_opinion,101,verdict,appeal_to_authority,appeal to authority
 df5d52b4204fb15e,enrico,new_expert_opinion,101,scheme,expert_opinion,YES
 df5d52b4204fb15e,enrico,new_expert_opinion,101,verdict,appeal_to_authority,appeal to authority
+df72f7490fae9a2f,dumitru,Annotazione Dumitru hasty_gener,45,scheme,none,none
 df72f7490fae9a2f,enrico,Copia di hasty_generalization_E,45,scheme,correlation_to_cause,Correlation to cause
 df72f7490fae9a2f,enrico,Copia di hasty_generalization_E,45,verdict,hasty_generalization,hasty generalization
 df72f7490fae9a2f,base,hasty_generalization,45,starting_label,hasty_generalization,hasty generalization
@@ -6154,14 +6305,14 @@ e041ce4b147f2cea,enrico,Copia di new_ad_populum_Enrico,129,verdict,ad_populum,ad
 e041ce4b147f2cea,base,new_ad_populum,129,starting_label,ad_populum,ad populum
 e0636b109c212016,base,Slippery slope,8,starting_label,slippery_slope,slippery slope
 e07cca0a14ed04d4,dumitru,Annotazione Dumitru example,34,CQ1,no,no
-e07cca0a14ed04d4,dumitru,Annotazione Dumitru example,34,CQ2,yes,yes
+e07cca0a14ed04d4,dumitru,Annotazione Dumitru example,34,CQ2,no,no
 e07cca0a14ed04d4,dumitru,Annotazione Dumitru example,34,CQ2.1,no,no
 e07cca0a14ed04d4,dumitru,Annotazione Dumitru example,34,CQ2.2,no,no
 e07cca0a14ed04d4,dumitru,Annotazione Dumitru example,34,CQ2.3,no,no
-e07cca0a14ed04d4,dumitru,Annotazione Dumitru example,34,CQ3,no,no
+e07cca0a14ed04d4,dumitru,Annotazione Dumitru example,34,CQ3,yes,yes
 e07cca0a14ed04d4,dumitru,Annotazione Dumitru example,34,scheme,example,YES
-e07cca0a14ed04d4,dumitru,Annotazione Dumitru example,34,uncertainty,CQ2:SUBJ,CQ2:SUBJ
-e07cca0a14ed04d4,dumitru,Annotazione Dumitru example,34,verdict,good_argumentation,Good Argumentation
+e07cca0a14ed04d4,dumitru,Annotazione Dumitru example,34,uncertainty,CQ3:SUBJ,CQ3:SUBJ
+e07cca0a14ed04d4,dumitru,Annotazione Dumitru example,34,verdict,weak_analogy,Weak Analogy
 e07cca0a14ed04d4,enrico,Copia di example_final_Enrico,34,difficulty,4,4
 e07cca0a14ed04d4,enrico,Copia di example_final_Enrico,34,scheme,example,YES
 e07cca0a14ed04d4,enrico,Copia di example_final_Enrico,34,verdict,cherry_picking,Cherry picking
@@ -6214,6 +6365,7 @@ e1c6fe7425fdbee7,enrico,Copia di example_final_Enrico,55,comment,non c'è una ge
 e1c6fe7425fdbee7,enrico,Copia di example_final_Enrico,55,difficulty,2,2
 e1c6fe7425fdbee7,enrico,Copia di example_final_Enrico,55,scheme,example,YES
 e1c6fe7425fdbee7,enrico,Copia di example_final_Enrico,55,verdict,good_argumentation,no fallacy
+e1e58b4536d1b7c9,dumitru,Annotazione Dumitru hasty_gener,76,scheme,none,none
 e1e58b4536d1b7c9,enrico,Copia di hasty_generalization_E,76,scheme,none,none
 e1e58b4536d1b7c9,enrico,Copia di hasty_generalization_E,76,verdict,hasty_generalization,hasty generalization
 e1e58b4536d1b7c9,base,hasty_generalization,76,starting_label,hasty_generalization,Hasty Generalization
@@ -6290,6 +6442,7 @@ e4583e093074b40a,eleni,new_analogy,35,scheme,analogy,YES
 e4583e093074b40a,eleni,new_analogy,35,verdict,any_fallacy,YES
 e4583e093074b40a,enrico,new_analogy,35,scheme,analogy,YES
 e4583e093074b40a,enrico,new_analogy,35,verdict,weak_analogy,weak analogy
+e4db37c5ab721870,dumitru,Annotazione Dumitru cause_effec,20,scheme,cause_to_effect,YES
 e4db37c5ab721870,enrico,Copia di cause_to_effect_Enrico,20,difficulty,1,1
 e4db37c5ab721870,enrico,Copia di cause_to_effect_Enrico,20,scheme,cause_to_effect,Cause to effect
 e4db37c5ab721870,enrico,Copia di cause_to_effect_Enrico,20,verdict,good_argumentation,no fallacy
@@ -6333,6 +6486,7 @@ e573fe92514419de,dumitru,Annotazione Dumitru ad hominem,45,scheme,ad_hominem,YES
 e573fe92514419de,dumitru,Annotazione Dumitru ad hominem,45,verdict,ad_hominem_circumstantial,Circumstantial
 e573fe92514419de,enrico,ad hominem,45,scheme,ad_hominem,Ad Hominem
 e573fe92514419de,enrico,ad hominem,45,verdict,ad_hominem_circumstantial,Circumstantial
+e57eefe833cf8660,dumitru,Annotazione Dumitru hasty_gener,38,scheme,example,example
 e57eefe833cf8660,enrico,Copia di hasty_generalization_E,38,scheme,example,Example
 e57eefe833cf8660,enrico,Copia di hasty_generalization_E,38,verdict,hasty_generalization,hasty generalization
 e57eefe833cf8660,base,hasty_generalization,38,starting_label,hasty_generalization,hasty generalization
@@ -6404,22 +6558,23 @@ e7acb298d5ea7e5b,eleni,new_expert_opinion,14,verdict,appeal_to_authority,appeal 
 e7acb298d5ea7e5b,enrico,new_expert_opinion,14,comment,si dà credibilità alla fonte ma non la si usa per sosntenere nulla,si dà credibilità alla fonte ma non la si usa per sosntenere nulla
 e7acb298d5ea7e5b,enrico,new_expert_opinion,14,scheme,idk,SNI
 e7acb298d5ea7e5b,enrico,new_expert_opinion,14,verdict,appeal_to_authority,appeal to authority
-e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,CQ1,no,no
-e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,CQ2,yes,yes
-e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,CQ2.1,no,no
-e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,CQ2.2,no,no
-e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,CQ2.3,no,no
-e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,CQ3,no,no
-e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,scheme,example,YES
-e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,uncertainty,CQ3:SUBJ,CQ3:SUBJ
-e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,verdict,good_argumentation,Good Argumentation
+e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,CQ1,na,na
+e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,CQ2,na,na
+e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,CQ2.1,na,na
+e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,CQ2.2,na,na
+e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,CQ2.3,na,na
+e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,CQ3,na,na
+e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,note,"No case: a general claim about elderly people on low incomes, used for a policy proposal; no instance supports a generalization.","No case: a general claim about elderly people on low incomes, used for a policy proposal; no instance supports a generalization."
+e7d9c6de6611e713,dumitru,Annotazione Dumitru example,70,scheme,none,NO
 e7d9c6de6611e713,enrico,Copia di example_final_Enrico,70,comment,non è un esempio ma si parla effettivamente della stessa cosa,non è un esempio ma si parla effettivamente della stessa cosa
 e7d9c6de6611e713,enrico,Copia di example_final_Enrico,70,scheme,example,YES
 e7d9c6de6611e713,enrico,Copia di example_final_Enrico,70,verdict,idk,?
+e7f9221dae46b3af,dumitru,Annotazione Dumitru hasty_gener,34,scheme,none,none
 e7f9221dae46b3af,enrico,Copia di hasty_generalization_E,34,scheme,none,none
 e7f9221dae46b3af,enrico,Copia di hasty_generalization_E,34,verdict,hasty_generalization,hasty generalization
 e7f9221dae46b3af,base,hasty_generalization,34,starting_label,hasty_generalization,hasty generalization
 e845e0784a26604e,base,Slippery slope,89,starting_label,slippery_slope,slippery slope
+e8d9e82deecd8173,dumitru,Annotazione Dumitru cause_effec,6,scheme,cause_to_effect,YES
 e8d9e82deecd8173,enrico,Copia di cause_to_effect_Enrico,6,difficulty,1,1
 e8d9e82deecd8173,enrico,Copia di cause_to_effect_Enrico,6,scheme,cause_to_effect,Cause to effect
 e8d9e82deecd8173,enrico,Copia di cause_to_effect_Enrico,6,verdict,good_argumentation,no fallacy
@@ -6438,6 +6593,7 @@ e97d827e913e0076,eleni,new_analogy,31,verdict,any_fallacy,YES
 e97d827e913e0076,enrico,new_analogy,31,scheme,analogy,YES
 e97d827e913e0076,enrico,new_analogy,31,verdict,weak_analogy,weak analogy
 eaa1ee25e22cd1f4,base,Slippery slope,92,starting_label,slippery_slope,slippery slope
+eac62b404921abc6,dumitru,Annotazione Dumitru cause_effec,9,scheme,cause_to_effect,YES
 eac62b404921abc6,enrico,Copia di cause_to_effect_Enrico,9,difficulty,1,1
 eac62b404921abc6,enrico,Copia di cause_to_effect_Enrico,9,scheme,cause_to_effect,Cause to effect
 eac62b404921abc6,enrico,Copia di cause_to_effect_Enrico,9,verdict,good_argumentation,no fallacy
@@ -6456,6 +6612,7 @@ eada6f07ac56c093,dumitru,Annotazione Dumitru Expert Opin,48,verdict,irrelevant_a
 eada6f07ac56c093,eleni,new_expert_opinion,48,verdict,appeal_to_authority,appeal to authority
 eada6f07ac56c093,enrico,new_expert_opinion,48,scheme,none,NO
 eada6f07ac56c093,enrico,new_expert_opinion,48,verdict,appeal_to_authority,appeal to authority
+eadc9acf7bef32c8,dumitru,Annotazione Dumitru hasty_gener,11,scheme,example,example
 eadc9acf7bef32c8,enrico,Copia di hasty_generalization_E,11,scheme,example,Example
 eadc9acf7bef32c8,enrico,Copia di hasty_generalization_E,11,verdict,hasty_generalization,hasty generalization
 eadc9acf7bef32c8,base,hasty_generalization,11,starting_label,hasty_generalization,hasty generalization
@@ -6497,6 +6654,7 @@ ecb6e3f4f9fd44d8,enrico,new_expert_opinion,49,comment,non esperti in etica?,non 
 ecb6e3f4f9fd44d8,enrico,new_expert_opinion,49,exit_cq,CQ1,CQ1
 ecb6e3f4f9fd44d8,enrico,new_expert_opinion,49,scheme,expert_opinion,YES
 ecb6e3f4f9fd44d8,enrico,new_expert_opinion,49,verdict,irrelevant_authority,false authority
+ed13d69a079a8b28,dumitru,Annotazione Dumitru cause_effec,3,scheme,cause_to_effect,YES
 ed13d69a079a8b28,enrico,Copia di cause_to_effect_Enrico,3,difficulty,1,1
 ed13d69a079a8b28,enrico,Copia di cause_to_effect_Enrico,3,scheme,cause_to_effect,Cause to effect
 ed13d69a079a8b28,enrico,Copia di cause_to_effect_Enrico,3,verdict,good_argumentation,no fallacy
@@ -6556,14 +6714,17 @@ ee1b6a104e739389,enrico,Copia di new_ad_populum_Enrico,22,difficulty,3,3
 ee1b6a104e739389,enrico,Copia di new_ad_populum_Enrico,22,scheme,popular_opinion,YES
 ee1b6a104e739389,enrico,Copia di new_ad_populum_Enrico,22,verdict,ad_populum,ad populum
 ee1b6a104e739389,enrico,new_ad_populum,22,scheme,popular_opinion,YES
+ee2b35764b3fe04e,dumitru,Annotazione Dumitru cause_effec,50,scheme,cause_to_effect,YES
 ee2b35764b3fe04e,enrico,Copia di cause_to_effect_Enrico,50,difficulty,3,3
 ee2b35764b3fe04e,enrico,Copia di cause_to_effect_Enrico,50,scheme,cause_to_effect,Cause to effect
 ee2b35764b3fe04e,enrico,Copia di cause_to_effect_Enrico,50,verdict,cherry_picking,Cherry picking
 ee2b35764b3fe04e,enrico,cause_to_effect,50,scheme,cause_to_effect,YES
+ee2e2d60866c9b30,dumitru,Annotazione Dumitru cause_effec,25,scheme,cause_to_effect,YES
 ee2e2d60866c9b30,enrico,Copia di cause_to_effect_Enrico,25,difficulty,1,1
 ee2e2d60866c9b30,enrico,Copia di cause_to_effect_Enrico,25,scheme,cause_to_effect,Cause to effect
 ee2e2d60866c9b30,enrico,Copia di cause_to_effect_Enrico,25,verdict,good_argumentation,no fallacy
 ee2e2d60866c9b30,enrico,cause_to_effect,25,scheme,cause_to_effect,YES
+ee459cd8ebd85b57,dumitru,Annotazione Dumitru hasty_gener,88,scheme,correlation_to_cause,correlation_to_cause
 ee459cd8ebd85b57,enrico,Copia di hasty_generalization_E,88,scheme,example,Example
 ee459cd8ebd85b57,enrico,Copia di hasty_generalization_E,88,verdict,hasty_generalization,hasty generalization
 ee459cd8ebd85b57,base,hasty_generalization,88,starting_label,hasty_generalization,Hasty Generalization
@@ -6579,6 +6740,7 @@ ee5b8dc4b05d0397,dumitru,Annotazione Dumitru example,16,verdict,hasty_generaliza
 ee5b8dc4b05d0397,enrico,Copia di example_final_Enrico,16,comment,EXPERT OPINION?,EXPERT OPINION?
 ee5b8dc4b05d0397,enrico,Copia di example_final_Enrico,16,scheme,example,YES
 ee5b8dc4b05d0397,enrico,Copia di example_final_Enrico,16,verdict,idk,?
+ee74a463e7b111f5,dumitru,Annotazione Dumitru hasty_gener,55,scheme,example,example
 ee74a463e7b111f5,enrico,Copia di hasty_generalization_E,55,scheme,expert_opinion,Expert opinion
 ee74a463e7b111f5,enrico,Copia di hasty_generalization_E,55,verdict,irrelevant_authority,irrelevant authority
 ee74a463e7b111f5,base,hasty_generalization,55,starting_label,hasty_generalization,hasty generalization
@@ -6615,12 +6777,15 @@ effe11f16606ca5d,dumitru,Annotazione Dumitru example,5,verdict,good_argumentatio
 effe11f16606ca5d,enrico,Copia di example_final_Enrico,5,comment,EXPERT OPINION,EXPERT OPINION
 effe11f16606ca5d,enrico,Copia di example_final_Enrico,5,scheme,example,YES
 effe11f16606ca5d,enrico,Copia di example_final_Enrico,5,verdict,idk,?
+f032046b435f8794,dumitru,Annotazione Dumitru hasty_gener,37,scheme,example,example
 f032046b435f8794,enrico,Copia di hasty_generalization_E,37,scheme,example,Example
 f032046b435f8794,enrico,Copia di hasty_generalization_E,37,verdict,hasty_generalization,hasty generalization
 f032046b435f8794,base,hasty_generalization,37,starting_label,hasty_generalization,hasty generalization
+f0b475c70c189a36,dumitru,Annotazione Dumitru hasty_gener,68,scheme,none,none
 f0b475c70c189a36,enrico,Copia di hasty_generalization_E,68,scheme,none,none
 f0b475c70c189a36,enrico,Copia di hasty_generalization_E,68,verdict,hasty_generalization,hasty generalization
 f0b475c70c189a36,base,hasty_generalization,68,starting_label,hasty_generalization,hasty generalization
+f0eccd78a0e2985b,dumitru,Annotazione Dumitru cause_effec,65,scheme,correlation_to_cause,correlation_to_cause
 f0eccd78a0e2985b,enrico,Copia di cause_to_effect_Enrico,65,scheme,none,NO
 f0eccd78a0e2985b,enrico,Copia di cause_to_effect_Enrico,65,verdict,false_cause,false causality
 f0eccd78a0e2985b,base,cause_to_effect,65,starting_label,false_cause,false causality
@@ -6709,6 +6874,7 @@ f30b20131bb84354,enrico,Copia di new_ad_populum_Enrico,140,difficulty,4,4
 f30b20131bb84354,enrico,Copia di new_ad_populum_Enrico,140,scheme,none,NO
 f30b20131bb84354,enrico,Copia di new_ad_populum_Enrico,140,verdict,appeal_to_tradition,appeal to tradition
 f30b20131bb84354,base,new_ad_populum,140,starting_label,appeal_to_tradition,appeal to tradition
+f350682f2c29baa4,dumitru,Annotazione Dumitru cause_effec,59,scheme,correlation_to_cause,correlation_to_cause
 f350682f2c29baa4,enrico,Copia di cause_to_effect_Enrico,59,scheme,correlation_to_cause,Correlation to effect
 f350682f2c29baa4,enrico,Copia di cause_to_effect_Enrico,59,verdict,post_hoc,post hoc
 f350682f2c29baa4,base,cause_to_effect,59,starting_label,false_cause,false causality
@@ -6724,6 +6890,7 @@ f3a77bcfa6b481c2,enrico,Copia di new_ad_populum_Enrico,103,difficulty,3,3
 f3a77bcfa6b481c2,enrico,Copia di new_ad_populum_Enrico,103,scheme,idk,SNI
 f3a77bcfa6b481c2,enrico,Copia di new_ad_populum_Enrico,103,verdict,ad_populum,ad populum
 f3a77bcfa6b481c2,base,new_ad_populum,103,starting_label,ad_populum,ad populum
+f3e8cb2eb327253f,dumitru,Annotazione Dumitru hasty_gener,82,scheme,cause_to_effect,cause_to_effect
 f3e8cb2eb327253f,enrico,Copia di hasty_generalization_E,82,scheme,none,none
 f3e8cb2eb327253f,enrico,Copia di hasty_generalization_E,82,verdict,hasty_generalization,hasty generalization
 f3e8cb2eb327253f,base,hasty_generalization,82,starting_label,hasty_generalization,Hasty Generalization
@@ -6763,6 +6930,7 @@ f4b69bfdca963503,eleni,new_analogy,85,scheme,analogy,YES
 f4b69bfdca963503,eleni,new_analogy,85,verdict,any_fallacy,YES
 f4b69bfdca963503,enrico,new_analogy,85,scheme,analogy,YES
 f4b69bfdca963503,enrico,new_analogy,85,verdict,weak_analogy,weak analogy
+f4b9b15b3ea2eb00,dumitru,Annotazione Dumitru cause_effec,51,scheme,cause_to_effect,YES
 f4b9b15b3ea2eb00,enrico,Copia di cause_to_effect_Enrico,51,comment,non vedo lo schema,non vedo lo schema
 f4b9b15b3ea2eb00,enrico,Copia di cause_to_effect_Enrico,51,scheme,cause_to_effect,Cause to effect
 f4b9b15b3ea2eb00,enrico,Copia di cause_to_effect_Enrico,51,verdict,idk,?
@@ -6790,6 +6958,7 @@ f52d317e726ed40d,enrico,new_expert_opinion,63,comment,non c'è un esperto e il r
 f52d317e726ed40d,enrico,new_expert_opinion,63,scheme,expert_opinion,YES
 f52d317e726ed40d,enrico,new_expert_opinion,63,verdict,idk,?
 f52d317e726ed40d,unknown,new_expert_opinion,63,doubt,f,f
+f54e1c4b78f2d3cf,dumitru,Annotazione Dumitru hasty_gener,27,scheme,example,example
 f54e1c4b78f2d3cf,enrico,Copia di hasty_generalization_E,27,scheme,example,Example
 f54e1c4b78f2d3cf,enrico,Copia di hasty_generalization_E,27,verdict,hasty_generalization,hasty generalization
 f54e1c4b78f2d3cf,base,hasty_generalization,27,starting_label,hasty_generalization,hasty generalization
@@ -6826,7 +6995,7 @@ f68a8317471ba463,dumitru,Annotazione Dumitru example,59,CQ2.2,no,no
 f68a8317471ba463,dumitru,Annotazione Dumitru example,59,CQ2.3,no,no
 f68a8317471ba463,dumitru,Annotazione Dumitru example,59,CQ3,no,no
 f68a8317471ba463,dumitru,Annotazione Dumitru example,59,scheme,example,YES
-f68a8317471ba463,dumitru,Annotazione Dumitru example,59,uncertainty,CQ2.2:SUBJ,CQ2.2:SUBJ
+f68a8317471ba463,dumitru,Annotazione Dumitru example,59,uncertainty,CQ2:SUBJ;CQ2.2:SUBJ,CQ2:SUBJ;CQ2.2:SUBJ
 f68a8317471ba463,dumitru,Annotazione Dumitru example,59,verdict,good_argumentation,Good Argumentation
 f68a8317471ba463,enrico,Copia di example_final_Enrico,59,comment,rischio != certezza,rischio != certezza
 f68a8317471ba463,enrico,Copia di example_final_Enrico,59,difficulty,3,3
@@ -6854,9 +7023,11 @@ f8364c6ed565537e,dumitru,Annotazione Dumitru example,50,scheme,none,NO
 f8364c6ed565537e,enrico,Copia di example_final_Enrico,50,difficulty,4,4
 f8364c6ed565537e,enrico,Copia di example_final_Enrico,50,scheme,example,YES
 f8364c6ed565537e,enrico,Copia di example_final_Enrico,50,verdict,cherry_picking,Cherry picking
+f934ed1b375b3139,dumitru,Annotazione Dumitru cause_effec,68,scheme,cause_to_effect,cause_to_effect
 f934ed1b375b3139,enrico,Copia di cause_to_effect_Enrico,68,scheme,none,NO
 f934ed1b375b3139,enrico,Copia di cause_to_effect_Enrico,68,verdict,false_cause,false causality
 f934ed1b375b3139,base,cause_to_effect,68,starting_label,false_cause,false causality
+f974933770b0565a,dumitru,Annotazione Dumitru cause_effec,71,scheme,correlation_to_cause,correlation_to_cause
 f974933770b0565a,enrico,Copia di cause_to_effect_Enrico,71,scheme,none,NO
 f974933770b0565a,enrico,Copia di cause_to_effect_Enrico,71,verdict,false_cause,false causality
 f974933770b0565a,base,cause_to_effect,71,starting_label,false_cause,false causality
@@ -7034,6 +7205,7 @@ fdd9ba7c0b22ef1f,eleni,new_analogy,61,scheme,analogy,YES
 fdd9ba7c0b22ef1f,eleni,new_analogy,61,verdict,any_fallacy,YES
 fdd9ba7c0b22ef1f,enrico,new_analogy,61,scheme,analogy,YES
 fdd9ba7c0b22ef1f,enrico,new_analogy,61,verdict,weak_analogy,weak analogy
+fdef9f79fa1cadca,dumitru,Annotazione Dumitru hasty_gener,2,scheme,none,none
 fdef9f79fa1cadca,enrico,Copia di hasty_generalization_E,2,scheme,none,none
 fdef9f79fa1cadca,enrico,Copia di hasty_generalization_E,2,verdict,hasty_generalization,hasty generalization
 fdef9f79fa1cadca,base,hasty_generalization,2,starting_label,hasty_generalization,hasty generalization
@@ -7103,9 +7275,10 @@ ff4a1f625b2f0849,dumitru,Annotazione Dumitru example,29,CQ2,yes,yes
 ff4a1f625b2f0849,dumitru,Annotazione Dumitru example,29,CQ2.1,no,no
 ff4a1f625b2f0849,dumitru,Annotazione Dumitru example,29,CQ2.2,no,no
 ff4a1f625b2f0849,dumitru,Annotazione Dumitru example,29,CQ2.3,no,no
-ff4a1f625b2f0849,dumitru,Annotazione Dumitru example,29,CQ3,yes,yes
+ff4a1f625b2f0849,dumitru,Annotazione Dumitru example,29,CQ3,no,no
 ff4a1f625b2f0849,dumitru,Annotazione Dumitru example,29,scheme,example,YES
-ff4a1f625b2f0849,dumitru,Annotazione Dumitru example,29,verdict,weak_analogy,Weak Analogy
+ff4a1f625b2f0849,dumitru,Annotazione Dumitru example,29,uncertainty,CQ3:SUBJ,CQ3:SUBJ
+ff4a1f625b2f0849,dumitru,Annotazione Dumitru example,29,verdict,good_argumentation,Good Argumentation
 ff4a1f625b2f0849,enrico,Copia di example_final_Enrico,29,difficulty,4,4
 ff4a1f625b2f0849,enrico,Copia di example_final_Enrico,29,scheme,example,YES
 ff4a1f625b2f0849,enrico,Copia di example_final_Enrico,29,verdict,good_argumentation,no fallacy
@@ -7121,6 +7294,7 @@ ff54562dde76a16c,enrico,Copia di new_ad_populum_Enrico,6,difficulty,2,2
 ff54562dde76a16c,enrico,Copia di new_ad_populum_Enrico,6,scheme,popular_opinion,YES
 ff54562dde76a16c,enrico,Copia di new_ad_populum_Enrico,6,verdict,ad_populum,ad populum
 ff54562dde76a16c,enrico,new_ad_populum,6,scheme,popular_opinion,YES
+ffe2aa5c4ea65c0b,dumitru,Annotazione Dumitru cause_effec,28,scheme,cause_to_effect,YES
 ffe2aa5c4ea65c0b,enrico,Copia di cause_to_effect_Enrico,28,difficulty,2,2
 ffe2aa5c4ea65c0b,enrico,Copia di cause_to_effect_Enrico,28,scheme,cause_to_effect,Cause to effect
 ffe2aa5c4ea65c0b,enrico,Copia di cause_to_effect_Enrico,28,verdict,good_argumentation,no fallacy
