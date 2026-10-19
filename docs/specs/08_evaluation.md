@@ -1,6 +1,6 @@
 # Spec 08. Evaluation
 
-Version 2, 11 October 2026. Version 1 dates from 10 and 11 September 2026. The spec holds the requirements already decided and the evaluation protocol. The changes from version 1, with their reasons, are listed at the end. Withdrawn requirements keep their number, so that references to P10, P11 and P12 elsewhere stay valid.
+Version 2.1, 19 October 2026. Version 2 dates from 11 October 2026, version 1 from 10 and 11 September 2026. The spec holds the requirements already decided, the evaluation protocol and, since version 2.1, the order in which the protocol is implemented, with the acceptance tests of its first stage. The changes, with their reasons, are listed at the end. Withdrawn requirements keep their number, so that references to P10, P11 and P12 elsewhere stay valid.
 
 ## Requirements already decided
 
@@ -56,7 +56,7 @@ P9. **Withdrawn on 11 October 2026.** It was the estimate of uncertainty from th
 P10. **Success criterion.** Version 1 fixed it before any result, with accuracy as the deciding metric. On 11 October 2026 the deciding metric became macro F1, after the results of A0 and of the zero-shot on full run v2 and before any result of an aggregator; the reason is in the list of changes. The criterion holds for the decision of 26 October (thesis plan, decision point).
 * Baseline: A0, the fixed diagram with the hard answers of a single model, which reproduces the setting of the diagnosis.
 * Reference model: the model whose A0 has the highest macro F1 in the gold scheme condition; with equal macro F1, the first model name in alphabetical order. It is written in the manifest of the evaluation. On full run v2 it is Qwen3.8 27B (macro F1 0.350), which also has the highest accuracy (0.504).
-* Primary configurations: before any result of an aggregator, spec 07 names one primary configuration for each of A1 to A5. Their number m is fixed with them (5 if all five exist). An aggregator dropped later does not lower m.
+* Primary configurations: before any result of an aggregator, spec 07 names one primary configuration for each of A1 to A5. Their number m is fixed with them (5 if all five exist). An aggregator dropped later does not lower m. Spec 07 also says which deciding comparisons answer the question of 26 October.
 * Deciding metric: macro F1 in the fine space (P2), gold scheme condition (P1). The same comparison in the predicted scheme condition serves as confirmation.
 * Deciding comparisons: each primary configuration against the reference A0, paired on the same items, with an interval on the difference in macro F1 at level 1 − 0.05/m (99 per cent with m = 5, Bonferroni). An improvement is claimed only if that interval excludes zero. An interval that contains zero is reported as the absence of a measurable difference, not as a small improvement.
 * Reported beside the deciding comparisons, without deciding: the same differences in accuracy (for comparability with Enrico's and Eleni's numbers) and in balanced accuracy; the paired difference between each primary configuration and the zero-shot of the reference model; the majority class per scheme and the in-sample ceiling, both declared as oracles.
@@ -73,7 +73,7 @@ P11. **Abstention curves.**
 
 P12. **Bootstrap.**
 * 10,000 resamples, 95 per cent percentile interval (other levels where P10 says so).
-* A single seed, written in `configs/evaluation.yaml` and in the manifest. The indices of the resamples are generated once and hold for all the systems and all the models: this is what makes the comparisons paired.
+* A single seed, written in the evaluation configuration (`configs/evaluation_v2.yaml` for full run v2) and in the manifest. The indices of the resamples are generated once and hold for all the systems and all the models: this is what makes the comparisons paired.
 * The unit is the item, without strata: the items of the test set are resampled with replacement, and all the answers and verdicts of an item move together. The breakdowns too, by scheme and by corpus, are computed on the same resamples of the whole test set, so the number of items of a breakdown varies from one resample to another; a resample with no items of a breakdown does not contribute to the interval of that breakdown. Reason: stratifying would keep the number of items per scheme fixed, and the interval would not include the uncertainty on the sample size, which with the 11 items of correlation to cause is exactly what must be shown.
 * The verdicts of the learned aggregators are computed once (P13) and resampled as they are, so the intervals do not include the variability of training them.
 * The exact McNemar test remains as a check on the paired comparison of two accuracies at full coverage.
@@ -84,8 +84,9 @@ P13. **Out-of-fold estimation.** Every parameter estimated from labels of the te
 * It applies to the node order of A1, to A3, to the weights and the stacking of A4, and to any threshold chosen on labelled items.
 * The majority per scheme and the ceiling stay in sample, declared as oracles. On full run v2 the leave-one-out majority gives the same accuracy as the in-sample one, 0.579.
 
-P14. **Output.** `argfallacy evaluate configs/evaluation.yaml` writes into `evaluations/<name>/`:
+P14. **Output.** `argfallacy evaluate CONFIG` writes into `evaluations/<name>/`, which git ignores, as it ignores `runs/`:
 * `manifest.json`: the runs used, the seed, the number of resamples, the folds, the reference model, the primary configurations and m, the commit of the code, the date.
+* `verdicts.csv`: one row per system and item, with the verdict, the confidence, the abstention and the explanation (spec 07, section 9). `a1_orders.csv` and `a3_choices.csv`: the order of A1 and the C of A3 chosen in each fold and scheme.
 * One CSV per table, numbers with four decimals.
 * `summary.html`, one self-contained page (no external resources, English labels) with every table: metrics between 0 and 1 on a sequential color scale, differences on a diverging scale centred on zero, the interval written under each value, and under each table a note that defines its columns. Tables, in order:
   1. run card;
@@ -103,8 +104,58 @@ P14. **Output.** `argfallacy evaluate configs/evaluation.yaml` writes into `eval
 
 The run report (`argfallacy report run`, spec 04) remains the diagnostic report of a single run; the evaluation report does not repeat its sections on cost and parser.
 
-## Changes from version 1
+## Implementation
 
+The protocol is implemented in two stages. The first gives what the decision of 26 October needs; the second completes the protocol in phase 4.
+
+### Stage one, for the decision of 26 October
+
+* What: the gold scheme condition of P1; the fine space of P2; P4; P10, that is, the main table in the gold condition, the deciding comparisons, what is reported beside them and the diagnostic comparisons; the exploratory comparisons of spec 07, section 8, with 95 per cent intervals (P5); P12; P13; from P14, the manifest, the CSV files of these tables, `verdicts.csv`, `a1_orders.csv`, `a3_choices.csv`, and `summary.md`, a markdown page with the tables of stage one, in place of `summary.html`.
+* Rows of the main table: A0 of each of the five entries; the primary configurations whose results exist; the zero-shot of each entry that has a zero-shot run (`summary.md` names the entries without one); the majority per scheme; the ceiling of each entry. Columns as in P10.
+* The evaluation configuration of full run v2, `configs/evaluation_v2.yaml`:
+
+  ```yaml
+  name: decision_v2
+  runs:
+    answers: 20261005T193017Z_full_v2
+    zeroshot: 20261009T221950Z_zeroshot_v1
+    judge: []
+  reference_model: qwen3_8_27b
+  seed: 20261019
+  resamples: 10000
+  folds: 5
+  m: 5
+  ```
+
+  `reference_model` is a guard: the command computes the reference model as P10 defines it, and stops if the two differ. `judge` lists the runs of `configs/judge_v1.yaml` and `configs/judge_v1_answers_only.yaml` once they exist. The command reads `summary.csv` and `manifest.json` of each run, never `raw.jsonl`; of the zero-shot and judge runs, stage one reads only the hard answer.
+* Folds (P13): three generators come from the seed, `numpy.random.SeedSequence(seed).spawn(3)`: the first for the folds, the second for the resamples of the 601 items, the third for the resamples of P4. The items of the test set, in order of `item_id`, are taken one gold scheme at a time, the schemes in alphabetical order; the items of each scheme are shuffled with the first generator and dealt in turn to folds 0, 1, 2, 3 and 4, continuing from one scheme to the next, so that the sizes of the folds differ by at most one item, and so do the sizes of each scheme in the folds.
+* Resamples (P12): one array of B by N indices into the items in order of `item_id`, drawn once, used for every system. A metric on a resample counts each item as many times as the resample draws it, with the definitions of spec 06 and P2; the macro averages run over the classes with support in the resample. A vectorized implementation of the metrics is expected; on the observed sample, each item once, it equals the canonical scorer.
+* Intervals: the percentiles of the B values with the default method of `numpy.percentile`: 2.5 and 97.5; for the deciding comparisons 100·α/2 and 100·(1 − α/2), with α = 0.05/m.
+* P4: the same tables on the 404 items without NLAS, with the verdicts of the aggregators as they are (no training again) and the resamples drawn for those items.
+
+Acceptance tests of stage one, on data written by hand, with no run:
+1. Folds: the same seed gives the same assignment; every item is in exactly one fold; the sizes of the folds, and of each scheme in the folds, differ by at most one.
+2. Resamples: drawn once, and every system is scored on the same indices.
+3. Metrics: on the observed sample, the vectorized accuracy, macro F1, balanced accuracy, and precision and recall of `good_argumentation` equal those of the canonical scorer within 1e-12, on predictions with `invalid` answers, missing verdicts and classes without support; on a resample with repeated items, they equal a computation made by hand.
+4. Deciding comparison: two identical systems give the interval [0, 0] and no improvement; a system right on every item, against a reference wrong on half of them, gives an improvement; the level of the interval follows m in the configuration (percentiles 0.5 and 99.5 with m = 5).
+5. The reference model is computed from the A0 of the entries, and the command stops when it differs from `reference_model`.
+6. Without NLAS, the frozen data give 404 items.
+7. `verdicts.csv` has one row per system and item, and its rows `A0:<entry>` equal the `diagram` rule of the run report.
+8. The manifest has the runs, the seed, the number of resamples, the fold of every item, the reference model, the primary configurations and m, the commit of the code and the date.
+
+### Stage two, in phase 4
+
+P1 with the scheme predicted by stage one: it first needs a change to the client, which today plans the predicted condition with one prediction per item for every entry and reads no prediction from a run, while P1 asks for the prediction of each entry; then the calls. Then P2 in the collapsed space, P3, P7, P8, P11, the F1 per class, the integrity table, the table of stage one and `summary.html`.
+
+## Changes
+
+From version 2 to version 2.1, on 19 October 2026, before any result of an aggregator:
+* The section on implementation: two stages, and the acceptance tests of the first. The spec had none, and the decision of 26 October needs only part of the protocol.
+* P12: the evaluation configuration is named after the run it evaluates, `configs/evaluation_v2.yaml`, and the section on implementation says how folds and resamples come from the single seed.
+* P14: `verdicts.csv`, `a1_orders.csv` and `a3_choices.csv` among the outputs; `evaluations/` ignored by git.
+* P10: spec 07 says which deciding comparisons answer the question of 26 October.
+
+From version 1 to version 2:
 * P10, deciding metric: accuracy became macro F1. On full run v2 the majority class per scheme has accuracy 0.579 and beats the A0 of every model (best 0.504), so under accuracy an aggregator that only learned the most frequent class of each scheme would pass the criterion without using the answers to the CQs. In macro F1 the majority scores 0.216 and the A0 of Qwen3.8 27B 0.350. Accuracy depends on the prevalence of the classes (Opitz 2024); macro F1 is the usual metric in fallacy classification (Pan et al. 2024). The change was made after seeing A0 and the zero-shot, before any aggregator, and it leaves the reference model unchanged. It is reported as a deviation from the criterion fixed in advance, with its reason (Lakens 2024).
 * P5 and P10: Bonferroni correction on the deciding comparisons, a primary configuration per aggregator, the zero-shot beside the deciding comparisons.
 * P13, new: out-of-fold estimation with folds shared by every aggregator.
