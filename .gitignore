@@ -2,6 +2,9 @@
 # The code regenerates them, and they are large. Anything in the thesis comes from argfallacy.eval.
 runs/
 
+# Evaluations: computed from the runs by `argfallacy evaluate`, never versioned.
+evaluations/
+
 # Raw data: kept outside the repository, and it belongs to the research group.
 # Under data/ only items.csv and annotations.csv go into git.
 *.xlsx

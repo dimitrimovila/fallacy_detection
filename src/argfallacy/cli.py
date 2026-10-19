@@ -1,6 +1,6 @@
 """Command line: ``argfallacy annotations update``, ``argfallacy run plan|execute CONFIG``,
 ``argfallacy parse RUN_ID``, ``argfallacy report run RUN_ID`` (and its earlier name
-``argfallacy pilot report RUN_ID``), ``argfallacy score prior``."""
+``argfallacy pilot report RUN_ID``), ``argfallacy score prior``, ``argfallacy evaluate CONFIG``."""
 
 from __future__ import annotations
 
@@ -94,6 +94,19 @@ def _cmd_parse(args: argparse.Namespace) -> int:
     written = parse_run(default_runs_dir() / args.run_id)
     for name, path in written.items():
         print(f"  {name}: {path}")
+    return 0
+
+
+def _cmd_evaluate(args: argparse.Namespace) -> int:
+    from .client.run import default_runs_dir
+    from .eval.evaluate import EvaluationConfig, evaluate
+    from .schemes import SchemeError
+
+    try:
+        out = evaluate(EvaluationConfig.load(args.config), runs_dir=default_runs_dir())
+    except SchemeError as error:
+        raise SystemExit(str(error)) from None
+    print(f"  {out / 'summary.md'}")
     return 0
 
 
@@ -200,6 +213,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     prior_cmd.add_argument("--out", default=None, help="default: runs/scores/prior/")
     prior_cmd.set_defaults(func=_cmd_score_prior)
+
+    evaluate_cmd = sub.add_parser(
+        "evaluate", help="the aggregators against A0, written into evaluations/<name>/"
+    )
+    evaluate_cmd.add_argument("config", help="a YAML evaluation configuration")
+    evaluate_cmd.set_defaults(func=_cmd_evaluate)
     return parser
 
 

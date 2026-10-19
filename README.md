@@ -188,9 +188,29 @@ with its blocks of questions in the order chosen on the other folds), A2 (the di
 with soft answers, the answers outside the arcs following the burden of proof of each critical
 question), A3 (a logistic regression per scheme on the soft answers, trained on the other
 folds) and A4 (the soft answers of several models averaged, then traversed as in A2). The
-five folds, stratified by scheme, come from one seed (`argfallacy.eval.assign_folds`). Not
-implemented yet: the aggregator A5, and the evaluation beyond the scorer, `argfallacy
-evaluate` (intervals, paired tests, the per-CQ and human agreement tables, abstention curves).
+five folds, stratified by scheme, come from one seed (`argfallacy.eval.assign_folds`).
+
+The evaluation compares them with A0 of the reference model:
+
+```bash
+argfallacy evaluate configs/evaluation_v2.yaml             # evaluations/decision_v2/
+```
+
+It reads `summary.csv` and `manifest.json` of the runs the configuration names, never
+`raw.jsonl`, so the runs must have been parsed by the current parser. It writes, under
+`evaluations/<name>/` (not versioned): `verdicts.csv` (one row per system and item, with the
+verdict, the confidence, the abstention and the explanation), `a1_orders.csv` and
+`a3_choices.csv` (the order of A1 and the C of A3 chosen in each fold and scheme), one CSV per
+table (the main table, the deciding, diagnostic and exploratory comparisons, and the main
+table and deciding comparisons without NLAS), `manifest.json` and `summary.md`. Every metric
+has a 95 per cent bootstrap interval, on 10,000 resamples of the items drawn once from the
+seed; the deciding comparisons, each primary configuration against A0 of the reference model
+in macro F1, have their interval at level 1 - 0.05/m. The command stops if the reference
+model, the entry whose A0 has the highest macro F1, is not the one the configuration names.
+
+Not implemented yet: the aggregator A5; the predicted scheme condition, the collapsed space,
+the breakdowns by scheme and corpus, the per-CQ and human agreement tables and the abstention
+curves of the evaluation.
 
 ## License
 
