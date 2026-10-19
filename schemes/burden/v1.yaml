@@ -1,0 +1,77 @@
+# The burden of proof of each critical question of schemes/v1/: where the
+# probabilistic traversal sends the mass of the answers outside the arcs
+# (cannot_be_determined and na).
+#   P, premise: the question asks whether a premise of the scheme holds. Unanswered,
+#      the argument cannot be accepted but no defect is shown: the mass leaves the
+#      diagram as abstention.
+#   E, exception: the question asks whether a circumstance defeats the argument.
+#      Unanswered, the circumstance is not shown: the mass takes the arc toward
+#      good_argumentation, or toward the generic fallacy where it cannot be reached.
+#   G, gate: both arcs can reach good_argumentation and the other arc opens
+#      follow-up questions. Unanswered, the mass goes to those questions.
+#   D, two fallacies: both arcs end on a fallacy, neither the generic one.
+#      Unanswered, the mass is split in two equal parts.
+
+ad_hominem:
+  CQ1: P
+  CQ2: E
+  CQ3: E
+  CQ4: E
+  CQ5: E
+  CQ6: E
+
+analogy:
+  CQ1: E
+  CQ1.1: E
+  CQ2: P
+  CQ3: P
+  CQ4: E
+
+cause_to_effect:
+  CQ1: P
+  CQ2: G
+  CQ2.1: E
+  CQ2.2: E
+  CQ3: E
+  CQ4: E
+
+correlation_to_cause:
+  CQ1: P
+  CQ2: G
+  CQ2.1: E
+  CQ2.2: E
+  CQ3: P
+  CQ4: E
+  CQ5: E
+
+example:
+  CQ1: P
+  CQ2: G
+  CQ2.1: E
+  CQ2.2: E
+  CQ2.3: E
+  CQ3: E
+
+expert_opinion:
+  CQ1: P
+  CQ2: E
+  CQ3: P
+  CQ3.1: D
+  CQ4: G
+  CQ4.1: P
+
+popular_opinion:
+  CQ1: E
+  CQ2: E
+  CQ3: P
+  CQ3.1: E
+  CQ3.2: E
+  CQ3.3: E
+
+slippery_slope:
+  CQ1: P
+  CQ2: P
+  CQ3: E
+  CQ4: G
+  CQ4.1: E
+  CQ5: P

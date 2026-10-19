@@ -34,9 +34,10 @@ data/             the data: items.csv and annotations.csv
 docs/             specifications per component, data log
 labels/           label dictionaries: fallacies and schemes
 prompts/          versioned prompt templates, JSON Schemas of the answers, answer definitions
-schemes/          the eight scheme diagrams as YAML, one folder per version: v1/ (1.1, the default), v2/ (2.0)
+schemes/          the eight scheme diagrams as YAML, one folder per version: v1/ (1.1, the default), v2/ (2.0);
+                  burden/, the burden of proof of each critical question, one table per version
 serving/          the models, how to serve them with vLLM, a smoke test, the cluster jobs
-src/argfallacy/   the Python package: schemes, labels, annotations, prompts, client, parse, eval, CLI
+src/argfallacy/   the Python package: schemes, labels, annotations, prompts, client, parse, aggregate, eval, CLI
 tests/            pytest suite, with a fake model backend (no network calls)
 runs/             created at run time: raw JSONL answers and manifests (not versioned)
 ```
@@ -182,7 +183,10 @@ gives no number of the thesis. `report.md` lists the rows that stand for no item
 labels that the diagram of their gold scheme does not produce, and the predictions that are
 no class of the label space.
 
-Not implemented yet: the aggregators, and the evaluation
+The aggregators A0 (the diagram), A2 (the diagram traversed with soft answers, the answers
+outside the arcs following the burden of proof of each critical question) and A4 (the soft
+answers of several models averaged, then traversed as in A2) are functions of
+`argfallacy.aggregate`. Not implemented yet: the aggregators A1, A3 and A5, and the evaluation
 beyond the scorer, `argfallacy evaluate` (intervals, paired tests, out-of-fold estimation,
 the per-CQ and human agreement tables, abstention curves).
 
