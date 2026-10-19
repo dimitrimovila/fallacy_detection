@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from ..eval.metrics import per_class
+
 TIE = 1e-12
-"""Two masses closer than this are equal."""
+"""Two masses, or two scores, closer than this are equal."""
+
+
+def macro_f1(gold: Sequence[str], predicted: Sequence[str | None]) -> float:
+    """Macro F1 as the canonical scorer counts it: the mean F1 over the classes with
+    support in ``gold``; no verdict is wrong."""
+    table = per_class(list(gold), list(predicted), sorted(set(gold)))
+    return float(table["f1"].mean()) if len(table) else 0.0
 
 
 @dataclass(frozen=True)

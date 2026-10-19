@@ -18,12 +18,13 @@ from .canonical import (
     score_schemes,
 )
 from .compat import compat_classwise, compat_metrics, compat_per_source
+from .folds import FOLDS, assign_folds, generators
 from .prior import PriorRun, load_test_set, prior_items, read_prior_runs, score_prior
 
 __all__ = [
     "Score", "score_fallacies", "score_schemes", "gold_scheme_mismatches",
     "predicted_fallacy_class", "predicted_scheme_class", "NO_VERDICT", "SCHEME_SPACE",
-    "majority_by",
+    "majority_by", "assign_folds", "generators", "FOLDS",
     "compat_metrics", "compat_classwise", "compat_per_source",
     "PriorRun", "read_prior_runs", "load_test_set", "prior_items", "score_prior",
 ]

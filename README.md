@@ -183,12 +183,14 @@ gives no number of the thesis. `report.md` lists the rows that stand for no item
 labels that the diagram of their gold scheme does not produce, and the predictions that are
 no class of the label space.
 
-The aggregators A0 (the diagram), A2 (the diagram traversed with soft answers, the answers
-outside the arcs following the burden of proof of each critical question) and A4 (the soft
-answers of several models averaged, then traversed as in A2) are functions of
-`argfallacy.aggregate`. Not implemented yet: the aggregators A1, A3 and A5, and the evaluation
-beyond the scorer, `argfallacy evaluate` (intervals, paired tests, out-of-fold estimation,
-the per-CQ and human agreement tables, abstention curves).
+The aggregators are functions of `argfallacy.aggregate`: A0 (the diagram), A1 (the diagram
+with its blocks of questions in the order chosen on the other folds), A2 (the diagram traversed
+with soft answers, the answers outside the arcs following the burden of proof of each critical
+question), A3 (a logistic regression per scheme on the soft answers, trained on the other
+folds) and A4 (the soft answers of several models averaged, then traversed as in A2). The
+five folds, stratified by scheme, come from one seed (`argfallacy.eval.assign_folds`). Not
+implemented yet: the aggregator A5, and the evaluation beyond the scorer, `argfallacy
+evaluate` (intervals, paired tests, the per-CQ and human agreement tables, abstention curves).
 
 ## License
 

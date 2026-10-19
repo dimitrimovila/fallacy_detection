@@ -14,8 +14,18 @@ from .burden import (
     load_burden,
     routes,
 )
+from .checklist import C_GRID, a3_out_of_fold, choose_c, features
 from .diagram import a0, good_terminal, pass_arc
-from .interface import Aggregation, decide, top_terminal
+from .interface import Aggregation, decide, macro_f1, top_terminal
+from .order import (
+    Layout,
+    Order,
+    a1_out_of_fold,
+    choose_order,
+    derive_blocks,
+    original_order,
+    rebuild,
+)
 from .soft import (
     LOGPROB,
     OUTSIDE,
@@ -32,8 +42,10 @@ from .soft import (
 )
 
 __all__ = [
-    "Aggregation", "decide", "top_terminal",
+    "Aggregation", "decide", "top_terminal", "macro_f1",
     "a0", "a2", "a4", "pass_arc", "good_terminal",
+    "Layout", "Order", "derive_blocks", "original_order", "rebuild", "choose_order",
+    "a1_out_of_fold", "a3_out_of_fold", "choose_c", "features", "C_GRID",
     "load_burden", "routes", "BURDEN_DIR", "TYPES", "POLICIES", "ABSTAIN", "SPLIT",
     "answer_masses", "mean_masses", "traverse_soft", "source_of", "sources_of",
     "SOURCES", "LOGPROB", "SAMPLE", "VERBAL", "OUTSIDE",
