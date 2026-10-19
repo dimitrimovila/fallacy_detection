@@ -168,8 +168,11 @@ one of them, so every launch splits the model over the two.
    conda activate argfallacy
    python -m pip install -e .
    ```
-   The names of the two environments are written in `serving/slurm/common.sh`; keeping
-   them apart means the dependencies of the client cannot move those of vLLM.
+   Keeping the two environments apart means the dependencies of the client cannot move
+   those of vLLM. The jobs find them through three settings, read from the environment or
+   from the `.env` (point 4), with the values of this cluster as defaults: `CONDA_ROOT`
+   (`/conf/shared-software/anaconda`, the folder that `conda info --base` prints),
+   `SERVER_ENV` (`vllm-0.30.0`) and `CLIENT_ENV` (`argfallacy`).
 4. Write the `.env` of the cluster, at the root of the repository: `HF_HOME`, a folder
    under `/extra` for the weights, `TIKTOKEN_ENCODINGS_BASE`, the folder of the
    vocabularies of gpt oss (point 6), and `LLM_API_KEY`, any string. `LLM_BASE_URL` is
@@ -179,6 +182,12 @@ one of them, so every launch splits the model over the two.
    TIKTOKEN_ENCODINGS_BASE=/extra/<user>/tiktoken_encodings
    LLM_API_KEY=any-string
    ```
+   On another cluster, or with other names for the environments, the same file also takes
+   `CONDA_ROOT`, `SERVER_ENV` and `CLIENT_ENV` (point 3), and `HEALTH_TIMEOUT`, the
+   seconds a job waits for a server to answer before it stops (1800 by default). A launch
+   reads 50 to 65 GB of weights: at the 110 MB/s of `labdasan0` that takes about ten
+   minutes, at a few MB/s some hours, so where the weights are read slowly the value is
+   raised, or the node is avoided.
    The weights go under `/extra`, not `/storage`: `/storage` is shared by the whole
    department and was nearly full (98 per cent) when the weights of the pilot were
    downloaded, while `/extra` had 23 TB free. `labdasan0` mounts the same `/extra`.
@@ -251,6 +260,19 @@ sbatch serving/slurm/pilot.sbatch configs/pilot2.yaml $RUN_ID gpt_oss_120b
 
 The job has ten hours. One that runs out of time is resubmitted with the same arguments,
 and resumes from the calls still missing.
+
+The `#SBATCH` lines of the two jobs are those of `labdasan0`: partition `owner1`, two GPUs,
+8 CPUs, 64 GB, ten hours for `pilot.sbatch` and one for `smoke.sbatch`. On another node or
+cluster they are overridden on the command line, which wins over the lines of the script,
+without editing it; `--tensor-parallel-size` follows the number of GPUs the job gets. Every
+model of `serving/models.yaml` needs one GPU of at least 96 GB or two of 48 GB on the same
+node. For example, on one 96 GB GPU of the partition `testing`, where a job takes at most
+4 CPUs:
+
+```
+sbatch --partition=testing --nodelist=vgpu11 --gres=gpu:1 --cpus-per-task=4 --time=3-00:00:00 \
+    serving/slurm/pilot.sbatch configs/full_v3.yaml $RUN_ID
+```
 
 The pilot job runs the smoke test on every entry before its calls, so no separate smoke
 test is needed first: a failed one stops the job before any call of that entry, the

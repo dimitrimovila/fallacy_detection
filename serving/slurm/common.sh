@@ -2,10 +2,26 @@
 # from the root of the repository. Sourcing it prepares the job (steps 1 to 4);
 # start_server and stop_server are step 5, one entry of serving/models.yaml at a time.
 
-SERVER_ENV=vllm-0.30.0   # vLLM, as in step 1 of serving/README.md
-CLIENT_ENV=argfallacy    # this repository, installed with `pip install -e .`
-CONDA_ROOT=/conf/shared-software/anaconda
-HEALTH_TIMEOUT=1800      # seconds for a server to load its weights and answer /health
+# The settings below depend on the cluster. Each is read from the environment, then
+# from the .env at the root of the repository, and falls back to the value written here,
+# that of the cluster of the Department of Mathematics. They are read with plain shell
+# because conda, and with it the client that reads the rest of the .env, is not active yet.
+env_setting() {
+    local value
+    value=$(sed -n "s/^[[:space:]]*$1=//p" .env 2> /dev/null | tail -n 1 | tr -d '\r' || true)
+    value=${value%\"}; value=${value#\"}; value=${value%\'}; value=${value#\'}
+    printf '%s' "${value:-$2}"
+}
+SERVER_ENV=${SERVER_ENV:-$(env_setting SERVER_ENV vllm-0.30.0)}   # vLLM, step 1 of serving/README.md
+CLIENT_ENV=${CLIENT_ENV:-$(env_setting CLIENT_ENV argfallacy)}    # this repository, `pip install -e .`
+CONDA_ROOT=${CONDA_ROOT:-$(env_setting CONDA_ROOT /conf/shared-software/anaconda)}
+# seconds for a server to load its weights and answer /health; raise it where the weights
+# are read slowly (a launch reads 50 to 65 GB)
+HEALTH_TIMEOUT=${HEALTH_TIMEOUT:-$(env_setting HEALTH_TIMEOUT 1800)}
+if [[ ! $HEALTH_TIMEOUT =~ ^[0-9]+$ ]]; then
+    echo "HEALTH_TIMEOUT must be a number of seconds, found '$HEALTH_TIMEOUT'" >&2
+    exit 1
+fi
 RELEASE_TIMEOUT=120      # seconds for a stopped server to give the GPUs back
 
 # conda's activation scripts are not written for `set -u`
@@ -17,6 +33,11 @@ use_env() {
 
 # 1. conda, and the settings of the .env with the rules of the client: a variable
 #    already in the environment wins over the file
+if [[ ! -f "$CONDA_ROOT/etc/profile.d/conda.sh" ]]; then
+    echo "no conda at CONDA_ROOT=$CONDA_ROOT: set CONDA_ROOT in the .env to the folder that" \
+         "\`conda info --base\` prints on this cluster" >&2
+    exit 1
+fi
 set +u
 source "$CONDA_ROOT/etc/profile.d/conda.sh"
 set -u
@@ -80,7 +101,7 @@ start_server() {
             exit 1
         fi
         if [[ $waited -ge $HEALTH_TIMEOUT ]]; then
-            echo "the server of ${entry} did not answer /health in ${HEALTH_TIMEOUT} s" >&2
+            echo "the server of ${entry} did not answer /health in ${HEALTH_TIMEOUT} s (HEALTH_TIMEOUT in the .env)" >&2
             tail -n 40 "$log" >&2
             exit 1
         fi
