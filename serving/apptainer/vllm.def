@@ -1,20 +1,25 @@
-# The image of the jobs on a cluster without conda: the official image of vLLM 0.30.0,
-# with the libraries of the client added. The client itself is not installed: the jobs
-# import it from src/ of the repository (serving/slurm/common.sh, CONTAINER in the .env).
+# The image of the jobs on a cluster without conda: Python 3.12 with vLLM 0.30.0 and its
+# PyTorch from PyPI (the build for CUDA 13, which needs a driver of version 580 or later),
+# and the libraries of the client. The client itself is not installed: the jobs import it
+# from src/ of the repository (serving/slurm/common.sh, CONTAINER in the .env).
+#
+# The base is the official image of Python, small enough to download where the large
+# layers of the image of vLLM are cut off (UPSCALE cluster, 19 October 2026), and it
+# carries the C compiler that Triton uses when vLLM compiles its kernels.
 #
 # Built on a compute node, not on the front-end, from the root of the repository, with
-# the temporary files and the cache of Apptainer on the project storage (the image is
-# about 9 GB):
+# the temporary files and the cache of Apptainer on the project storage:
 #
 #   mkdir -p $IMAGES/tmp $IMAGES/cache
 #   export APPTAINER_TMPDIR=$IMAGES/tmp APPTAINER_CACHEDIR=$IMAGES/cache
 #   apptainer build --ignore-fakeroot-command $IMAGES/vllm-0.30.0.sif serving/apptainer/vllm.def
 
 Bootstrap: docker
-From: vllm/vllm-openai:v0.30.0
+From: python:3.12-bookworm
 
 %post
-    # the packages of vLLM stay as they are: pip adds only what is missing
+    python3 -m pip install --no-cache-dir "vllm==0.30.0"
+    # pip adds only what is missing, so the packages of vLLM stay as they are
     python3 -m pip install --no-cache-dir "pyyaml>=6.0" "pandas>=2.0" "openai>=1.30" \
         "openpyxl>=3.1" "jsonschema>=4.0"
-    python3 -c 'import vllm, torch; print(f"vLLM {vllm.__version__}, PyTorch {torch.__version__}")'
+    python3 -c 'import vllm, torch; print(f"vLLM {vllm.__version__}, PyTorch {torch.__version__} built for CUDA {torch.version.cuda}")'
