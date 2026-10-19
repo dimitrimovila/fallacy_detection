@@ -23,6 +23,9 @@ if [[ ! $HEALTH_TIMEOUT =~ ^[0-9]+$ ]]; then
     exit 1
 fi
 RELEASE_TIMEOUT=120      # seconds for a stopped server to give the GPUs back
+# on a cluster without conda: the Apptainer image of serving/apptainer/vllm.def, which
+# holds vLLM and the libraries of the client; empty, the two conda environments above
+CONTAINER=${CONTAINER:-$(env_setting CONTAINER "")}
 
 # conda's activation scripts are not written for `set -u`
 use_env() {
@@ -31,17 +34,43 @@ use_env() {
     set -u
 }
 
-# 1. conda, and the settings of the .env with the rules of the client: a variable
-#    already in the environment wins over the file
-if [[ ! -f "$CONDA_ROOT/etc/profile.d/conda.sh" ]]; then
-    echo "no conda at CONDA_ROOT=$CONDA_ROOT: set CONDA_ROOT in the .env to the folder that" \
-         "\`conda info --base\` prints on this cluster" >&2
-    exit 1
+# 1. the software, conda or the image, and the settings of the .env with the rules of the
+#    client: a variable already in the environment wins over the file
+if [[ -n "$CONTAINER" ]]; then
+    if [[ ! -f "$CONTAINER" ]]; then
+        echo "no image at CONTAINER=$CONTAINER: build it as serving/apptainer/vllm.def says" >&2
+        exit 1
+    fi
+    # the command that runs inside the image: it sees the GPUs, the repository (the
+    # working directory) and, once the .env is read, the folder of the weights; the client
+    # is imported from src/, so the image needs no installation of it
+    image_command() {
+        IMAGE_CMD=(apptainer exec --nv --bind "$PWD")
+        if [[ -n "${HF_HOME:-}" ]]; then IMAGE_CMD+=(--bind "$HF_HOME"); fi
+        if [[ -n "${TIKTOKEN_ENCODINGS_BASE:-}" ]]; then
+            IMAGE_CMD+=(--bind "$TIKTOKEN_ENCODINGS_BASE")
+        fi
+        IMAGE_CMD+=(--env "PYTHONPATH=$PWD/src" "$CONTAINER")
+    }
+    in_image() {
+        image_command
+        "${IMAGE_CMD[@]}" "$@"
+    }
+    # the server and the client share the image, so there is no environment to switch
+    use_env() { :; }
+    python() { in_image python3 "$@"; }
+    argfallacy() { in_image python3 -m argfallacy.cli "$@"; }
+else
+    if [[ ! -f "$CONDA_ROOT/etc/profile.d/conda.sh" ]]; then
+        echo "no conda at CONDA_ROOT=$CONDA_ROOT: set CONDA_ROOT in the .env to the folder that" \
+             "\`conda info --base\` prints on this cluster, or CONTAINER to an Apptainer image" >&2
+        exit 1
+    fi
+    set +u
+    source "$CONDA_ROOT/etc/profile.d/conda.sh"
+    set -u
+    use_env "$CLIENT_ENV"
 fi
-set +u
-source "$CONDA_ROOT/etc/profile.d/conda.sh"
-set -u
-use_env "$CLIENT_ENV"
 # (assigned first: a failure inside `eval "$(...)"` would not stop the job)
 settings=$(python -c 'import shlex; from argfallacy.env import load_env; print("\n".join(f"export {k}={shlex.quote(v)}" for k, v in load_env().items()))')
 eval "$settings"
@@ -86,8 +115,14 @@ start_server() {
     log="runs/slurm/${SLURM_JOB_ID}-${entry}-vllm.log"
     echo "== ${entry}: vllm serve ${line} (log: ${log})"
     use_env "$SERVER_ENV"
+    # setsid runs a program, not a shell function, so the command of the image is spelled out
+    local -a launch=(vllm)
+    if [[ -n "$CONTAINER" ]]; then
+        image_command
+        launch=("${IMAGE_CMD[@]}" vllm)
+    fi
     # its own process group, so that stopping it reaches the workers too
-    setsid vllm serve "${serve[@]}" --host 127.0.0.1 --port "$PORT" \
+    setsid "${launch[@]}" serve "${serve[@]}" --host 127.0.0.1 --port "$PORT" \
         --tensor-parallel-size "$NGPU" --dtype auto > "$log" 2>&1 &
     SERVER_PID=$!
     use_env "$CLIENT_ENV"

@@ -233,6 +233,20 @@ one of them, so every launch splits the model over the two.
    ```
    and the folder goes into the `.env` as `TIKTOKEN_ENCODINGS_BASE` (point 4).
 
+**On a cluster without conda**, such as the UPSCALE cluster of the University, the server
+and the client run in one Apptainer image instead of the two environments of points 2
+and 3. The image is built once, on a compute node, as `serving/apptainer/vllm.def`
+describes, and the `.env` names it:
+```
+CONTAINER=/path/to/vllm-0.30.0.sif
+```
+With `CONTAINER` set, the jobs run vLLM, the smoke test and the client with
+`apptainer exec --nv`, which sees the repository, `HF_HOME` and `TIKTOKEN_ENCODINGS_BASE`;
+`CONDA_ROOT`, `SERVER_ENV` and `CLIENT_ENV` are not read. The weights are downloaded
+with the `hf` of the image (`apptainer exec <image> hf download ...`), and the lines of
+`#SBATCH` that name partition, account and GPUs are overridden on the command line of
+`sbatch`.
+
 **Running.** From the root of the repository on the front-end, in the environment
 `argfallacy`:
 
