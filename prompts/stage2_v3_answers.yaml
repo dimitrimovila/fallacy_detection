@@ -71,7 +71,7 @@ per_cq:
     CQ4:
       "yes": >-
         the text attributes B entirely to A, explaining B by A alone, while B evidently
-        also depends on other important causes
+        also depends on other causes
       "no": >-
         the text presents A as a cause that contributes to B or tends to produce it,
         without claiming that A is the whole explanation of B
@@ -87,7 +87,7 @@ per_cq:
     CQ6:
       "yes": >-
         the text attributes B entirely to A, explaining B by A alone, while B evidently
-        also depends on other important causes
+        also depends on other causes
       "no": >-
         the text presents A as a cause that contributes to B or tends to produce it,
         without claiming that A is the whole explanation of B

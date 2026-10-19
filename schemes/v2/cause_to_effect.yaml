@@ -32,9 +32,9 @@ critical_questions:
   - id: CQ4
     text: >-
       Does the text present A as the only cause of B, while B clearly also depends on
-      other important causes?
+      other causes?
   - id: CQ5
-    text: Is it plausible that A leads to B, whatever one thinks of A or B?
+    text: Is it plausible that A leads to B?
   - id: CQ5.1
     text: Is it true that A occurs, or can occur, in the case at hand?
 

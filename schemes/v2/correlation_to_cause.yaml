@@ -35,7 +35,7 @@ critical_questions:
   - id: CQ6
     text: >-
       Does the text present A as the only cause of B, while B clearly also depends on
-      other important causes?
+      other causes?
 
 graph:
   start: CQ1
