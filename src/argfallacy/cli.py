@@ -42,11 +42,15 @@ def _entries(config, names: list[str] | None) -> list[str]:
 
 def _cmd_run_plan(args: argparse.Namespace) -> int:
     from .client import ResponseCache, RunConfig, load_items, plan, select_items, summarise_plan
+    from .schemes import SchemeError
 
     config = RunConfig.load(args.config)
     entries = _entries(config, args.model)
     items = select_items(config, load_items(args.items))
-    calls = plan(config, items, only=entries)
+    try:
+        calls = plan(config, items, only=entries)
+    except SchemeError as error:
+        raise SystemExit(str(error)) from None
     with ResponseCache() as cache:
         report = summarise_plan(calls, cache)
     print(f"configuration  : {config.name}")
@@ -67,11 +71,15 @@ def _cmd_run_plan(args: argparse.Namespace) -> int:
 
 def _cmd_run_execute(args: argparse.Namespace) -> int:
     from .client import RunConfig, execute, load_items, select_items
+    from .schemes import SchemeError
 
     config = RunConfig.load(args.config)
     entries = _entries(config, args.model)
     items = select_items(config, load_items(args.items))
-    manifest = execute(config, items, run_id=args.run_id, only=entries)
+    try:
+        manifest = execute(config, items, run_id=args.run_id, only=entries)
+    except SchemeError as error:
+        raise SystemExit(str(error)) from None
     print(f"run_id          : {manifest['run_id']}")
     print(f"calls           : planned {manifest['calls_planned']}, "
           f"executed {manifest['calls_executed']}, "

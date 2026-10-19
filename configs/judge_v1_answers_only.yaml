@@ -1,0 +1,23 @@
+# A5 without the justifications: the same as judge_v1.yaml, with only the hard answers of
+# qwen3_8_27b to the critical questions in the prompt. An exploratory configuration.
+# `argfallacy run plan configs/judge_v1_answers_only.yaml` counts the calls.
+
+name: judge_v1_answers_only
+
+items:
+  # the 601 items of the test set: every item with a gold scheme, no sample
+  exclude_none_scheme: true
+
+stages: [judge]
+scheme_condition: gold
+models: [qwen3_8_27b]
+prompt_version: v1
+
+judge:
+  answers_from: 20261005T193017Z_full_v2
+  answers_model: qwen3_8_27b
+  justifications: false
+
+generation:
+  # for the entries without a max_tokens of their own
+  max_tokens: 512

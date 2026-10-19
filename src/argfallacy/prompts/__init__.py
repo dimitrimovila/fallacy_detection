@@ -7,6 +7,8 @@ code: changing a prompt means changing a versioned file.
 from .render import (
     CANNOT_BE_DETERMINED,
     DEFAULT_VERSION,
+    JUDGE,
+    JUDGE_VERSION,
     NOT_APPLICABLE,
     PROMPTS_DIR,
     SCHEMAS_DIR,
@@ -23,6 +25,7 @@ from .render import (
     load_json_schema,
     load_template,
     prompt_version,
+    render_judge,
     render_stage1,
     render_stage2,
     render_zeroshot,
@@ -34,6 +37,7 @@ __all__ = [
     "PROMPTS_DIR", "SCHEMAS_DIR", "STAGE1", "STAGE2", "ZEROSHOT", "DEFAULT_VERSION",
     "ZEROSHOT_VERSION", "CANNOT_BE_DETERMINED", "NOT_APPLICABLE", "RenderedPrompt", "Verdict",
     "render_stage1", "render_stage2", "render_zeroshot", "verdicts", "verdict_schema",
+    "JUDGE", "JUDGE_VERSION", "render_judge",
     "answer_options", "answer_schema",
     "load_template", "load_json_schema", "load_answer_meanings", "prompt_version", "fill",
 ]

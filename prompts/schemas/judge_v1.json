@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "judge_v1",
+  "description": "LLM judge: the verdict chosen with the answers to the critical questions in view. The enum of `answer` is rewritten per scheme with the names the prompt shows for the terminals of its diagram (labels/fallacies.yaml); the value here is a placeholder.",
+  "type": "object",
+  "properties": {
+    "answer": {
+      "type": "string",
+      "enum": [
+        "Good Argumentation"
+      ]
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "justification": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "answer",
+    "confidence",
+    "justification"
+  ],
+  "additionalProperties": false
+}

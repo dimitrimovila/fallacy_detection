@@ -34,8 +34,11 @@ STAGE1 = "stage1"
 STAGE2 = "stage2"
 ZEROSHOT = "zeroshot"
 """The verdict asked directly, from the text and the gold scheme, without the CQs."""
+JUDGE = "judge"
+"""The zero-shot prompt plus the answers of a run to the CQs of the scheme: an LLM judge."""
 DEFAULT_VERSION = "v2"
 ZEROSHOT_VERSION = "v1"
+JUDGE_VERSION = "v1"
 
 CANNOT_BE_DETERMINED = "cannot_be_determined"
 """The third option, a choice of this project: the diagrams and the prompts described in
@@ -344,10 +347,11 @@ def verdicts(scheme: Scheme, vocabulary: Mapping[str, Any] | None = None) -> tup
 
 def verdict_schema(
     scheme: Scheme, version: str = ZEROSHOT_VERSION,
-    vocabulary: Mapping[str, Any] | None = None,
+    vocabulary: Mapping[str, Any] | None = None, stage: str = ZEROSHOT,
 ) -> dict[str, Any]:
-    """The zero-shot JSON schema with ``answer`` narrowed to the verdicts of this scheme."""
-    schema = json.loads(json.dumps(load_json_schema(ZEROSHOT, version)))
+    """The JSON schema of a verdict stage with ``answer`` narrowed to the verdicts of this
+    scheme."""
+    schema = json.loads(json.dumps(load_json_schema(stage, version)))
     schema["properties"]["answer"]["enum"] = [v.shown for v in verdicts(scheme, vocabulary)]
     schema["title"] = f"{schema['title']}_{scheme.scheme_id}"
     return schema
@@ -389,4 +393,69 @@ def render_zeroshot(
         cq_id=None,
         answer_options=tuple(v.shown for v in listed),
         json_schema=verdict_schema(scheme, version, vocabulary),
+    )
+
+
+def _answers_block(scheme: Scheme, answers: Mapping[str, tuple[str | None, str | None]],
+                   justifications: bool) -> str:
+    """Every CQ of the scheme, in the order of the diagram, word for word, with its answer.
+
+    The answer is the hard answer as its canonical value, followed by its
+    justification unless ``justifications`` is false; an answer the question does
+    not admit is written as none usable.
+    """
+    entries = []
+    for cq_id in scheme.cq_order:
+        if cq_id not in answers:
+            raise SchemeError(f"{scheme.scheme_id}: no answer to {cq_id}")
+        answer, justification = answers[cq_id]
+        if answer not in answer_options(scheme, cq_id):
+            line = "Answer: none usable."
+        else:
+            line = f"Answer: `{answer}`."
+            if justifications and justification:
+                line += f" {' '.join(str(justification).split())}"
+        entries.append(f"**{cq_id}.** {scheme.cqs[cq_id].text}\n{line}")
+    return "\n\n".join(entries)
+
+
+def render_judge(
+    item: Mapping[str, Any],
+    scheme: Scheme,
+    answers: Mapping[str, tuple[str | None, str | None]],
+    justifications: bool = True,
+    version: str = JUDGE_VERSION,
+    vocabulary: Mapping[str, Any] | None = None,
+) -> RenderedPrompt:
+    """The judge prompt: the zero-shot prompt with the answers to the CQs of the scheme.
+
+    ``answers`` maps every CQ of the scheme to its hard answer and justification.
+    The judge does not see the arcs of the diagram: it combines the answers freely.
+    """
+    text = str(item.get("text") or "").strip()
+    if not text:
+        raise SchemeError(f"item {item.get('item_id')!r} has no text")
+
+    listed = verdicts(scheme, vocabulary)
+    filled = _fill_versioned(
+        load_template(JUDGE, version),
+        {
+            "scheme_name": scheme.name,
+            "schema": scheme.schema,
+            "variables": _variables_block(scheme),
+            "text": text,
+            "answers": _answers_block(scheme, answers, justifications),
+            "verdicts": "\n".join(f"* `{v.shown}`: {v.definition}" for v in listed),
+        },
+        prompt_version(JUDGE, version),
+        where=f"{JUDGE}_{version}.md",
+    )
+    return RenderedPrompt(
+        text=filled,
+        stage=JUDGE,
+        prompt_version=prompt_version(JUDGE, version),
+        scheme_id=scheme.scheme_id,
+        cq_id=None,
+        answer_options=tuple(v.shown for v in listed),
+        json_schema=verdict_schema(scheme, version, vocabulary, stage=JUDGE),
     )

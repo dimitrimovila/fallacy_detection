@@ -108,3 +108,13 @@ Names and definitions come from `labels/fallacies.yaml` (version 1.7, rule 3 of 
 The parser takes the name shown back to the terminal id through the same file, and records the probability of the label chosen (spec 04, section 4.2).
 
 Acceptance tests: rendering is deterministic; the admitted verdicts, in the JSON Schema and in the prompt, are the terminals of the scheme, in the order above; ad hominem has no Good Argumentation; every name shown is read back as its terminal id, and a name not shown (the full `label` of an ad hominem variant) is `invalid`.
+
+## 9. Judge, `judge_v1.md`
+
+The prompt of A5, the LLM judge (spec 07, section 7): `zeroshot_v1.md` with two changes, so that the only difference from the zero-shot is the answers. Version `judge_v1`, rendered by `render_judge(item, scheme, answers, justifications)`.
+1. Between the text and the verdicts, the section "Answers to the critical questions": a paragraph saying that each critical question was answered about the text, one question at a time, without seeing the verdicts, that the answers may contain mistakes, and what `cannot_be_determined` and `na` mean; then every CQ of the scheme, in the order of the YAML, word for word, as ``**CQ1.** <the question>``, followed on the next line by ``Answer: `<the hard answer>`. <its justification>``, the hard answer of the source entry as its canonical value. An answer the question does not admit (`invalid`) is written "Answer: none usable.". With `justifications: false` every line stops after the answer.
+2. In "What to do", before the sentence that asks for the single verdict: "Weigh the answers to the critical questions against the text: they are evidence, not a verdict, and you may disagree with any of them."
+
+The judge does not see the arcs of the diagram: it combines the answers freely. The JSON Schema `schemas/judge_v1.json` is that of `zeroshot_v1` with its own title, and `answer` is narrowed per scheme in the same way. The parser reads a judge line as a zero-shot line.
+
+Acceptance tests: rendering is deterministic; the prompt contains every CQ of the scheme word for word and its answer, and no justification with `justifications: false`; without the section and the sentence it is the zero-shot prompt of the same item.

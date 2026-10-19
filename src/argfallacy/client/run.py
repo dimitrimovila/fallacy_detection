@@ -31,10 +31,12 @@ import yaml
 from ..paths import REPO_ROOT, SCHEMES_DIR, SCHEMES_ROOT
 from ..prompts import (
     DEFAULT_VERSION,
+    JUDGE,
     STAGE1,
     STAGE2,
     ZEROSHOT,
     prompt_version,
+    render_judge,
     render_stage1,
     render_stage2,
     render_zeroshot,
@@ -58,6 +60,7 @@ SCHEMES_FOLDERS = ("v1", "v2")
 V2_SCHEMES, V3_PROMPTS = "v2", "v3"
 """The definitions of ``stage2_v3_answers.yaml`` are written on the CQ ids of version 2.0,
 so the two go together and with nothing else."""
+JUDGE_KEYS = ("answers_from", "answers_model", "justifications")
 
 
 # --------------------------------------------------------------------- models
@@ -103,9 +106,16 @@ class RunConfig:
     generation: dict[str, Any] = field(default_factory=dict)
     predictions_from: str | None = None
     schemes: str = SCHEMES_DIR.name
+    judge: dict[str, Any] = field(default_factory=dict)
+    """For the stage ``judge``: ``answers_from``, the run whose ``summary.csv`` gives the
+    answers; ``answers_model``, the entry whose answers are shown; ``justifications``."""
     raw: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        if JUDGE in self.stages:
+            missing = [key for key in JUDGE_KEYS if key not in (self.judge or {})]
+            if missing:
+                raise SchemeError(f"{self.name}: the stage judge needs {missing} under `judge`")
         if self.schemes not in SCHEMES_FOLDERS:
             raise SchemeError(f"{self.name}: schemes must be one of {list(SCHEMES_FOLDERS)}, "
                               f"not {self.schemes!r}")
@@ -225,6 +235,7 @@ def plan(
     schemes: Mapping[str, Any] | None = None,
     predictions: Mapping[str, str] | None = None,
     only: Sequence[str] | None = None,
+    runs_dir: str | Path | None = None,
 ) -> list[PlannedCall]:
     """Every call the configuration asks for, in the order they will be made.
 
@@ -237,13 +248,17 @@ def plan(
     knows it.
 
     The zero-shot stage is one prompt per item under the scheme stage two would
-    use, asking for the verdict directly.
+    use, asking for the verdict directly.  The judge stage is the same prompt with
+    the answers of ``judge.answers_model`` in the run ``judge.answers_from``, read
+    from its ``summary.csv`` under ``runs_dir``.
     """
     entries = select_models(config, only)
     models = models if models is not None else load_models()
     schemes = schemes if schemes is not None else load_all(config.schemes_dir)
     items = list(items)
     calls: list[PlannedCall] = []
+    judged = (judge_answers(config, runs_dir if runs_dir is not None else default_runs_dir())
+              if JUDGE in config.stages else {})
 
     for model_name in entries:
         spec = model_spec(model_name, models)
@@ -276,7 +291,7 @@ def plan(
                         max_tokens=max_tokens, logprobs=logprobs,
                         **identity,
                     ))
-            if STAGE2 not in config.stages and ZEROSHOT not in config.stages:
+            if not {STAGE2, ZEROSHOT, JUDGE} & set(config.stages):
                 continue
 
             scheme_id = _scheme_for(item, config, predictions)
@@ -289,6 +304,25 @@ def plan(
                     calls.append(PlannedCall(
                         model=model_name, model_id=spec["model_id"], item_id=item_id,
                         stage=ZEROSHOT, scheme=scheme_id, cq_id=None, sample_index=sample,
+                        prompt=rendered.text, prompt_version=rendered.prompt_version,
+                        json_schema=rendered.json_schema,
+                        max_tokens=max_tokens, logprobs=logprobs,
+                        **identity,
+                    ))
+            if JUDGE in config.stages:
+                given = judged.get((item_id, scheme_id), {})
+                if missing := [cq for cq in scheme.cq_order if cq not in given]:
+                    raise SchemeError(
+                        f"the summary.csv of {config.judge['answers_from']} has no answer of "
+                        f"{config.judge['answers_model']} for item {item_id}, "
+                        f"{scheme_id} {missing[0]}")
+                rendered = render_judge(item, scheme, given,
+                                        bool(config.judge["justifications"]),
+                                        config.prompt_version)
+                for sample in range(samples):
+                    calls.append(PlannedCall(
+                        model=model_name, model_id=spec["model_id"], item_id=item_id,
+                        stage=JUDGE, scheme=scheme_id, cq_id=None, sample_index=sample,
                         prompt=rendered.text, prompt_version=rendered.prompt_version,
                         json_schema=rendered.json_schema,
                         max_tokens=max_tokens, logprobs=logprobs,
@@ -308,6 +342,36 @@ def plan(
                         **identity,
                     ))
     return calls
+
+
+def judge_answers(
+    config: RunConfig, runs_dir: str | Path
+) -> dict[tuple[str, str], dict[str, tuple[str, str | None]]]:
+    """(item, scheme) -> CQ -> (hard answer, justification) of the entry the judge reads.
+
+    From the ``summary.csv`` of ``judge.answers_from``, stage two, ``gold`` condition,
+    which the parser must have written with the justifications.
+    """
+    import pandas as pd
+
+    source, model = config.judge["answers_from"], config.judge["answers_model"]
+    path = Path(runs_dir) / source / "summary.csv"
+    if not path.is_file():
+        raise SchemeError(f"the stage judge reads the answers of {source}: no {path}; parse "
+                          f"that run first (argfallacy parse {source})")
+    frame = pd.read_csv(path)
+    if "justification" not in frame.columns:
+        raise SchemeError(f"the summary.csv of {source} has no justification: it was written "
+                          f"by an earlier parser; parse the run again (argfallacy parse "
+                          f"{source})")
+    rows = frame[(frame["stage"] == STAGE2) & (frame["scheme_condition"] == GOLD)
+                 & (frame["model"] == model)]
+    out: dict[tuple[str, str], dict[str, tuple[str, str | None]]] = {}
+    for row in rows.itertuples(index=False):
+        justification = None if pd.isna(row.justification) else str(row.justification)
+        out.setdefault((str(row.item_id), str(row.scheme)), {})[str(row.cq_id)] = (
+            str(row.answer), justification)
+    return out
 
 
 def _scheme_for(
@@ -595,7 +659,7 @@ def execute(
     models = models if models is not None else load_models()
     schemes = schemes if schemes is not None else load_all(config.schemes_dir)
 
-    calls = plan(config, items, models, schemes, predictions)
+    calls = plan(config, items, models, schemes, predictions, runs_dir=runs_dir)
     run_id = run_id or make_run_id(config.name)
     run_dir = Path(runs_dir) / run_id
     run_dir.mkdir(parents=True, exist_ok=True)

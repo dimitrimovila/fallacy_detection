@@ -282,6 +282,27 @@ def test_the_manifest_of_the_evaluation(hand_runs):
     assert set(manifest["primary_configurations"]) == {"A1", "A2", "A3", "A4"}
 
 
+def test_a_judge_run_enters_as_a5(hand_runs):
+    runs, items = hand_runs["runs"], pd.read_csv(hand_runs["items"])
+    test = items[items["in_test_set"]]
+    verdicts = pd.DataFrame({"item_id": test["item_id"], "stage": "judge",
+                             "scheme_condition": "gold", "scheme": test["gold_scheme"],
+                             "cq_id": None, "model": "m1", "answer": test["gold_fallacy"]})
+    (runs / "judged").mkdir()
+    verdicts.to_csv(runs / "judged" / "summary.csv", index=False)
+    manifest = {"config": {"models": ["m1"], "stages": ["judge"],
+                           "judge": {"answers_from": "full", "answers_model": "m1",
+                                     "justifications": True}}}
+    (runs / "judged" / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    out = _evaluate(hand_runs, runs={"answers": "full", "zeroshot": "zs", "judge": ["judged"]})
+    main = pd.read_csv(out / "main_table.csv").set_index("system")
+    assert main.loc["A5", "accuracy"] == 1.0
+    assert "A5" in set(pd.read_csv(out / "deciding.csv")["system"])
+    summary = (out / "summary.md").read_text(encoding="utf-8")
+    assert "A5.answers_only: no judge run without justifications" in summary
+    assert "A5: no judge run with" not in summary
+
+
 def test_the_command_stops_on_another_reference_model(hand_runs):
     with pytest.raises(SchemeError, match="m1"):
         _evaluate(hand_runs, reference_model="m2")

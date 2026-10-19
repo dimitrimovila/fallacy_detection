@@ -151,6 +151,12 @@ run) and `configs/zeroshot_pilot.yaml` (the 50 pilot items, two entries), run an
 the same commands. The parser writes the verdict as its terminal id, with the probability of
 the label chosen in `p_label`.
 
+The judge stage (`stages: [judge]`) gives the same prompt plus the answers of one entry of a
+run to the critical questions of the scheme, read from the `summary.csv` of that run, which
+must have been parsed first: `configs/judge_v1.yaml` (601 items, `qwen3_8_27b` reading its own
+answers in full run v2 with their justifications) and `configs/judge_v1_answers_only.yaml`
+(the same without justifications), run and parsed with the same commands.
+
 A configuration asks the CQs of `schemes/v1/` (version 1.1) unless it sets `schemes: v2`
 (version 2.0), which goes only with `prompt_version: v3`, and v3 only with it:
 `configs/full_v3.yaml` asks the CQs of version 2.0 at stage two, under the gold scheme, with
@@ -187,8 +193,9 @@ The aggregators are functions of `argfallacy.aggregate`: A0 (the diagram), A1 (t
 with its blocks of questions in the order chosen on the other folds), A2 (the diagram traversed
 with soft answers, the answers outside the arcs following the burden of proof of each critical
 question), A3 (a logistic regression per scheme on the soft answers, trained on the other
-folds) and A4 (the soft answers of several models averaged, then traversed as in A2). The
-five folds, stratified by scheme, come from one seed (`argfallacy.eval.assign_folds`).
+folds) and A4 (the soft answers of several models averaged, then traversed as in A2). A5, the
+LLM judge, is the verdict of a run of the judge stage. The five folds, stratified by scheme,
+come from one seed (`argfallacy.eval.assign_folds`).
 
 The evaluation compares them with A0 of the reference model:
 
@@ -208,9 +215,12 @@ seed; the deciding comparisons, each primary configuration against A0 of the ref
 in macro F1, have their interval at level 1 - 0.05/m. The command stops if the reference
 model, the entry whose A0 has the highest macro F1, is not the one the configuration names.
 
-Not implemented yet: the aggregator A5; the predicted scheme condition, the collapsed space,
-the breakdowns by scheme and corpus, the per-CQ and human agreement tables and the abstention
-curves of the evaluation.
+The runs of the judge stage enter the evaluation through the key `judge` of its
+configuration.
+
+Not implemented yet: the predicted scheme condition, the collapsed space, the breakdowns by
+scheme and corpus, the per-CQ and human agreement tables and the abstention curves of the
+evaluation.
 
 ## License
 

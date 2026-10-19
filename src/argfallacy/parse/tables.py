@@ -38,6 +38,7 @@ from jsonschema import Draft202012Validator
 from ..labels import scheme_ids
 from ..prompts import (
     CANNOT_BE_DETERMINED,
+    JUDGE,
     NOT_APPLICABLE,
     STAGE1,
     ZEROSHOT,
@@ -50,7 +51,7 @@ from ..schemes.loader import SchemeError, load_vocabulary
 INVALID = "invalid"
 ALL_OPTIONS = ("yes", "no", "positive", "negative", CANNOT_BE_DETERMINED, NOT_APPLICABLE)
 OUTSIDE_ARCS = (CANNOT_BE_DETERMINED, NOT_APPLICABLE)
-VERDICT_STAGES = (ZEROSHOT,)
+VERDICT_STAGES = (ZEROSHOT, JUDGE)
 """The stages whose answer is a verdict, a terminal id; their rows are read alike."""
 SCHEME_IDS = tuple(scheme_ids())
 """The answers of stage one, from ``labels/schemes.yaml``."""

@@ -1,0 +1,24 @@
+# A5, the LLM judge: for every item of the test set, the zero-shot prompt with, in addition,
+# the answers of qwen3_8_27b to the critical questions of the gold scheme in full run v2, each
+# with its justification. The plan reads runs/<answers_from>/summary.csv, written by the
+# current parser. `argfallacy run plan configs/judge_v1.yaml` counts the calls.
+
+name: judge_v1
+
+items:
+  # the 601 items of the test set: every item with a gold scheme, no sample
+  exclude_none_scheme: true
+
+stages: [judge]
+scheme_condition: gold
+models: [qwen3_8_27b]
+prompt_version: v1
+
+judge:
+  answers_from: 20261005T193017Z_full_v2
+  answers_model: qwen3_8_27b
+  justifications: true
+
+generation:
+  # for the entries without a max_tokens of their own
+  max_tokens: 512
