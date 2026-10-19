@@ -1,23 +1,25 @@
-"""From raw calls to a table.  The pilot version, and no further.
+"""From raw calls to the two tables every later step reads.
 
 The client never looks at what came back; this is where it is read.  Two files:
 ``answers.csv``, one row per call, and ``summary.csv``, one row per question and
-model, carrying the three probabilities of a yes: from the logprobs, from the
-stated confidence and from the frequency over the samples.
+model, with the hard answer and the soft answers the aggregators combine: the
+masses of every answer from the logprobs, the stated confidence and the shares
+over the samples.
 
 Everything here is a second pass over ``raw.jsonl``, which is never rewritten.
 Changing the parser costs a re-parse, never a re-run — that separation is the
 reason the two live in different packages.
 
-This one stops at what the pilot report needs; the full parser comes later.
-
 How many samples an entry took decides what its hard answer is.  With one
 sample, the hard answer is that sample.  With more, it is the majority over the
-valid samples, and ``p_sample`` the frequency of a yes among them.
+valid samples, and every soft answer is a mean or a share over them: the samples
+are drawn alike, so sample 0 has no special status.
 
-A zero-shot call answers with the name its prompt showed for a verdict; the row
-carries the terminal id instead, read back through ``labels/fallacies.yaml``, and
-``p_label``, the probability of the name chosen, over the ways of writing it.
+Stage one answers with a scheme id, a verdict stage with the name its prompt
+showed for a verdict; the row carries the terminal id instead, read back through
+``labels/fallacies.yaml``, and ``p_label``, the probability of the name chosen,
+over the ways of writing it.  At these stages the probabilities of ``summary.csv``
+are those of the label chosen.
 """
 
 from __future__ import annotations
@@ -33,6 +35,7 @@ from typing import Any
 import pandas as pd
 from jsonschema import Draft202012Validator
 
+from ..labels import scheme_ids
 from ..prompts import (
     CANNOT_BE_DETERMINED,
     NOT_APPLICABLE,
@@ -46,18 +49,28 @@ from ..schemes.loader import SchemeError, load_vocabulary
 
 INVALID = "invalid"
 ALL_OPTIONS = ("yes", "no", "positive", "negative", CANNOT_BE_DETERMINED, NOT_APPLICABLE)
+OUTSIDE_ARCS = (CANNOT_BE_DETERMINED, NOT_APPLICABLE)
+VERDICT_STAGES = (ZEROSHOT,)
+"""The stages whose answer is a verdict, a terminal id; their rows are read alike."""
+SCHEME_IDS = tuple(scheme_ids())
+"""The answers of stage one, from ``labels/schemes.yaml``."""
 
 ANSWERS_COLUMNS = [
     "run_id", "item_id", "stage", "scheme_condition", "scheme", "cq_id", "sample_index",
     "model", "model_id", "prompt_version", "cache_key", "from_cache",
     "answer", "confidence", "justification",
-    *[f"p_logprob_{option}" for option in ALL_OPTIONS], "p_label", "p_label_lower_bound",
+    *[f"p_logprob_{option}" for option in ALL_OPTIONS],
+    *[f"p_logprob_{scheme_id}" for scheme_id in SCHEME_IDS],
+    "p_label", "p_label_lower_bound",
     "logprob_partial", "parse_ok", "finish_reason", "latency_s", "error",
 ]
 SUMMARY_COLUMNS = [
     "item_id", "stage", "scheme_condition", "scheme", "cq_id", "model",
     "answer", "p_logprob", "p_verbal", "p_sample",
-    "n_samples_ok", "idk", "invalid_count",
+    "n_samples_ok", "idk", "invalid_count", "justification",
+    *[f"p_logprob_{option}" for option in ALL_OPTIONS],
+    *[f"p_sample_{option}" for option in ALL_OPTIONS],
+    "p_label", "p_label_lower_bound",
 ]
 
 
@@ -76,19 +89,17 @@ def options_for(
 ) -> tuple[str, ...]:
     """What this call was allowed to answer.
 
-    Stage one answers with a scheme id, the zero-shot stage with the names its
+    Stage one answers with a scheme id, a verdict stage with the names its
     prompt showed for the verdicts of the scheme.
     """
     if row.get("stage") == STAGE1:
-        from ..labels import scheme_ids
-
-        return tuple(scheme_ids())
+        return SCHEME_IDS
     schemes = schemes if schemes is not None else load_all()
     scheme = schemes.get(row.get("scheme"))
-    if row.get("stage") == ZEROSHOT:
+    if row.get("stage") in VERDICT_STAGES:
         if scheme is None:
-            raise SchemeError(f"zero-shot row of item {row.get('item_id')!r} has no known "
-                              f"scheme: {row.get('scheme')!r}")
+            raise SchemeError(f"{row.get('stage')} row of item {row.get('item_id')!r} has no "
+                              f"known scheme: {row.get('scheme')!r}")
         return tuple(shown_verdicts(scheme))
     if scheme is None or not row.get("cq_id"):
         return ("yes", "no", CANNOT_BE_DETERMINED, NOT_APPLICABLE)
@@ -292,7 +303,7 @@ def parse_row(
         parse_ok = True
 
     p_label, p_label_bound = None, None
-    if row.get("stage") == ZEROSHOT:
+    if row.get("stage") in VERDICT_STAGES:
         # the name shown goes back to its terminal; no masses over the first token,
         # since a name may take several tokens
         p_label, p_label_bound = label_probability(raw.get("logprobs"), options, answer, key)
@@ -325,7 +336,8 @@ def parse_row(
         "latency_s": row.get("latency_s"),
         "error": row.get("error"),
     }
-    for option in ALL_OPTIONS:
+    # the masses are over the answers at stage two, over the scheme ids at stage one
+    for option in (*ALL_OPTIONS, *SCHEME_IDS):
         out[f"p_logprob_{option}"] = masses.get(option)
     return out
 
@@ -376,31 +388,133 @@ def majority(group: pd.DataFrame) -> str:
     return str(ranked.index[0])
 
 
+def _number(value: Any) -> float | None:
+    return None if value is None or pd.isna(value) else float(value)
+
+
+def _mean(values: Iterable[float | None]) -> float | None:
+    numbers = [value for value in values if value is not None]
+    return sum(numbers) / len(numbers) if numbers else None
+
+
+def _oriented(row: pd.Series, yes_like: str) -> float | None:
+    """The stated confidence as a probability of the first admitted answer.
+
+    None for an answer outside the arcs: reading ``na`` or ``cannot_be_determined``
+    as a low probability of yes would decide, silently, that they mean no.
+    """
+    confidence = _number(row["confidence"])
+    if confidence is None or row["answer"] in (*OUTSIDE_ARCS, INVALID):
+        return None
+    return confidence / 100.0 if row["answer"] == yes_like else 1.0 - confidence / 100.0
+
+
+def _answer_probabilities(
+    valid: pd.DataFrame, zero_row: pd.Series | None, options: tuple[str, ...], several: bool
+) -> dict[str, Any]:
+    """Stage two: the masses and shares of every answer, and the three probabilities of yes.
+
+    The three are oriented on the first admitted answer (``yes``, or ``positive`` for
+    ad hominem CQ1).  With one sample they are those of sample 0; with several,
+    means and shares over the valid samples.
+    """
+    yes_like = options[0]
+    admitted = [option for option in ALL_OPTIONS if option in options]
+    columns = [f"p_logprob_{option}" for option in admitted]
+    out: dict[str, Any] = {}
+    if not several:
+        if zero_row is not None:
+            out.update({column: _number(zero_row[column]) for column in columns})
+            out["p_verbal"] = _oriented(zero_row, yes_like) if zero_row["parse_ok"] else None
+        out["p_logprob"] = out.get(f"p_logprob_{yes_like}")
+        return out
+
+    with_masses = valid[valid[columns].notna().all(axis=1)]
+    if len(with_masses):
+        out.update({column: float(with_masses[column].astype(float).mean())
+                    for column in columns})
+    if len(valid):
+        out.update({f"p_sample_{option}": float((valid["answer"] == option).mean())
+                    for option in admitted})
+    out["p_logprob"] = out.get(f"p_logprob_{yes_like}")
+    out["p_verbal"] = _mean(_oriented(row, yes_like) for _, row in valid.iterrows())
+    out["p_sample"] = out.get(f"p_sample_{yes_like}")
+    return out
+
+
+def _label_probabilities(
+    stage: str, valid: pd.DataFrame, zero_row: pd.Series | None, several: bool, hard: str
+) -> dict[str, Any]:
+    """Stage one and the verdict stages: the probabilities of the label chosen.
+
+    With several samples, a sample that chose another label counts 0 in
+    ``p_label`` and ``p_verbal``; ``p_logprob`` (stage one) is the mean mass of the
+    hard answer.  A sample with the hard answer and no ``p_label`` is left out, and
+    ``p_label`` stays empty when none of them has one.
+    """
+    if hard == INVALID or zero_row is None:
+        return {}
+    verdict = stage in VERDICT_STAGES
+    if not several:
+        confidence = _number(zero_row["confidence"])
+        out = {"p_verbal": None if confidence is None else confidence / 100.0}
+        if stage == STAGE1:
+            out["p_logprob"] = _number(zero_row[f"p_logprob_{hard}"])
+        if verdict and _number(zero_row["p_label"]) is not None:
+            out["p_label"] = float(zero_row["p_label"])
+            out["p_label_lower_bound"] = bool(zero_row["p_label_lower_bound"])
+        return out
+
+    chosen = valid[valid["answer"] == hard]
+    others = [0.0] * (len(valid) - len(chosen))
+    out = {"p_sample": len(chosen) / len(valid)}
+    stated = [_number(c) for c in chosen["confidence"]]
+    out["p_verbal"] = _mean([None if c is None else c / 100.0 for c in stated] + others)
+    if stage == STAGE1:
+        masses = [f"p_logprob_{scheme_id}" for scheme_id in SCHEME_IDS]
+        with_masses = valid[valid[masses].notna().all(axis=1)]
+        out["p_logprob"] = _mean(_number(v) for v in with_masses[f"p_logprob_{hard}"])
+    if verdict:
+        used = chosen[chosen["p_label"].notna()]
+        if len(used):
+            out["p_label"] = _mean([*used["p_label"].astype(float)] + others)
+            out["p_label_lower_bound"] = bool(used["p_label_lower_bound"].astype(bool).any())
+    return out
+
+
+def _justification(
+    valid: pd.DataFrame, zero_row: pd.Series | None, several: bool, hard: str
+) -> str | None:
+    """That of sample 0 with one sample; with several, that of the valid sample with the
+    lowest index that gave the hard answer."""
+    if hard == INVALID:
+        return None
+    if not several:
+        value = None if zero_row is None else zero_row["justification"]
+    else:
+        chosen = valid[valid["answer"] == hard]
+        value = chosen["justification"].iloc[0] if len(chosen) else None
+    return None if value is None or pd.isna(value) else str(value)
+
+
 def summarise(
     answers: pd.DataFrame, schemes: Mapping[str, Any] | None = None
 ) -> pd.DataFrame:
-    """One row per question and model, with the three probabilities.
+    """One row per question and model: the hard answer and the soft answers.
 
-    ``p_logprob`` and ``p_sample`` are the probability of the *first* admitted
-    answer — ``yes``, or ``positive`` for ad hominem CQ1 — so the three numbers
-    always point the same way.  ``p_verbal`` is oriented to match: a confident
-    ``no`` is a low probability of yes, not a high one.
+    At stage two, ``p_logprob_<answer>`` and ``p_sample_<answer>`` give the masses and
+    the shares of every admitted answer, and ``p_logprob``, ``p_verbal`` and
+    ``p_sample`` the probability of the *first* admitted answer, so the three
+    always point the same way: a confident ``no`` is a low probability of yes.  At
+    stage one and at the verdict stages the probabilities are those of the label
+    chosen, and the verdict stages add ``p_label``.
 
-    An entry that answered once, sample 0 alone, has its hard answer, ``p_logprob``
-    and ``p_verbal`` from that sample, and no ``p_sample``.  An entry that answered
-    several times has the majority of :func:`majority` as its hard answer and
-    ``p_sample`` over the valid samples; ``p_logprob`` and ``p_verbal`` still come
-    from sample 0, ``p_verbal`` oriented on the answer of sample 0, which is what
-    its confidence is about.
+    An entry that answered once has everything from sample 0.  An entry that
+    answered several times has the majority of :func:`majority` as its hard answer
+    and every soft answer from its valid samples.
 
-    ``na`` gets no ``p_verbal``, the same as ``cannot_be_determined``: reading it
-    as a low probability of yes would decide, silently, that na means no.  It
-    does not set ``idk`` either — that flag stays exactly ``answer ==
-    cannot_be_determined`` — so the two stay distinguishable downstream by
-    ``answer`` alone, which is the only thing this parser records about them.
-
-    A zero-shot row has its hard answer and none of the three probabilities: a
-    verdict has no yes to orient them on.  ``p_label`` stays in ``answers.csv``.
+    ``na`` sets no ``idk`` — that flag stays exactly ``answer ==
+    cannot_be_determined`` — so the two stay distinguishable by ``answer``.
     """
     schemes = schemes if schemes is not None else load_all()
     if answers.empty:
@@ -413,11 +527,9 @@ def summarise(
     records: list[dict[str, Any]] = []
     for keys, group in grouped:
         item_id, stage, condition, scheme, cq_id, model = keys
-        zeroshot = stage == ZEROSHOT
         options = options_for(
             {"stage": stage, "scheme": scheme, "cq_id": cq_id}, schemes
         )
-        yes_like = options[0]
 
         group = group.sort_values("sample_index")
         zero = group[group["sample_index"] == 0]
@@ -425,39 +537,24 @@ def summarise(
         several = bool((group["sample_index"] > 0).any())
 
         valid = valid_samples(group)
-        n_ok = len(valid)
         if several:
             hard = majority(group)
-            p_sample = (valid["answer"] == yes_like).mean() if n_ok and not zeroshot else None
         else:
             hard = zero_row["answer"] if zero_row is not None else INVALID
-            p_sample = None
 
-        p_logprob = None
-        if zero_row is not None and not zeroshot:
-            value = zero_row.get(f"p_logprob_{yes_like}")
-            p_logprob = None if pd.isna(value) else float(value)
-
-        p_verbal = None
-        idk = hard == CANNOT_BE_DETERMINED
-        stated = zero_row["answer"] if zero_row is not None else INVALID
-        if (zero_row is not None and zero_row["parse_ok"] and not zeroshot
-                and stated not in (CANNOT_BE_DETERMINED, NOT_APPLICABLE)):
-            confidence = zero_row["confidence"]
-            if confidence is not None and not pd.isna(confidence):
-                fraction = float(confidence) / 100.0
-                p_verbal = fraction if stated == yes_like else 1.0 - fraction
-
+        if stage == STAGE1 or stage in VERDICT_STAGES:
+            probabilities = _label_probabilities(stage, valid, zero_row, several, hard)
+        else:
+            probabilities = _answer_probabilities(valid, zero_row, options, several)
         records.append({
             "item_id": item_id, "stage": stage, "scheme_condition": condition,
             "scheme": scheme, "cq_id": cq_id, "model": model,
             "answer": hard,
-            "p_logprob": p_logprob,
-            "p_verbal": p_verbal,
-            "p_sample": None if p_sample is None else float(p_sample),
-            "n_samples_ok": n_ok,
-            "idk": bool(idk),
+            "n_samples_ok": len(valid),
+            "idk": hard == CANNOT_BE_DETERMINED,
             "invalid_count": int((group["answer"] == INVALID).sum()),
+            "justification": _justification(valid, zero_row, several, hard),
+            **probabilities,
         })
     return pd.DataFrame(records, columns=SUMMARY_COLUMNS).sort_values(
         ["model", "item_id", "stage", "cq_id"]

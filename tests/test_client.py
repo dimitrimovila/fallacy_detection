@@ -476,7 +476,8 @@ def test_the_summary_carries_the_three_probabilities(schemes):
 
     assert summary["answer"] == "yes"
     assert summary["p_logprob"] == pytest.approx(0.8, abs=1e-6)
-    assert summary["p_verbal"] == pytest.approx(0.8, abs=1e-9)
+    # yes at 80 and twice at 60, no twice at 60: the mean over the five samples
+    assert summary["p_verbal"] == pytest.approx((0.8 + 0.6 + 0.6 + 0.4 + 0.4) / 5, abs=1e-9)
     assert summary["p_sample"] == pytest.approx(3 / 5)
     assert summary["n_samples_ok"] == 5
     assert not summary["idk"]

@@ -197,7 +197,13 @@ def test_the_probability_of_the_chosen_label_on_the_fake_backend(tmp_path, schem
         assert row.p_label == pytest.approx(REAL_WEIGHT)
     summary = summarise(answers, schemes)
     assert len(summary) == len(items) * 2
-    assert summary[["p_logprob", "p_verbal", "p_sample"]].isna().all().all()
+    assert summary["p_logprob"].isna().all()
+    # every sample has the same p_label; a sample with another verdict counts 0
+    single = summary[summary["model"] == "fake_single"]
+    assert list(single["p_label"]) == pytest.approx([REAL_WEIGHT] * len(single))
+    assert single["p_sample"].isna().all()
+    several = summary[summary["model"] == "fake"]
+    assert list(several["p_label"]) == pytest.approx(list(REAL_WEIGHT * several["p_sample"]))
 
 
 def test_the_zeroshot_configurations_plan_one_prompt_per_item(schemes):

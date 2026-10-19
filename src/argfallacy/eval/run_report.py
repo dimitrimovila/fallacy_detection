@@ -129,7 +129,7 @@ class RunData:
     def hard(self) -> pd.DataFrame:
         """Stage-two rows of sample 0, with the hard answer of ``summary.csv`` as ``answer``.
 
-        The logprob columns stay those of sample 0, where the parser reads them.
+        The logprob columns stay those of sample 0, which the ``logprob`` rule reads.
         """
         keys = ["model", "item_id", "scheme", "cq_id"]
         summary = self.summary[self.summary["stage"] == "stage2"][[*keys, "answer"]]
@@ -347,8 +347,8 @@ def _stage2_summary(data: RunData) -> pd.DataFrame:
 def probability_correlations(data: RunData, by_cq: bool = False) -> pd.DataFrame:
     """Spearman correlation between ``p_logprob``, ``p_verbal`` and ``p_sample``.
 
-    Each pair on the rows that have both: an answer of ``cannot_be_determined`` or
-    ``na`` at sample 0 has no ``p_verbal``, and an entry that answers once has no
+    Each pair on the rows that have both: a question where no valid sample answered
+    on an arc has no ``p_verbal``, and an entry that answers once has no
     ``p_sample``.  ``n`` counts the rows with ``p_logprob`` and ``p_verbal``.
     """
     frame = _stage2_summary(data)
@@ -756,16 +756,15 @@ def agreement_by_cq(data: RunData) -> pd.DataFrame:
 
 
 def parser_checks(data: RunData) -> pd.DataFrame:
-    """Two checks on what the minimal parser wrote.
+    """Two checks on what the parser wrote.
 
     ``hard_not_argmax``: rows of sample 0 at stage two whose answer is not the
-    answer with the highest ``p_logprob`` (at temperature 0 they should coincide; at
-    a higher temperature the sample can take another answer).
+    answer with the highest ``p_logprob`` (at temperature 0 they should coincide,
+    up to near ties; at a higher temperature the sample can take another answer).
     ``stage1_p_sample_not_modal``: rows of stage one in ``summary.csv`` whose
     ``p_sample`` differs from the frequency of the hard answer over the valid
-    samples; ``summarise`` orients it on the first admitted answer, which at stage
-    one is the first scheme id, so the number has no meaning there.  An entry that
-    answers once has no ``p_sample`` and no such row.
+    samples; expected 0.  An entry that answers once has no ``p_sample`` and no
+    such row.
     """
     zero = data.sample0
     zero = zero[zero["answer"] != INVALID]
@@ -1059,9 +1058,7 @@ def render(data: RunData, title: str = "Run report") -> str:
     add("`hard_not_argmax`: stage-two rows of sample 0 whose answer is not the answer "
         "with the highest `p_logprob` (meaningful at temperature 0). "
         "`stage1_p_sample_not_modal`: stage-one rows of `summary.csv` whose `p_sample` is "
-        "not the frequency of the hard answer over the valid samples; the minimal "
-        "parser orients `p_sample` and `p_verbal` on the first admitted answer, which at "
-        "stage one is the first scheme id, so at stage one both columns have no meaning.\n")
+        "not the frequency of the hard answer over the valid samples, expected 0.\n")
 
     add("## Appendix A. Answers per question\n")
     add("Share of each answer over all the samples; `n` is the number of calls.\n")
