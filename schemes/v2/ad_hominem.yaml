@@ -31,7 +31,7 @@ critical_questions:
     answer_space: ["positive", "negative"]
     note: >-
       The positive branch leaves the ad hominem cluster and shares the
-      appeal_to_authority label with expert_opinion CQ2.1 and CQ2.2. The two are not
+      appeal_to_authority label with expert_opinion CQ2 and CQ3. The two are not
       the same situation: here the argument leverages moral character, there domain
       competence. Record (scheme, exit CQ), not just the terminal label.
   - id: CQ2
@@ -40,9 +40,9 @@ critical_questions:
       that compromise the objectivity of their judgment?
   - id: CQ3
     text: >-
-      Does the attack discredit the other person through a commitment or tie of theirs
-      to a person, group, movement or cause (for example political, religious or
-      ideological) that is viewed negatively?
+      Does the attack discredit the other person through their commitment, connection
+      or association with a person, group, movement or cause (for example political,
+      religious or ideological) that is viewed negatively?
   - id: CQ4
     text: Is the direct attack on the other person an accusation of hypocrisy?
   - id: CQ5

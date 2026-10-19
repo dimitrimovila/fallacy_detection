@@ -31,17 +31,12 @@ critical_questions:
     text: >-
       Does the majority of the reference group rely on the concept of nature to assert
       A?
-  - id: CQ1.3
-    text: >-
-      Is the presumption in favour of A based solely on the fact that it is accepted by
-      a large majority of the reference group?
   - id: CQ2
     text: >-
       Does the argument rely on a subgroup likely to support A, while drawing a
       conclusion that applies to a broader population?
   - id: CQ3
-    text: >-
-      Does the text refer to a group that is clearly too small to support A?
+    text: Is the group that supports A too small to justify the conclusion?
 
 graph:
   start: CQ1
@@ -54,10 +49,7 @@ graph:
       "no":  {node: CQ1.2}
     CQ1.2:
       "yes": {terminal: appeal_to_nature}
-      "no":  {node: CQ1.3}
-    CQ1.3:
-      "yes": {terminal: ad_populum}
-      "no":  {terminal: ad_populum, reconvergence: true}
+      "no":  {terminal: ad_populum}
     CQ2:
       "yes": {terminal: cherry_picking}
       "no":  {node: CQ3}

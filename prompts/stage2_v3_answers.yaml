@@ -102,15 +102,6 @@ per_cq:
         the example is proportionate to the typical cases the generalization covers,
         even if it is severe
 
-  expert_opinion:
-    CQ2.1:
-      "yes": >-
-        the text draws A from S's word as a certainty, treating the fact that S said it
-        as enough to settle that A is true
-      "no": >-
-        the text draws A from S's word only as a reasonable presumption, leaving room
-        for S being wrong
-
   slippery_slope:
     CQ3:
       "yes": >-

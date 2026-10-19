@@ -35,8 +35,6 @@ critical_questions:
       other causes?
   - id: CQ5
     text: Is it plausible that A leads to B?
-  - id: CQ5.1
-    text: Is it true that A occurs, or can occur, in the case at hand?
 
 graph:
   start: CQ1
@@ -54,8 +52,5 @@ graph:
       "yes": {terminal: causal_reductionism}
       "no":  {node: CQ5}
     CQ5:
-      "yes": {node: CQ5.1}
-      "no":  {terminal: false_premise}
-    CQ5.1:
       "yes": {terminal: good_argumentation}
-      "no":  {terminal: false_premise, reconvergence: true}
+      "no":  {terminal: false_premise}

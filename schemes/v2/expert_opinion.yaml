@@ -30,20 +30,18 @@ critical_questions:
     text: >-
       Does the argument rest only on S's word, with no evidence or reasoning for A given
       by S or by the arguer?
-  - id: CQ2.1
-    text: Does the text present S's word as conclusive for A?
-  - id: CQ2.2
-    text: Does A clearly contradict the prevailing view of experts in D?
   - id: CQ3
+    text: Does A clearly contradict the prevailing view of experts in D?
+  - id: CQ4
     text: Did S really assert (or claim) A as true?
-  - id: CQ3.1
+  - id: CQ4.1
     text: >-
       Has S expressed a position of their own on the issue under discussion, in this
       exchange or elsewhere?
-  - id: CQ4
+  - id: CQ5
     text: >-
       Is there a conclusion C that differs from A but uses A to justify itself?
-  - id: CQ4.1
+  - id: CQ5.1
     text: >-
       Assuming that A is true, does the conclusion C follow from it without an
       unjustified leap?
@@ -60,23 +58,20 @@ graph:
       "yes": {node: CQ2}
       "no":  {terminal: irrelevant_authority}
     CQ2:
-      "yes": {node: CQ2.1}
-      "no":  {node: CQ3}
-    CQ2.1:
       "yes": {terminal: appeal_to_authority}
-      "no":  {node: CQ2.2}
-    CQ2.2:
-      "yes": {terminal: appeal_to_authority, reconvergence: true}
-      "no":  {node: CQ3, reconvergence: true}
+      "no":  {node: CQ3}
     CQ3:
-      "yes": {node: CQ4}
-      "no":  {node: CQ3.1}
-    CQ3.1:
+      "yes": {terminal: appeal_to_authority, reconvergence: true}
+      "no":  {node: CQ4}
+    CQ4:
+      "yes": {node: CQ5}
+      "no":  {node: CQ4.1}
+    CQ4.1:
       "yes": {terminal: strawman}
       "no":  {terminal: false_attribution}
-    CQ4:
-      "yes": {node: CQ4.1}
+    CQ5:
+      "yes": {node: CQ5.1}
       "no":  {terminal: good_argumentation}
-    CQ4.1:
+    CQ5.1:
       "yes": {terminal: good_argumentation, reconvergence: true}
       "no":  {terminal: non_sequitur}

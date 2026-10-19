@@ -377,7 +377,7 @@ def test_a_run_on_the_schemes_v2_is_planned_parsed_and_traversed_on_them(tmp_pat
     run_dir = tmp_path / "v2"
     parse_run(run_dir)
     answers = pd.read_csv(run_dir / "answers.csv")
-    only_v2 = answers[(answers["scheme"] == "expert_opinion") & (answers["cq_id"] == "CQ2.1")]
+    only_v2 = answers[(answers["scheme"] == "expert_opinion") & (answers["cq_id"] == "CQ5.1")]
     assert len(only_v2) == 1 and only_v2["parse_ok"].all()
 
     # example CQ1 yes: False Premise in version 2.0, False Attribution in version 1.1

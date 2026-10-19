@@ -35,11 +35,11 @@ SNAPSHOT = {
 SNAPSHOT_V2 = {
     "ad_hominem":           (6, 6,  7, False),
     "analogy":              (5, 4,  7, True),
-    "cause_to_effect":      (6, 6,  7, True),
+    "cause_to_effect":      (5, 5,  6, True),
     "correlation_to_cause": (6, 6,  7, True),
     "example":              (6, 6,  8, True),
-    "expert_opinion":       (8, 7, 13, True),
-    "popular_opinion":      (6, 4,  7, True),
+    "expert_opinion":       (7, 6,  8, True),
+    "popular_opinion":      (5, 3,  6, True),
     "slippery_slope":       (3, 3,  4, True),
 }
 
