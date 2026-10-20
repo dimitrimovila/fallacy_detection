@@ -1,6 +1,6 @@
 # Spec 05. The parser for the aggregators
 
-Version 1, 19 October 2026. Component: `src/argfallacy/parse/`. It replaces the minimal parser of spec 04, section 3, which stays valid for everything this spec does not change.
+Version 1.1, 20 October 2026 (version 1, 19 October 2026; 1.1 states two rules of section 5 as the parser applies them: `p_label` is empty when no sample with the hard answer has one, and `justification` is written at these stages too). Component: `src/argfallacy/parse/`. It replaces the minimal parser of spec 04, section 3, which stays valid for everything this spec does not change.
 Depends on: 03, 04. Used by: the run report (spec 04, section 4), 07, 08.
 
 ## 1. Purpose
@@ -39,11 +39,11 @@ The samples of an entry are drawn in the same way, so sample 0 has no special st
 
 At stage one the answer is a scheme id; at the verdict stages it is a terminal id. The verdict stages are `zeroshot` and the stage `judge` that spec 07 adds; the parser lists them in one constant. At these stages the probabilities refer to the hard answer, the label chosen:
 * `p_logprob`, stage one only: the mass of the hard answer, from the columns of section 3. With one sample, that of sample 0; with several, the mean over the valid samples that have masses. At the verdict stages `p_logprob` stays empty, since a name can take several tokens.
-* `p_label`, a new column of `summary.csv`, verdict stages only: with one sample, `p_label` of sample 0. With several, the mean over the valid samples of `p_label` where the sample's answer is the hard answer and 0 where it is another label; a sample with the hard answer and no `p_label` is left out. `p_label_lower_bound`, also new in `summary.csv`, is true if any value used is a lower bound.
+* `p_label`, a new column of `summary.csv`, verdict stages only: with one sample, `p_label` of sample 0. With several, the mean over the valid samples of `p_label` where the sample's answer is the hard answer and 0 where it is another label; a sample with the hard answer and no `p_label` is left out, and `p_label` is empty when no sample with the hard answer has one. `p_label_lower_bound`, also new in `summary.csv`, is true if any value used is a lower bound.
 * `p_verbal`: with one sample, the confidence of sample 0 over 100. With several, the mean over the valid samples of confidence/100 where the sample's answer is the hard answer and 0 where it is another label.
 * `p_sample`: the share of the valid samples whose answer is the hard answer. Empty with one sample.
 
-All four are empty when the hard answer is `invalid`. Before, the minimal parser oriented the three columns on the first admitted answer, which at stage one is the first scheme id, so they had no meaning there; at the zero-shot stage it left them empty.
+All four are empty when the hard answer is `invalid`. `justification` is chosen as at stage two (section 4). Before, the minimal parser oriented the three columns on the first admitted answer, which at stage one is the first scheme id, so they had no meaning there; at the zero-shot stage it left them empty.
 
 ## 6. The answers that are not the argmax of `p_logprob`
 
