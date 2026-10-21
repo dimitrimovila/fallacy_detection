@@ -157,8 +157,16 @@ must have been parsed first: `configs/judge_v1.yaml` (601 items, `qwen3_8_27b` r
 answers in full run v2 with their justifications) and `configs/judge_v1_answers_only.yaml`
 (the same without justifications), run and parsed with the same commands.
 
+For full run v3, `configs/judge_full_v3.yaml` and
+`configs/judge_full_v3_answers_only.yaml` use the same `judge_v1` prompt, with
+`schemes: v2` and the answers of `20261019T151336Z_full_v3`. Each plans 601 calls.
+The source manifest must name the same schemes folder; when it records a content hash,
+that hash must match the current scheme files. A mismatch stops the plan before calls.
+A legacy source manifest without a folder means `schemes/v1/`.
+The v3 pairing rule applies to the CQ prompts, not to a judge-only run.
+
 A configuration asks the CQs of `schemes/v1/` (version 1.1) unless it sets `schemes: v2`
-(version 2.0), which goes only with `prompt_version: v3`, and v3 only with it:
+(version 2.0). For CQ runs, this goes only with `prompt_version: v3`, and v3 only with it:
 `configs/full_v3.yaml` asks the CQs of version 2.0 at stage two, under the gold scheme, with
 the five entries of the full run. The manifest records the folder, and the parser and the
 report read the diagrams from there; a manifest without it means `schemes/v1/`. On a run of

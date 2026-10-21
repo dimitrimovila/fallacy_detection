@@ -1,0 +1,15 @@
+# The full_v3 judge without the justifications, using the same judge_v1 prompt.
+name: judge_full_v3_answers_only
+items:
+  exclude_none_scheme: true
+stages: [judge]
+scheme_condition: gold
+schemes: v2
+models: [qwen3_8_27b]
+prompt_version: v1
+judge:
+  answers_from: 20261019T151336Z_full_v3
+  answers_model: qwen3_8_27b
+  justifications: false
+generation:
+  max_tokens: 512

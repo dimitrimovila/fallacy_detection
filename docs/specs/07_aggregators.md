@@ -192,6 +192,15 @@ An `invalid` hard answer is written "Answer: none usable." With `justifications:
 * The answers enter the rendered prompt, so the cache key covers them; the manifest records them with the rest of the configuration.
 * The lines of `raw.jsonl` have `stage` `judge`, the scheme of the prompt and an empty `cq_id`. The parser reads them as zero-shot rows (spec 05, section 5); the run report does not read this stage.
 
+
+For full run v3, `configs/judge_full_v3.yaml` and
+`configs/judge_full_v3_answers_only.yaml` use the same `judge_v1` prompt, with
+`schemes: v2` and the answers of `20261019T151336Z_full_v3`. Each plans 601 calls.
+The source manifest must name the same schemes folder; when it records a content hash,
+that hash must match the current scheme files. A mismatch stops the plan before calls.
+A legacy source manifest without a folder means `schemes/v1/`.
+The v3 pairing rule applies to the CQ prompts, not to a judge-only run.
+
 ### 7.3 Configurations
 
 * `configs/judge_v1.yaml`, the primary configuration: the 601 items of the test set, `qwen3_8_27b`, the answers of `qwen3_8_27b` in `20261005T193017Z_full_v2`, with justifications. 601 calls.

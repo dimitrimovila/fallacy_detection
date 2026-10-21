@@ -119,7 +119,9 @@ class RunConfig:
         if self.schemes not in SCHEMES_FOLDERS:
             raise SchemeError(f"{self.name}: schemes must be one of {list(SCHEMES_FOLDERS)}, "
                               f"not {self.schemes!r}")
-        if (self.prompt_version == V3_PROMPTS) != (self.schemes == V2_SCHEMES):
+        if self.stages != [JUDGE] and (
+            (self.prompt_version == V3_PROMPTS) != (self.schemes == V2_SCHEMES)
+        ):
             raise SchemeError(
                 f"{self.name}: prompt_version {self.prompt_version!r} with schemes "
                 f"{self.schemes!r}; prompt_version {V3_PROMPTS!r} goes only with schemes "
@@ -359,6 +361,15 @@ def judge_answers(
     if not path.is_file():
         raise SchemeError(f"the stage judge reads the answers of {source}: no {path}; parse "
                           f"that run first (argfallacy parse {source})")
+    manifest = read_manifest(path.parent)
+    source_folder = schemes_dir_of(manifest).name
+    if source_folder != config.schemes:
+        raise SchemeError(f"the judge source {source} uses schemes {source_folder}, "
+                          f"but the judge configuration uses {config.schemes}")
+    recorded_hash = ((manifest or {}).get("schemes_version") or {}).get("content_sha256")
+    if recorded_hash and recorded_hash != schemes_hash(config.schemes_dir):
+        raise SchemeError(f"the judge source {source} has different scheme contents from "
+                          f"{config.schemes}; restore the schemes used by the source run")
     frame = pd.read_csv(path)
     if "justification" not in frame.columns:
         raise SchemeError(f"the summary.csv of {source} has no justification: it was written "

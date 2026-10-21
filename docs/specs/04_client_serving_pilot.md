@@ -53,6 +53,15 @@ SQLite in `runs/cache.sqlite`, a table with key = sha256 of (`model_id`, `prompt
 * `--run-id ID` on `execute`: several invocations write into the same run, one folder, one `raw.jsonl`, one manifest. With `--model`, this is how a job that serves one entry per launch of the server writes one run for the whole configuration. The exit code of `execute` is not zero when an entry that the invocation ran has failed calls.
 * Concurrency with a limit per model (from `models.yaml`), retries with growing waits on 429 and 5xx errors, a timeout per call. A definitive error produces a line in `raw.jsonl` with `error` set, and the key does not enter the cache, so the call is retried on resume.
 * Resume: relaunching the same `execute` after an interruption resumes from the missing calls, without duplicating lines in `raw.jsonl` (only what is not already in the cache is written).
+
+For full run v3, `configs/judge_full_v3.yaml` and
+`configs/judge_full_v3_answers_only.yaml` use the same `judge_v1` prompt, with
+`schemes: v2` and the answers of `20261019T151336Z_full_v3`. Each plans 601 calls.
+The source manifest must name the same schemes folder; when it records a content hash,
+that hash must match the current scheme files. A mismatch stops the plan before calls.
+A legacy source manifest without a folder means `schemes/v1/`.
+The v3 pairing rule applies to the CQ prompts, not to a judge-only run.
+
 * Stage `judge` (spec 07, section 7): a configuration with `stages: [judge]` and `prompt_version: v1` plans one call per item under its gold scheme, with the samples of each entry, as the zero-shot does. Its keys under `judge` are `answers_from`, the run whose `summary.csv` gives the answers, `answers_model`, the entry whose answers are shown, and `justifications`. The plan reads that `summary.csv`, written by the parser of spec 05, and stops with an error naming the item and the CQ if a CQ of the item's scheme has no row. The answers enter the rendered prompt, so the cache key covers them.
 * `predicted` condition: the plan uses the stage-one predictions of the model itself and generates stage-two calls only for the items whose predicted scheme differs from the gold one; for the others the results of the `gold` condition are valid here too, and the parser knows it.
 
