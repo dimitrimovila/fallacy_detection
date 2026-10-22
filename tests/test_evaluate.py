@@ -15,6 +15,7 @@ from argfallacy.eval import assign_folds, load_test_set, score_fallacies
 from argfallacy.eval.evaluate import (
     EvaluationConfig,
     Scorer,
+    _zeroshot_answers,
     deciding,
     difference,
     evaluate,
@@ -139,7 +140,10 @@ def test_the_configuration_of_full_run_v2():
 
     config = EvaluationConfig.load(REPO_ROOT / "configs" / "evaluation_v2.yaml")
     assert config.runs == {"answers": "20261005T193017Z_full_v2",
-                           "zeroshot": "20261009T221950Z_zeroshot_v1", "judge": []}
+                           "zeroshot": ["20261009T221950Z_zeroshot_v1",
+                                        "20261021T111606Z_zeroshot_k2"],
+                           "judge": ["20261021T111110Z_judge_v1",
+                                     "20261021T111110Z_judge_v1_answers_only"]}
     assert (config.name, config.reference_model, config.seed, config.resamples, config.folds,
             config.m) == ("decision_v2", "qwen3_8_27b", 20261019, 10000, 5, 5)
 
@@ -273,7 +277,7 @@ def test_the_manifest_of_the_evaluation(hand_runs):
     out = _evaluate(hand_runs)
     manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
     for key in ("runs", "seed", "resamples", "folds", "reference_model",
-                "primary_configurations", "m", "commit", "date"):
+                "primary_configurations", "m", "commit", "date", "software_versions"):
         assert key in manifest, key
     assert manifest["seed"] == 20261019 and manifest["resamples"] == 200 and manifest["m"] == 5
     assert manifest["reference_model"] == "m1"
@@ -315,3 +319,50 @@ def test_a_summary_of_the_minimal_parser_is_refused(hand_runs):
         path, index=False)
     with pytest.raises(SchemeError, match="parse"):
         _evaluate(hand_runs)
+
+
+def _second_zeroshot(hand):
+    runs = hand["runs"]
+    target = runs / "zs2"
+    target.mkdir()
+    frame = pd.read_csv(runs / "zs" / "summary.csv")
+    frame["model"] = "m2"
+    frame.to_csv(target / "summary.csv", index=False)
+    manifest = json.loads((runs / "zs" / "manifest.json").read_text(encoding="utf-8"))
+    manifest["run_id"] = "zs2"
+    (target / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    return frame
+
+
+def test_split_zero_shots_keep_the_original_predictions_and_record_sources(hand_runs):
+    expected = _second_zeroshot(hand_runs)
+    out = _evaluate(hand_runs, runs={"answers": "full", "zeroshot": ["zs", "zs2"]})
+    verdicts = pd.read_csv(out / "verdicts.csv")
+    first = verdicts[verdicts.system == "zeroshot:m1"].set_index("item_id").verdict
+    second = verdicts[verdicts.system == "zeroshot:m2"].set_index("item_id").verdict
+    pd.testing.assert_series_equal(first, second)
+    assert len(second) == len(expected)
+    manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["runs"]["zeroshot"] == ["zs", "zs2"]
+    assert manifest["zeroshot_sources"] == {"m1": "zs", "m2": "zs2"}
+
+
+@pytest.mark.parametrize("problem", ["overlap", "schemes", "prompts", "duplicate_rows"])
+def test_incompatible_zero_shot_inputs_are_rejected(hand_runs, problem):
+    _second_zeroshot(hand_runs)
+    path = hand_runs["runs"] / "zs2"
+    frame = pd.read_csv(path / "summary.csv")
+    manifest = json.loads((path / "manifest.json").read_text(encoding="utf-8"))
+    if problem == "overlap":
+        frame["model"] = "m1"
+    elif problem == "schemes":
+        manifest["schemes_version"]["content_sha256"] = "other"
+    elif problem == "prompts":
+        manifest["prompt_versions"] = ["different"]
+    else:
+        frame = pd.concat([frame, frame.iloc[:1]])
+    frame.to_csv(path / "summary.csv", index=False)
+    (path / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    ids = pd.read_csv(hand_runs["items"]).query("in_test_set").item_id.tolist()
+    with pytest.raises(SchemeError):
+        _zeroshot_answers(hand_runs["runs"], ["zs", "zs2"], ids)

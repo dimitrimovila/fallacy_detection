@@ -19,6 +19,7 @@ import subprocess
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
@@ -46,7 +47,7 @@ from ..client.run import GOLD, read_manifest, schemes_dir_of
 from ..labels import label_space
 from ..parse import ALL_OPTIONS, INVALID
 from ..paths import REPO_ROOT
-from ..prompts import STAGE2, ZEROSHOT
+from ..prompts import JUDGE, STAGE2, ZEROSHOT
 from ..schemes import SchemeError, load_all, load_vocabulary
 from .baselines import majority_by
 from .canonical import _gold_terminal, predicted_fallacy_class
@@ -250,12 +251,45 @@ def _hard_answers(summary: pd.DataFrame, ids: Sequence[str],
                   stage: str | None = None) -> dict[str, dict[str, str | None]]:
     """entry -> item -> hard answer, from the verdict rows of a zero-shot or judge run."""
     rows = summary if stage is None else summary[summary["stage"] == stage]
+    rows = rows[rows["scheme_condition"] == GOLD]
     out: dict[str, dict[str, str | None]] = {}
     for model, own in rows.groupby("model"):
+        if own["item_id"].duplicated().any():
+            raise SchemeError(f"{model}: duplicate verdict rows for the same item")
         given = dict(zip(own["item_id"], own["answer"], strict=True))
         out[str(model)] = {i: (None if pd.isna(given.get(i)) or given.get(i) == INVALID
                                else given[i]) for i in ids}
     return out
+
+
+def _zeroshot_answers(
+    runs_dir: Path, configured: str | list[str] | None, ids: Sequence[str],
+) -> tuple[dict[str, dict[str, str | None]], dict[str, str]]:
+    """Combine disjoint model entries from compatible zero-shot runs, preserving provenance."""
+    names = ([configured] if isinstance(configured, str)
+             else ([] if configured is None else configured))
+    if not isinstance(names, list) or any(not isinstance(n, str) for n in names):
+        raise SchemeError("runs.zeroshot must be a run ID or a list of run IDs")
+    if len(set(names)) != len(names):
+        raise SchemeError("runs.zeroshot contains a repeated run ID")
+    answers, sources = {}, {}
+    reference = None
+    for name in names:
+        manifest, summary = _read_run(runs_dir, name)
+        schemes = manifest.get("schemes_version") or {}
+        signature = (schemes_dir_of(manifest).name, schemes.get("tag"),
+                     schemes.get("content_sha256"), tuple(manifest.get("prompt_versions") or []))
+        if reference is not None and signature != reference:
+            raise SchemeError(f"zero-shot run {name}: incompatible schemes or prompt versions")
+        reference = signature
+        own = _hard_answers(summary, ids, ZEROSHOT)
+        if not own:
+            raise SchemeError(f"zero-shot run {name}: no gold-condition zero-shot predictions")
+        if overlap := sorted(set(answers) & set(own)):
+            raise SchemeError(f"zero-shot run {name}: model entries already supplied: {overlap}")
+        answers.update(own)
+        sources.update({model: name for model in own})
+    return answers, sources
 
 
 def _single(verdict: str | None, explanation: str) -> Aggregation:
@@ -465,8 +499,7 @@ def evaluate(config: EvaluationConfig, runs_dir: str | Path, out_root: str | Pat
 
     missing = []
     zeroshot_run = config.runs.get("zeroshot")
-    zeroshot = _hard_answers(_read_run(runs_dir, zeroshot_run)[1], ids, ZEROSHOT) \
-        if zeroshot_run else {}
+    zeroshot, zeroshot_sources = _zeroshot_answers(runs_dir, zeroshot_run, ids)
     for entry in entries:
         if entry in zeroshot:
             systems[f"zeroshot:{entry}"] = {i: _single(v, "the verdict asked directly")
@@ -476,8 +509,14 @@ def evaluate(config: EvaluationConfig, runs_dir: str | Path, out_root: str | Pat
     for run_id in config.runs.get("judge") or []:
         judge_manifest, judge_summary = _read_run(runs_dir, run_id)
         settings = judge_manifest["config"].get("judge") or {}
+        if settings.get("answers_from") != answers_run:
+            raise SchemeError(f"judge run {run_id}: answers_from does not match {answers_run}")
+        if schemes_dir_of(judge_manifest) != folder:
+            raise SchemeError(f"judge run {run_id}: schemes differ from the answers run")
         name = "A5" if settings.get("justifications", True) else "A5.answers_only"
-        judged = _hard_answers(judge_summary, ids)
+        if name in systems:
+            raise SchemeError(f"judge run {run_id}: another run already supplies {name}")
+        judged = _hard_answers(judge_summary, ids, JUDGE)
         if len(judged) != 1:
             raise SchemeError(f"the judge run {run_id} has {len(judged)} entries, not one")
         ((judge_model, given),) = judged.items()
@@ -563,6 +602,7 @@ def evaluate(config: EvaluationConfig, runs_dir: str | Path, out_root: str | Pat
         "name": config.name,
         "runs": {"answers": answers_run, "zeroshot": zeroshot_run,
                  "judge": list(config.runs.get("judge") or [])},
+        "zeroshot_sources": zeroshot_sources,
         "schemes": {"folder": folder.name,
                     "tag": (manifest.get("schemes_version") or {}).get("tag")},
         "prompt_versions": manifest.get("prompt_versions"),
@@ -573,6 +613,8 @@ def evaluate(config: EvaluationConfig, runs_dir: str | Path, out_root: str | Pat
         "reference_model": reference, "a0_macro_f1": a0_f1,
         "primary_configurations": {p: descriptions[p] for p in present},
         "m": config.m, "commit": commit, "date": date,
+        "software_versions": {package: version(package)
+                              for package in ("numpy", "pandas", "scikit-learn")},
     }
     (out / "manifest.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
 
@@ -588,4 +630,12 @@ def evaluate(config: EvaluationConfig, runs_dir: str | Path, out_root: str | Pat
     (out / "summary.md").write_text(
         _summary(card, main, decide, answer, diagnostic, exploratory, main_n, decide_n,
                  missing, config.m, len(ids), len(ids_n)), encoding="utf-8")
+    from .cq import write_cq_report
+
+    write_cq_report(runs_dir / answers_run, out, items_path=items_path)
+    with (out / "summary.md").open("a", encoding="utf-8") as stream:
+        stream.write("\nCQ diagnostics and human agreement: [cq_report.md](cq_report.md).\n")
+    from .html_report import write_summary
+
+    write_summary(out)
     return out

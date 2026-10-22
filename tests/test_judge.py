@@ -140,7 +140,7 @@ def test_the_judge_configurations_plan_601_calls(tmp_path, schemes):
         pytest.skip("no data/items.csv")
     models = load_models()
     keys = {}
-    for name in ("judge_v1", "judge_v1_answers_only"):
+    for name in ("judge_full_v2", "judge_full_v2_answers_only"):
         config = RunConfig.load(REPO_ROOT / "configs" / f"{name}.yaml")
         items = select_items(config, frame)
         _source_run(tmp_path, config.judge["answers_from"], items, schemes,
@@ -149,7 +149,7 @@ def test_the_judge_configurations_plan_601_calls(tmp_path, schemes):
         assert len(calls) == 601
         assert {c.stage for c in calls} == {JUDGE} and {c.cq_id for c in calls} == {None}
         keys[name] = {c.key() for c in calls}
-    assert not keys["judge_v1"] & keys["judge_v1_answers_only"]
+    assert not keys["judge_full_v2"] & keys["judge_full_v2_answers_only"]
 
 
 @pytest.mark.parametrize("folder", ["v1", "v2"])

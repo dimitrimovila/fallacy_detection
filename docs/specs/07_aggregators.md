@@ -1,6 +1,6 @@
 # Spec 07. The aggregators
 
-Version 1, 19 October 2026, written before any result of A1 to A5. Components: `src/argfallacy/aggregate/`; the burden table `schemes/burden/v1.yaml`; the judge prompt `prompts/judge_v1.md` with `prompts/schemas/judge_v1.json`; the stage `judge` of the client; `configs/judge_v1.yaml` and `configs/judge_v1_answers_only.yaml`.
+Version 1, 19 October 2026, written before any result of A1 to A5. Components: `src/argfallacy/aggregate/`; the burden table `schemes/burden/v1.yaml`; the judge prompt `prompts/judge_v1.md` with `prompts/schemas/judge_v1.json`; the stage `judge` of the client; `configs/judge_full_v2.yaml` and `configs/judge_full_v2_answers_only.yaml`.
 Depends on: 01, 03, 04, 05, 06, 08 (folds of P13). Used by: 08.
 
 ## 0. Purpose, and what the primary configurations answer
@@ -203,8 +203,8 @@ The v3 pairing rule applies to the CQ prompts, not to a judge-only run.
 
 ### 7.3 Configurations
 
-* `configs/judge_v1.yaml`, the primary configuration: the 601 items of the test set, `qwen3_8_27b`, the answers of `qwen3_8_27b` in `20261005T193017Z_full_v2`, with justifications. 601 calls.
-* `configs/judge_v1_answers_only.yaml`, exploratory: the same without justifications. 601 calls.
+* `configs/judge_full_v2.yaml`, the primary configuration: the 601 items of the test set, `qwen3_8_27b`, the answers of `qwen3_8_27b` in `20261005T193017Z_full_v2`, with justifications. 601 calls.
+* `configs/judge_full_v2_answers_only.yaml`, exploratory: the same without justifications. 601 calls.
 
 Both run with `serving/slurm/pilot.sbatch`, like every other configuration. The verdict of A5 is the hard answer of the parsed run, its confidence `p_label` (spec 05). The judge has what the zero-shot has plus the answers, so A5 against the zero-shot of the same model measures what the answers add, reported beside the deciding comparison (spec 08, P10). An LLM used as a judge: Zheng et al. (2023).
 
@@ -213,7 +213,7 @@ Both run with `serving/slurm/pilot.sbatch`, like every other configuration. The 
 Named before the results; reported as exploratory comparisons (spec 08, P5), never as an improvement:
 * A2 with one policy on every CQ: `stop`, every CQ as P (with this policy A2 differs from A0 only in using soft answers); `branch`, the mass outside the arcs split in two equal parts at every CQ; `charitable`, the mass outside the arcs to the pass arc at every CQ, split in two at the D node.
 * A2 for each of the other four entries, with the source of section 6 and the burden of proof of each CQ: the diagnostic comparison of spec 08, P10, against the A0 of the same entry.
-* A5 without justifications, `configs/judge_v1_answers_only.yaml`.
+* A5 without justifications, `configs/judge_full_v2_answers_only.yaml`.
 
 Named here and computed in phase 4 only if time allows: A3 as a tree of depth at most 3 on the hard answers; A4 with weights per CQ from the agreement of each entry with the per-CQ annotation of the `Annotazione Dumitru` sheets, estimated out of fold; A4 by stacking (Wolpert 1992).
 
@@ -230,7 +230,7 @@ On the diagrams of `schemes/v1/` and `schemes/v2/`, and on answers written by ha
 4. A2: with no mass outside the arcs, the distribution equals that of `propagate` within 1e-12; with all the mass outside the arcs at a P node, abstention; at an E node, the pass arc; at a G node, the arc to the follow-up questions; at the D node, half and half; terminals and abstention sum to 1. The three exploratory policies route as section 8 says.
 5. A3: on data written by hand where one CQ separates the classes, the model learns it and predicts out of fold; with one class in training, that class; ties in the inner criterion go to the smaller C; the `scheme_mismatch` items stay out of training.
 6. A4: with five identical entries, A4 equals A2 of one entry; the source of each entry follows its regime, on a manifest written by hand; an entry whose answer at a CQ is `invalid` with no masses is left out of the mean.
-7. A5: rendering is deterministic; the prompt contains every CQ of the scheme word for word and the answers, and no justification with `justifications: false`; a source run without a CQ of an item stops the plan; `configs/judge_v1.yaml` plans 601 calls; a judge line parses to a terminal id with its `p_label`.
+7. A5: rendering is deterministic; the prompt contains every CQ of the scheme word for word and the answers, and no justification with `justifications: false`; a source run without a CQ of an item stops the plan; `configs/judge_full_v2.yaml` plans 601 calls; a judge line parses to a terminal id with its `p_label`.
 8. A1 and A3 give the same verdicts in two runs with the same seed.
 
 ## 11. What not to do
@@ -250,7 +250,7 @@ On the diagrams of `schemes/v1/` and `schemes/v2/`, and on answers written by ha
 
 ## 13. Definition of done
 
-Lint and tests green, with the commands of the README. A0 to A4 computed on full run v2 by `argfallacy evaluate` (spec 08), A0 equal to the `diagram` rule of the run report. A5 ready: `argfallacy run plan configs/judge_v1.yaml` counts 601 calls. Summary in Italian.
+Lint and tests green, with the commands of the README. A0 to A4 computed on full run v2 by `argfallacy evaluate` (spec 08), A0 equal to the `diagram` rule of the run report. A5 ready: `argfallacy run plan configs/judge_full_v2.yaml` counts 601 calls. Summary in Italian.
 
 ## References
 

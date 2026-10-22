@@ -18,6 +18,7 @@ dependencies = [
     "jsonschema>=4.0",       # validation of the models' structured output
     "scikit-learn>=1.5",     # the logistic regression of A3
     "numpy>=1.23",           # the folds, the resamples and the metrics of the evaluation
+    "matplotlib>=3.8",       # the reliability diagrams of the CQ evaluation
 ]
 
 [project.optional-dependencies]

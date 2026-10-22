@@ -1,14 +1,18 @@
 # The evaluation of full run v2, first stage: the gold scheme condition, the main table, the
 # deciding comparisons of the primary configurations against A0 of the reference model, and
 # the same without NLAS. `argfallacy evaluate configs/evaluation_v2.yaml` writes it into
-# evaluations/decision_v2/. The runs must have been parsed by the current parser.
+# evaluations/decision_v2/, replacing the previous output.
+# The runs must have been parsed by the current parser.
 
 name: decision_v2
 runs:
   answers: 20261005T193017Z_full_v2
-  zeroshot: 20261009T221950Z_zeroshot_v1
-  # the runs of configs/judge_v1.yaml and configs/judge_v1_answers_only.yaml, once they exist
-  judge: []
+  zeroshot:
+    - 20261009T221950Z_zeroshot_v1
+    - 20261021T111606Z_zeroshot_k2
+  judge:
+    - 20261021T111110Z_judge_v1
+    - 20261021T111110Z_judge_v1_answers_only
 # a guard: the command computes the reference model and stops if it is another
 reference_model: qwen3_8_27b
 # one seed for the folds and the resamples

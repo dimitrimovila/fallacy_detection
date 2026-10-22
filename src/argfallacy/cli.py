@@ -118,6 +118,22 @@ def _cmd_evaluate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_report_cqs(args: argparse.Namespace) -> int:
+    from .client.run import default_runs_dir
+    from .eval.cq import write_cq_report
+
+    out = write_cq_report(default_runs_dir() / args.run_id, args.out)
+    print(f"  {out / 'cq_report.md'}")
+    return 0
+
+
+def _cmd_report_summary(args: argparse.Namespace) -> int:
+    from .eval.html_report import write_summary
+
+    print(write_summary(args.evaluation, args.judge_audit, args.revised_cqs))
+    return 0
+
+
 def _cmd_report_run(args: argparse.Namespace) -> int:
     from .client.run import default_runs_dir
     from .eval.run_report import PILOT_REPORT_NAME, REPORT_NAME, write_report
@@ -212,6 +228,17 @@ def build_parser() -> argparse.ArgumentParser:
             help="skip the token counts, which read raw.jsonl one line at a time",
         )
         report_cmd.set_defaults(func=_cmd_report_run)
+        if group == "report":
+            cqs_cmd = commands.add_parser("cqs", help="CQ diagnostics and human agreement")
+            cqs_cmd.add_argument("run_id")
+            cqs_cmd.add_argument("--out", required=True, help="an evaluation output folder")
+            cqs_cmd.set_defaults(func=_cmd_report_cqs)
+            summary_cmd = commands.add_parser(
+                "summary", help="visual HTML of saved evaluation tables")
+            summary_cmd.add_argument("evaluation", help="an evaluation output folder")
+            summary_cmd.add_argument("--judge-audit", help="optional four-judge audit folder")
+            summary_cmd.add_argument("--revised-cqs", help="optional revised-CQ diagnostics folder")
+            summary_cmd.set_defaults(func=_cmd_report_summary)
 
     score = sub.add_parser("score", help="compute the metrics").add_subparsers(
         dest="command", required=True

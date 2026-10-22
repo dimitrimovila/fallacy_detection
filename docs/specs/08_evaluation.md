@@ -118,8 +118,12 @@ The protocol is implemented in two stages. The first gives what the decision of 
   name: decision_v2
   runs:
     answers: 20261005T193017Z_full_v2
-    zeroshot: 20261009T221950Z_zeroshot_v1
-    judge: []
+    zeroshot:
+      - 20261009T221950Z_zeroshot_v1
+      - 20261021T111606Z_zeroshot_k2
+    judge:
+      - 20261021T111110Z_judge_v1
+      - 20261021T111110Z_judge_v1_answers_only
   reference_model: qwen3_8_27b
   seed: 20261019
   resamples: 10000
@@ -127,7 +131,16 @@ The protocol is implemented in two stages. The first gives what the decision of 
   m: 5
   ```
 
-  `reference_model` is a guard: the command computes the reference model as P10 defines it, and stops if the two differ. `judge` lists the runs of `configs/judge_v1.yaml` and `configs/judge_v1_answers_only.yaml` once they exist. The command reads `summary.csv` and `manifest.json` of each run, never `raw.jsonl`; of the zero-shot and judge runs, stage one reads only the hard answer.
+  `reference_model` is a guard: the command computes the reference model as P10 defines it, and stops if the two differ. `judge` lists the runs of `configs/judge_full_v2.yaml` and `configs/judge_full_v2_answers_only.yaml` once they exist. The command reads `summary.csv` and `manifest.json` of each run, never `raw.jsonl`; of the zero-shot and judge runs, stage one reads only the hard answer.
+* `runs.zeroshot` accepts one run ID (backward compatible) or a list of run IDs.
+  Runs in the list must use the same scheme folder, tag, content hash and prompt versions;
+  each model entry may occur in only one source. Duplicate verdict rows are rejected.
+  The evaluation manifest records `zeroshot_sources`, model entry to source run ID,
+  and `software_versions` for numpy, pandas and scikit-learn.
+  A judge must refer to the configured answers run and its scheme folder; duplicate
+  with-justifications or answers-only judge inputs are rejected. Only gold-condition
+  rows of the requested verdict stage are read. Missing predictions count as errors.
+  The completed configuration replaces the previous output in `decision_v2`.
 * Folds (P13): three generators come from the seed, `numpy.random.SeedSequence(seed).spawn(3)`: the first for the folds, the second for the resamples of the 601 items, the third for the resamples of P4. The items of the test set, in order of `item_id`, are taken one gold scheme at a time, the schemes in alphabetical order; the items of each scheme are shuffled with the first generator and dealt in turn to folds 0, 1, 2, 3 and 4, continuing from one scheme to the next, so that the sizes of the folds differ by at most one item, and so do the sizes of each scheme in the folds.
 * Resamples (P12): one array of B by N indices into the items in order of `item_id`, drawn once, used for every system. A metric on a resample counts each item as many times as the resample draws it, with the definitions of spec 06 and P2; the macro averages run over the classes with support in the resample. A vectorized implementation of the metrics is expected; on the observed sample, each item once, it equals the canonical scorer.
 * Intervals: the percentiles of the B values with the default method of `numpy.percentile`: 2.5 and 97.5; for the deciding comparisons 100·α/2 and 100·(1 − α/2), with α = 0.05/m.
@@ -143,9 +156,48 @@ Acceptance tests of stage one, on data written by hand, with no run:
 7. `verdicts.csv` has one row per system and item, and its rows `A0:<entry>` equal the `diagram` rule of the run report.
 8. The manifest has the runs, the seed, the number of resamples, the fold of every item, the reference model, the primary configurations and m, the commit of the code and the date.
 
-### Stage two, in phase 4
+### CQ and human agreement implementation
 
-P1 with the scheme predicted by stage one: it first needs a change to the client, which today plans the predicted condition with one prediction per item for every entry and reads no prediction from a run, while P1 asks for the prediction of each entry; then the calls. Then P2 in the collapsed space, P3, P7, P8, P11, the F1 per class, the integrity table, the table of stage one and `summary.html`.
+P7 and the available parts of P8 are written by `argfallacy evaluate` alongside
+its existing outputs. `argfallacy report cqs RUN_ID --out OUTPUT` refreshes only
+these diagnostics and also works on revised schemes without a burden table.
+Outputs: `cq_metrics.csv`, `cq_agreement.csv`, `cq_calibration.csv`,
+`cq_calibration.svg` when binary human targets exist, `human_agreement.csv` for
+the original-scheme evaluation, `cq_manifest.json` and `cq_report.md`.
+
+Human CQ sheets are identified by their complete original CQ set and restricted
+to the item's gold scheme, even when the annotator judges that scheme absent.
+Identical duplicate ratings count once; conflicting CQ ratings stop computation.
+Original annotations are not applied to revised questions. Human verdict ratings
+from repeated sheets count as one per item and annotator; conflicts and nonterminal
+coarse labels are excluded and counted. Missing ratings are omitted from alpha;
+singletons do not enter its coincidence matrix. Alpha is undefined with no expected
+disagreement; raw agreement counts observed rater pairs. Unanimity uses only items
+with a valid answer from every configured model and reports that denominator.
+
+The Brier targets are binary human answers. Parsed probabilities already point to
+yes/positive; no complement of `p_verbal` is applied. Reliability bins have equal
+counts (up to one), splitting tied probabilities deterministically. Flip sensitivity
+is reported per model and averaged across models. Human CQ agreement below 20
+annotations is withheld. Model distributions retain missing and invalid responses;
+missing predictions disagree with annotated answers. Missing second-annotator CQ
+ratings and unidentified blind repeats are explicitly reported. These descriptive
+analyses do not change the deciding comparisons of P10.
+
+### Visual presentation of available results
+
+`summary.html` is a self-contained English presentation of the available saved
+metric tables, comparisons, CQ diagnostics and human agreement. It is written by
+`evaluate` and can be refreshed without recomputing metrics with
+`argfallacy report summary EVALUATION_DIR`. Optional `--judge-audit DIR` and
+`--revised-cqs DIR` include the four-judge comparison and revised questions.
+The renderer keeps the saved values and intervals, embeds calibration figures,
+records table fingerprints and labels oracle baselines and unavailable conditions.
+It does not yet implement every table listed in P14.
+
+### Remaining stage two work
+
+P1 with the scheme predicted by stage one: it first needs a change to the client, which today plans the predicted condition with one prediction per item for every entry and reads no prediction from a run, while P1 asks for the prediction of each entry; then the calls. Then P2 in the collapsed space, P3, P11, the F1 per class, the integrity table, the table of stage one and the corresponding additions to `summary.html`.
 
 ## Changes
 

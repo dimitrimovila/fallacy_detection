@@ -153,8 +153,8 @@ the label chosen in `p_label`.
 
 The judge stage (`stages: [judge]`) gives the same prompt plus the answers of one entry of a
 run to the critical questions of the scheme, read from the `summary.csv` of that run, which
-must have been parsed first: `configs/judge_v1.yaml` (601 items, `qwen3_8_27b` reading its own
-answers in full run v2 with their justifications) and `configs/judge_v1_answers_only.yaml`
+must have been parsed first: `configs/judge_full_v2.yaml` (601 items, `qwen3_8_27b` reading its own
+answers in full run v2 with their justifications) and `configs/judge_full_v2_answers_only.yaml`
 (the same without justifications), run and parsed with the same commands.
 
 For full run v3, `configs/judge_full_v3.yaml` and
@@ -224,11 +224,42 @@ in macro F1, have their interval at level 1 - 0.05/m. The command stops if the r
 model, the entry whose A0 has the highest macro F1, is not the one the configuration names.
 
 The runs of the judge stage enter the evaluation through the key `judge` of its
-configuration.
+configuration. `runs.zeroshot` accepts one run ID or a list of runs containing disjoint
+model entries with the same scheme and prompt versions. The manifest records the source
+run of each zero-shot entry. The full v2 configuration includes K2 and both judge runs;
+its output is `evaluations/decision_v2/`, replacing the previous output.
+
+CQ diagnostics and human agreement are included in the evaluation folder as
+`cq_report.md`, with distributions, nominal alpha, Brier scores, pooled reliability
+diagrams and diagram sensitivity. They can also be refreshed without recomputing
+the aggregators:
+
+```bash
+argfallacy report cqs 20261005T193017Z_full_v2 --out evaluations/decision_v2
+argfallacy report cqs 20261019T151336Z_full_v3 --out evaluations/cq_full_v3
+```
+
+The evaluation also writes a self-contained `summary.html` with coloured tables,
+intervals, plain-language method names, CQ filters and embedded reliability plots.
+To include the four-judge audit and revised questions in the same page, refresh it
+from existing tables (no inference or metric recomputation):
+
+```bash
+argfallacy report summary evaluations/decision_v2 --judge-audit evaluations/judge_audit_20261021 --revised-cqs evaluations/cq_full_v3
+```
+
+The page can be copied on its own and opened offline. `evaluate` regenerates the
+core evaluation page; rerun the presentation command to include the optional audits.
+The earlier `scratch/report_prototype/summary_report.py` is an exploratory report
+for diagram and direct predictions, not the current evaluation renderer.
+
+Human CQ comparisons require the original schemes; revised questions are not joined
+by CQ number. Identical duplicate annotation rows count once; conflicting CQ ratings
+stop the report. Conflicting or coarse human verdicts are excluded and counted.
+Unavailable second-annotator CQ ratings and blind repeats are named in the report.
 
 Not implemented yet: the predicted scheme condition, the collapsed space, the breakdowns by
-scheme and corpus, the per-CQ and human agreement tables and the abstention curves of the
-evaluation.
+scheme and corpus and the abstention curves of the evaluation.
 
 ## License
 

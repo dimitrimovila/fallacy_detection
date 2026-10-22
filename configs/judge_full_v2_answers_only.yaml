@@ -1,8 +1,8 @@
-# A5 without the justifications: the same as judge_v1.yaml, with only the hard answers of
+# A5 without the justifications: the same as judge_full_v2.yaml, with only the hard answers of
 # qwen3_8_27b to the critical questions in the prompt. An exploratory configuration.
-# `argfallacy run plan configs/judge_v1_answers_only.yaml` counts the calls.
+# `argfallacy run plan configs/judge_full_v2_answers_only.yaml` counts the calls.
 
-name: judge_v1_answers_only
+name: judge_full_v2_answers_only
 
 items:
   # the 601 items of the test set: every item with a gold scheme, no sample
