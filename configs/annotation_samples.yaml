@@ -1,0 +1,23 @@
+# The samples of the human annotation, drawn together so that they are disjoint.
+# `argfallacy annotations samples configs/annotation_samples.yaml --out DIR` writes the sheet
+# of the direct-verdict sample, samples.csv and manifest.json into DIR, outside the repository.
+# The same seed gives the same files, byte for byte, at the same commit.
+
+seed: 20261024
+date: 2026-10-24
+# items per round and per scheme in the direct-verdict sheet
+round_size: 10
+# the CQ annotation on schemes 2.0: items of pool A without a fine verdict of the `eleni`
+# annotator, per gold scheme
+cq_v2:
+  per_scheme:
+    ad_hominem: 16
+    analogy: 16
+    example: 16
+    expert_opinion: 16
+    popular_opinion: 16
+    cause_to_effect: 16
+    correlation_to_cause: 5
+  # test items of this gold scheme with no row in the `Annotazione Dumitru` sheets
+  never_annotated:
+    slippery_slope: 10

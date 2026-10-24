@@ -99,6 +99,19 @@ argfallacy annotations update
 argfallacy annotations update --skip "Annotazione Dumitru correlation"   # leaves that sheet's rows as they are
 ```
 
+Drawing the samples of the human annotation (the CQ annotation on schemes 2.0 and the
+direct verdict, disjoint, with the seed of the configuration) and writing the sheet of the
+direct verdict for a local annotation app. The folder must be outside the repository, since
+the texts come from corpora with their own terms; it receives `direct_verdict_sheet.jsonl`
+(one item per line: position, item, scheme name, text and the verdict menu of the zero-shot
+prompt), `samples.csv` (every drawn item with its sample, and round and position for the
+direct verdict) and `manifest.json` (seed, counts, commit, sha256 of the files). The same
+seed gives the same bytes.
+
+```bash
+argfallacy annotations samples configs/annotation_samples.yaml --out /path/outside/the/repository
+```
+
 Serving one entry of `serving/models.yaml`, then checking it answers with
 log-probabilities (the smoke test exits with a code other than zero if the entry cannot
 be run):

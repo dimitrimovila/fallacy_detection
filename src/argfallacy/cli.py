@@ -1,4 +1,4 @@
-"""Command line: ``argfallacy annotations update``, ``argfallacy run plan|execute CONFIG``,
+"""Command line: ``argfallacy annotations update|samples``, ``argfallacy run plan|execute CONFIG``,
 ``argfallacy parse RUN_ID``, ``argfallacy report run RUN_ID`` (and its earlier name
 ``argfallacy pilot report RUN_ID``), ``argfallacy score prior``, ``argfallacy evaluate CONFIG``."""
 
@@ -26,6 +26,20 @@ def _cmd_annotations_update(args: argparse.Namespace) -> int:
     for sheet, (before, after) in counts.items():
         print(f"{sheet}: {before} rows before, {after} now")
     print(f"wrote {ANNOTATIONS_FILE}")
+    return 0
+
+
+def _cmd_annotations_samples(args: argparse.Namespace) -> int:
+    from .annotation_samples import SampleConfig, write_samples
+    from .schemes import SchemeError
+
+    try:
+        manifest = write_samples(SampleConfig.load(args.config), args.out)
+    except SchemeError as error:
+        raise SystemExit(f"{error}\nnothing was written.") from None
+    for sample, counts in manifest["counts"].items():
+        print(f"{sample}: {sum(counts.values())} items, {counts}")
+    print(f"rounds of the direct sample: {manifest['rounds']}")
     return 0
 
 
@@ -186,6 +200,12 @@ def build_parser() -> argparse.ArgumentParser:
     update_cmd.add_argument("--skip", action="append", default=[], metavar="SHEET",
                             help="a sheet not to read, its rows stay; repeatable")
     update_cmd.set_defaults(func=_cmd_annotations_update)
+    samples_cmd = annotations.add_parser(
+        "samples", help="draw the annotation samples and write the direct-verdict sheet"
+    )
+    samples_cmd.add_argument("config", help="a YAML sampling configuration")
+    samples_cmd.add_argument("--out", required=True, help="a folder outside the repository")
+    samples_cmd.set_defaults(func=_cmd_annotations_samples)
     run = sub.add_parser("run", help="ask the models").add_subparsers(
         dest="command", required=True
     )
