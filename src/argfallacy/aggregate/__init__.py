@@ -52,6 +52,18 @@ def __getattr__(name):
         from . import c1
 
         return getattr(c1, name)
+    if name in {"CQInputs", "C1CrossFitter", "ReferenceInputs"}:
+        from . import crossfit
+
+        return getattr(crossfit, name)
+    if name in {"Side", "Router", "C2Result", "c2_out_of_fold", "route"}:
+        from . import routing
+
+        return getattr(routing, name)
+    if name in {"CQTree", "PooledCalibration", "C3Result", "c3_out_of_fold"}:
+        from . import tree
+
+        return getattr(tree, name)
     raise AttributeError(name)
 
 __all__ = [
@@ -64,4 +76,7 @@ __all__ = [
     "SOURCES", "LOGPROB", "SAMPLE", "VERBAL", "OUTSIDE",
     "Expansion", "NodeCall", "expand", "a2_pruned", "ssoft",
     "C1Config", "C1Result", "c1_out_of_fold", "configurations", "transfer_c1",
+    "CQInputs", "C1CrossFitter", "ReferenceInputs",
+    "Side", "Router", "C2Result", "c2_out_of_fold", "route",
+    "CQTree", "PooledCalibration", "C3Result", "c3_out_of_fold",
 ]

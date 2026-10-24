@@ -329,6 +329,70 @@ intervals overall and by scheme; all CQs of an item move together.
 including coverage over annotated items and the test set. The round-two evaluator
 configuration and its command integration remain to be implemented.
 
+## Routing and learned trees
+
+C2 routes between C1 and the reference zero-shot. C3 fits one decision tree of
+depth at most three per scheme on C1's combined probabilities and outside masses.
+Their offline APIs share a `C1CrossFitter`, which caches fits by their exact
+training items. Training inputs come from four inner item folds; held-out inputs
+come from C1 fitted on the complete training partition. Hyperparameter validation
+rebuilds both levels inside each split, including C1's own parameter selection.
+Globally out-of-fold C1 predictions are not reused as second-level training data.
+
+```python
+from argfallacy.aggregate import C1CrossFitter, Side, c2_out_of_fold, c3_out_of_fold
+from argfallacy.eval.routing import routing_curve
+
+source = C1CrossFitter(data, labels, seed)
+zero = Side.from_summary(zeroshot_summary, f"zeroshot:{data.reference}", data.reference)
+c2 = c2_out_of_fold(source, zero, folds)  # primary tau = 0
+c3 = c3_out_of_fold(source, folds)
+curve = routing_curve(c2, data.items, indices=bootstrap_indices)
+```
+
+The correctness regressions of C2 fit only disagreements between available
+verdicts. Agreement selects the diagram; one available verdict is used directly;
+no available verdict means abstention. Each regression chooses C by pooled inner
+log loss. Its features are diagram confidence, terminal margin, abstention,
+mean binary entropy in bits along the most probable path, zero-shot `p_label`
+with a missing indicator, and the scheme. Missing probabilities use the mean of
+all training items, or 0.5 if none is observed. A correctness target with one class
+uses that constant probability; with no disagreement observations it uses 0.5.
+The selected side's distribution is retained, while C2 confidence is its estimated
+probability of correctness. The explanation includes the side and both estimates.
+
+`c2.at_tau(tau)` applies another threshold to the same held-out estimates.
+`routing_curve` reports every change in the curve between -1 and 1 and the
+thresholds attaining at least 60, 70, 80, 90 and 100 per cent explained items.
+The denominator includes every test item. Discrete jumps retain the achieved
+share; unavailable diagram verdicts can make a target unreachable, which is
+reported explicitly. The 95 per cent intervals reuse the evaluation's item
+resamples with thresholds fixed from the pooled estimates.
+
+C3 uses Gini splits and balanced class weights. Its terminal distribution is the
+weighted leaf distribution; confidence is the unweighted share of its chosen
+class among the training items of the leaf. Explanations list CQ features and
+thresholds along the tree path. Tied validation scores prefer smaller depth,
+then larger leaves. One training class gives that class; no eligible training
+item gives an abstention. Gold labels absent from their scheme's terminals stay
+out of tree and recalibration training.
+
+Exploratory APIs accept `ReferenceInputs(data, seed, hard=True)` as C2's A0 side,
+or `ReferenceInputs(data, seed)` for C3's tree on the reference hard answers.
+That tree encodes the first/second arc as 1/0 and outside answers as a missing
+split with outside mass 1. `c3_out_of_fold(source, folds, kind="pooled")` instead
+fits one shared terminal-mass slope and one bias per label, shrinking toward
+identity with L-BFGS and choosing C by inner log loss. It normalises over the
+terminals of each item's scheme.
+
+For revised schemes, `C1CrossFitter(revised_data, labels, seed, fit_data=data)`
+fits only the original CQ labels and predicts the revised signals; supply the
+zero-shot with matching revised menus. Additional fixed predictions, including
+D+Q and S-soft when available, enter C2 as `extra_sides=(Side(name, predictions),)`.
+Each side gets a correctness regression on the same features; the largest
+estimate among available sides wins, with ties to the diagram then input order.
+Use the `name` argument to identify exploratory results and parameter choices.
+
 ## Sequential critical questions
 
 The `ssoft` stage asks questions along the revised diagrams, showing all the CQs
