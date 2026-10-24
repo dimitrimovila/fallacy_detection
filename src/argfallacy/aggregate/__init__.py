@@ -48,6 +48,10 @@ def __getattr__(name):
         from . import checklist
 
         return getattr(checklist, name)
+    if name in {"C1Config", "C1Result", "c1_out_of_fold", "configurations", "transfer_c1"}:
+        from . import c1
+
+        return getattr(c1, name)
     raise AttributeError(name)
 
 __all__ = [
@@ -59,4 +63,5 @@ __all__ = [
     "answer_masses", "mean_masses", "traverse_soft", "source_of", "sources_of",
     "SOURCES", "LOGPROB", "SAMPLE", "VERBAL", "OUTSIDE",
     "Expansion", "NodeCall", "expand", "a2_pruned", "ssoft",
+    "C1Config", "C1Result", "c1_out_of_fold", "configurations", "transfer_c1",
 ]

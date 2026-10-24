@@ -274,6 +274,61 @@ Unavailable second-annotator CQ ratings and blind repeats are named in the repor
 Not implemented yet: the predicted scheme condition, the collapsed space, the breakdowns by
 scheme and corpus and the abstention curves of the evaluation.
 
+## Combining critical-question answers
+
+Round-two C1 combines the five entries before traversing the diagram. Its primary
+configuration is centred stacking supervised by the binary answers on the gold
+scheme's `Annotazione Dumitru` sheet, with soft traversal on schemes 1.1.
+`argfallacy.aggregate.c1_inputs.build_dataset` reads supplied `summary.csv` and
+manifest frames; `argfallacy.eval.c1.cq_labels` selects those labels. The annotation
+row must also judge the gold scheme present; answers from a row judging another
+scheme do not enter the labelled population or the human path reference.
+
+The offline API takes these prepared inputs, the shared folds and the evaluation
+seed; it does not open a run or launch inference:
+
+```python
+from argfallacy.aggregate.c1 import c1_out_of_fold, configurations
+from argfallacy.eval.c1 import cq_evaluation, entry_answers
+import pandas as pd
+
+configs = configurations(excluded_label_schemes=(
+    "example", "cause_to_effect", "correlation_to_cause",
+))
+results = {c.name: c1_out_of_fold(data, labels, folds, seed, c) for c in configs}
+predictions = pd.concat([entry_answers(data), *[r.combined for r in results.values()]])
+cq_report = cq_evaluation(data, labels, predictions, indices=bootstrap_indices)
+```
+
+The named alternatives cover majority, Dawid–Skene, CQ-weighted A4 and stacking
+supervised by gold verdicts, each with soft and hard traversal, including
+`C1.hard`. Labelled fits use the other four outer folds and choose hyperparameters
+with four inner folds split by item. Dawid–Skene instead fits all items once,
+without labels. Weighted A4 chooses its signals jointly by inner Brier score;
+ties prefer equal weights, then each entry's distribution signal and the fixed
+logprob/sample/verbal order. Missing alternative signals do not contribute to
+that split; the mean outside mass remains fixed.
+
+All combiners decide only `p_first`. A hard answer uses its larger arc, with
+ties going to the reference answer when it is on an arc, otherwise to the first
+arc; outside mass above 0.5 gives an indeterminate answer. Fitted stacking and
+Dawid–Skene can disagree with unanimous hard inputs; no unanimity override is
+applied. The stacking centre and the two supervised objectives share all features.
+
+`configurations(schemes_version="2.0")` supplies the unsupervised and gold-fitted
+alternatives on revised schemes. `transfer_c1(result, revised_data)` applies each
+original held-out fold's CQ-stacking coefficients without fitting revised labels.
+`configurations(include_unstable=True)` enables the optional re-annotation
+exclusion; pass binary paired labels as `repeats`. Its exclusions are estimated
+within each training partition. `baseline_aggregations(data)` supplies unchanged
+A2 of the reference entry and A4 for comparison.
+
+The CQ report includes agreement, Brier scores and paired 95 per cent bootstrap
+intervals overall and by scheme; all CQs of an item move together.
+`human_path_reference` reports the human diagram path as a descriptive reference,
+including coverage over annotated items and the test set. The round-two evaluator
+configuration and its command integration remain to be implemented.
+
 ## Sequential critical questions
 
 The `ssoft` stage asks questions along the revised diagrams, showing all the CQs

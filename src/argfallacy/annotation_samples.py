@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from .annotations import ANNOTATIONS_FILE, ANNOTATOR, ITEMS_FILE, load_annotations
+from .annotations import ANNOTATIONS_FILE, ANNOTATOR, ITEMS_FILE, gold_scheme_rows, load_annotations
 from .eval.evaluate import _commit
 from .eval.prior import load_test_set
 from .paths import REPO_ROOT
@@ -69,19 +69,6 @@ class Drawn:
     """item_id, scheme: sorted by scheme and item."""
 
 
-def _sheet_schemes(annotations: pd.DataFrame, schemes) -> dict[str, str]:
-    """The scheme of each ``Annotazione Dumitru`` sheet: the one with exactly its CQs."""
-    found = {}
-    rows = annotations[annotations.annotator == ANNOTATOR]
-    for sheet, group in rows.groupby("sheet"):
-        cqs = set(group.loc[group.field.str.startswith("CQ"), "field"])
-        matches = [s for s, scheme in schemes.items() if set(scheme.cqs) == cqs]
-        if len(matches) != 1:
-            raise SchemeError(f"{sheet}: no single scheme has the CQs {sorted(cqs)}")
-        found[sheet] = matches[0]
-    return found
-
-
 def pool_a(items: pd.DataFrame, annotations: pd.DataFrame, schemes) -> set[str]:
     """The test items with a full 1.1 vector under the gold scheme.
 
@@ -92,18 +79,7 @@ def pool_a(items: pd.DataFrame, annotations: pd.DataFrame, schemes) -> set[str]:
     476 items: 438 reach a verdict along the diagram, 35 of cause to effect stop at
     ``na`` and 3 stop at ``idk``.
     """
-    gold = items.set_index("item_id").gold_scheme
-    by_sheet = _sheet_schemes(annotations, schemes)
-    rows = annotations[(annotations.annotator == ANNOTATOR) & annotations.item_id.isin(gold.index)]
-    pool = set()
-    for (item_id, sheet, _), group in rows.groupby(["item_id", "sheet", "row"]):
-        scheme = gold[item_id]
-        if by_sheet[sheet] != scheme:
-            continue
-        values = dict(zip(group.field, group.value, strict=True))
-        if values.get("scheme") == scheme and all(cq in values for cq in schemes[scheme].cqs):
-            pool.add(item_id)
-    return pool
+    return set(gold_scheme_rows(items, annotations, schemes, complete=True).item_id)
 
 
 def eleni_items(items: pd.DataFrame, annotations: pd.DataFrame, schemes) -> set[str]:

@@ -53,6 +53,38 @@ def load_annotations(path: str | Path = ANNOTATIONS_FILE) -> pd.DataFrame:
     return frame
 
 
+def gold_scheme_rows(items: pd.DataFrame, annotations: pd.DataFrame, schemes,
+                     complete: bool = False) -> pd.DataFrame:
+    """Rows on the gold-scheme sheet that also judge that scheme to be present.
+
+    Match each sheet by its complete CQ set. With ``complete``, require every CQ
+    field on the same row, including ``na`` and ``idk`` answers.
+    """
+    gold = items.set_index("item_id").gold_scheme
+    own = annotations[annotations.annotator == ANNOTATOR]
+    by_sheet = {}
+    for sheet, group in own.groupby("sheet"):
+        cqs = set(group.loc[group.field.str.startswith("CQ"), "field"])
+        matches = [s for s, scheme in schemes.items() if set(scheme.cqs) == cqs]
+        if len(matches) != 1:
+            raise SchemeError(f"{sheet}: no single scheme has the CQs {sorted(cqs)}")
+        by_sheet[sheet] = matches[0]
+    selected = []
+    rows = own[own.item_id.isin(gold.index)]
+    for (item_id, sheet, row), group in rows.groupby(["item_id", "sheet", "row"]):
+        scheme = gold[item_id]
+        if by_sheet[sheet] != scheme:
+            continue
+        judgements = group.loc[group.field == "scheme", "value"].unique()
+        if len(judgements) > 1:
+            raise SchemeError(f"{item_id} {sheet} row {row}: conflicting scheme judgements")
+        values = dict(zip(group.field, group.value, strict=True))
+        if values.get("scheme") == scheme and (
+                not complete or all(cq in values for cq in schemes[scheme].cqs)):
+            selected.append(group)
+    return pd.concat(selected) if selected else own.iloc[:0].copy()
+
+
 def _same_text(a: str, b: str) -> bool:
     """Tolerates a copying slip, not a row pasted next to another item."""
     a, b = light_normalize(a), light_normalize(b)
@@ -165,5 +197,5 @@ def update(workbook: str | Path, path: str | Path = ANNOTATIONS_FILE,
     return {s: (int(before.get(s, 0)), len(r)) for s, r in new.items()}
 
 
-__all__ = ["ANNOTATIONS_FILE", "ITEMS_FILE", "COLUMNS", "load_annotations",
+__all__ = ["ANNOTATIONS_FILE", "ITEMS_FILE", "COLUMNS", "load_annotations", "gold_scheme_rows",
            "read_sheet", "update"]
