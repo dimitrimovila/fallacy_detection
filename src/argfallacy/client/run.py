@@ -32,6 +32,7 @@ from ..paths import REPO_ROOT, SCHEMES_DIR, SCHEMES_ROOT
 from ..prompts import (
     DEFAULT_VERSION,
     JUDGE,
+    SSOFT,
     STAGE1,
     STAGE2,
     ZEROSHOT,
@@ -109,9 +110,20 @@ class RunConfig:
     judge: dict[str, Any] = field(default_factory=dict)
     """For the stage ``judge``: ``answers_from``, the run whose ``summary.csv`` gives the
     answers; ``answers_model``, the entry whose answers are shown; ``justifications``."""
+    history: bool = True
+    threshold: float = 0.02
     raw: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        if SSOFT in self.stages:
+            if (self.stages != [SSOFT] or self.scheme_condition != GOLD
+                    or self.schemes != V2_SCHEMES or self.prompt_version != "v1"):
+                raise SchemeError("ssoft requires stages [ssoft], gold condition, schemes v2 "
+                                  "and prompt_version v1")
+            if not isinstance(self.history, bool):
+                raise SchemeError("ssoft history must be true or false")
+            if not math.isfinite(self.threshold) or not 0 <= self.threshold <= 1:
+                raise SchemeError("ssoft threshold must be finite and between 0 and 1")
         if JUDGE in self.stages:
             missing = [key for key in JUDGE_KEYS if key not in (self.judge or {})]
             if missing:
@@ -119,7 +131,7 @@ class RunConfig:
         if self.schemes not in SCHEMES_FOLDERS:
             raise SchemeError(f"{self.name}: schemes must be one of {list(SCHEMES_FOLDERS)}, "
                               f"not {self.schemes!r}")
-        if self.stages != [JUDGE] and (
+        if self.stages not in ([JUDGE], [SSOFT]) and (
             (self.prompt_version == V3_PROMPTS) != (self.schemes == V2_SCHEMES)
         ):
             raise SchemeError(
@@ -206,6 +218,7 @@ class PlannedCall:
     tier: int | None = None
     reasoning: dict[str, Any] | None = None
     serve_args: tuple[str, ...] = ()
+    path: str = ""
 
     def request(self) -> Request:
         return Request(
@@ -254,6 +267,10 @@ def plan(
     the answers of ``judge.answers_model`` in the run ``judge.answers_from``, read
     from its ``summary.csv`` under ``runs_dir``.
     """
+    if config.stages == [SSOFT]:
+        from .ssoft import plan_ssoft
+
+        return plan_ssoft(config, items, models, schemes, only)
     entries = select_models(config, only)
     models = models if models is not None else load_models()
     schemes = schemes if schemes is not None else load_all(config.schemes_dir)
@@ -663,6 +680,11 @@ def execute(
     failure is a line in ``raw.jsonl`` with ``error`` set and no cache entry, so
     the next run tries it again.
     """
+    if config.stages == [SSOFT]:
+        from .ssoft import execute_ssoft
+
+        return execute_ssoft(config, items, run_id, runs_dir, backend, cache, models,
+                             schemes, max_attempts, sleep, only)
     import time
 
     entries = select_models(config, only)

@@ -39,6 +39,8 @@ JUDGE = "judge"
 DEFAULT_VERSION = "v2"
 ZEROSHOT_VERSION = "v1"
 JUDGE_VERSION = "v1"
+SSOFT = "ssoft"
+SSOFT_VERSION = "v1"
 
 CANNOT_BE_DETERMINED = "cannot_be_determined"
 """The third option, a choice of this project: the diagrams and the prompts described in
@@ -310,6 +312,45 @@ def render_stage2(
         answer_options=options,
         json_schema=answer_schema(scheme, cq_id, version),
     )
+
+
+def render_ssoft(
+    item: Mapping[str, Any], scheme: Scheme, cq_id: str,
+    history: tuple[tuple[str, str], ...] | bool = (), version: str = SSOFT_VERSION,
+) -> RenderedPrompt:
+    """One CQ with all the questions and the answers of its path, without verdicts."""
+    text = str(item.get("text") or "").strip()
+    if not text:
+        raise SchemeError(f"item {item.get('item_id')!r} has no text")
+    if cq_id not in scheme.cqs:
+        raise SchemeError(f"{scheme.scheme_id}: unknown CQ {cq_id!r}")
+    if history is False:
+        earlier = "Not shown: answer this question on its own."
+    else:
+        node = scheme.start
+        lines = []
+        for cq, answer in history:
+            if cq != node or answer not in scheme.nodes[cq]:
+                raise SchemeError(f"{scheme.scheme_id}: invalid history at {cq}={answer}")
+            lines.append(f"**{cq}.** {scheme.cqs[cq].text}\nAnswer: {answer}.")
+            node = scheme.nodes[cq][answer].target
+        if node != cq_id:
+            raise SchemeError(f"{scheme.scheme_id}: history reaches {node}, not {cq_id}")
+        earlier = "\n\n".join(lines) if lines else "None: this is the first question."
+    filled = _fill_versioned(
+        load_template(SSOFT, version),
+        {"scheme_name": scheme.name, "schema": scheme.schema,
+         "variables": _variables_block(scheme), "text": text, "cq_id": cq_id,
+         "cq_text": scheme.cqs[cq_id].text,
+         "answer_options": _answer_options_block(scheme, cq_id, load_answer_meanings("v3")),
+         "all_cqs": "\n\n".join(f"**{cq}.** {scheme.cqs[cq].text}" for cq in scheme.cq_order),
+         "history": earlier},
+        prompt_version(SSOFT, version), where=f"{SSOFT}_{version}.md")
+    schema = load_json_schema(SSOFT, version)
+    schema["properties"]["answer"]["enum"] = list(answer_options(scheme, cq_id))
+    schema["title"] = f"{schema['title']}_{scheme.scheme_id}_{cq_id}"
+    return RenderedPrompt(filled, SSOFT, prompt_version(SSOFT, version), scheme.scheme_id,
+                          cq_id, answer_options(scheme, cq_id), schema)
 
 
 @dataclass(frozen=True)

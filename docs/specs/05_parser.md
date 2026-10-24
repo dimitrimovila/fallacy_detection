@@ -75,6 +75,24 @@ On lines of `raw.jsonl` written by hand, with the response shape of the fake bac
 
 Lint and tests green, with the commands of the README. Full run v2 parsed again on the computer that holds its `raw.jsonl`, with A0 of `qwen3_8_27b` unchanged (accuracy 0.504, macro F1 0.350) and `stage1_p_sample_not_modal` at 0 for every entry. Summary in Italian.
 
+## 11. `ssoft.csv`, sequential CQ answers
+
+Parsing an `ssoft` run also writes `ssoft.csv`: one row per item, scheme, entry,
+CQ and path, with every column of a stage-two row of `summary.csv`, plus `path`
+and `depth`. It uses the same validation, logprob masses and oriented verbal
+confidence as stage two. Two histories reaching one CQ remain separate rows.
+The rows stay out of `summary.csv`; `answers.csv` retains the individual attempts
+and adds path and depth columns only when the raw input includes this stage.
+
+The path is `CQ1=no>CQ2=yes`, empty at the first node. Depth counts earlier
+answers, starting at zero. With `history: false`, both path and depth are empty.
+Successful retries supersede failed attempts for the same item/entry/CQ/path/sample
+in `ssoft.csv`; successful invalid answers remain invalid and are counted. A node
+with only failed attempts stays as one invalid row. No raw record is rewritten.
+
+The client uses these same parser functions while planning the next level; this
+does not change independent-stage parsing or cause the client to write CSV files.
+
 ## References
 
 * Xiong, M. et al. (2024). Can LLMs express their uncertainty? An empirical evaluation of confidence elicitation in LLMs. *ICLR*.

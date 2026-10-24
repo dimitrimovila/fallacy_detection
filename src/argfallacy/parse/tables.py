@@ -1,6 +1,6 @@
 """From raw calls to the two tables every later step reads.
 
-The client never looks at what came back; this is where it is read.  Two files:
+CQ interpretation lives here, including the reads used to plan sequential calls. Two files:
 ``answers.csv``, one row per call, and ``summary.csv``, one row per question and
 model, with the hard answer and the soft answers the aggregators combine: the
 masses of every answer from the logprobs, the stated confidence and the shares
@@ -40,6 +40,7 @@ from ..prompts import (
     CANNOT_BE_DETERMINED,
     JUDGE,
     NOT_APPLICABLE,
+    SSOFT,
     STAGE1,
     ZEROSHOT,
     answer_options,
@@ -340,6 +341,9 @@ def parse_row(
     # the masses are over the answers at stage two, over the scheme ids at stage one
     for option in (*ALL_OPTIONS, *SCHEME_IDS):
         out[f"p_logprob_{option}"] = masses.get(option)
+    if row.get("stage") == SSOFT:
+        out["path"] = row.get("path") or ""
+        out["depth"] = row.get("depth", len(out["path"].split(">")) if out["path"] else 0)
     return out
 
 
@@ -358,9 +362,9 @@ def parse_answers(
     rows: Iterable[Mapping[str, Any]], schemes: Mapping[str, Any] | None = None
 ) -> pd.DataFrame:
     schemes = schemes if schemes is not None else load_all()
-    return pd.DataFrame(
-        [parse_row(row, schemes) for row in rows], columns=ANSWERS_COLUMNS
-    )
+    parsed = [parse_row(row, schemes) for row in rows]
+    extra = ["path", "depth"] if any(row["stage"] == SSOFT for row in parsed) else []
+    return pd.DataFrame(parsed, columns=[*ANSWERS_COLUMNS, *extra])
 
 
 def valid_samples(group: pd.DataFrame) -> pd.DataFrame:
@@ -518,6 +522,7 @@ def summarise(
     cannot_be_determined`` — so the two stay distinguishable by ``answer``.
     """
     schemes = schemes if schemes is not None else load_all()
+    answers = answers[answers["stage"] != SSOFT]
     if answers.empty:
         return pd.DataFrame(columns=SUMMARY_COLUMNS)
 
@@ -562,6 +567,30 @@ def summarise(
     ).reset_index(drop=True)
 
 
+def summarise_ssoft(
+    answers: pd.DataFrame, schemes: Mapping[str, Any] | None = None,
+) -> pd.DataFrame:
+    """Stage-two probabilities per path, keeping successful retries once per node."""
+    from ..prompts import STAGE2
+
+    columns = [*SUMMARY_COLUMNS, "path", "depth"]
+    own = answers[answers["stage"] == SSOFT].copy()
+    if own.empty:
+        return pd.DataFrame(columns=columns)
+    keys = ["item_id", "scheme_condition", "scheme", "cq_id", "model", "path", "sample_index"]
+    # A successful raw record supersedes failed attempts, including after resume.
+    own["_failed"] = own["error"].notna() & (own["error"] != "")
+    own = own.sort_values("_failed", ascending=False, kind="stable").drop_duplicates(
+        keys, keep="last")
+    frames = []
+    for (path, depth), group in own.groupby(["path", "depth"], dropna=False, sort=False):
+        frame = summarise(group.assign(stage=STAGE2), schemes)
+        frame["stage"], frame["path"], frame["depth"] = SSOFT, path, depth
+        frames.append(frame)
+    return pd.concat(frames, ignore_index=True)[columns].sort_values(
+        ["model", "item_id", "path", "cq_id"]).reset_index(drop=True)
+
+
 def parse_run(run_dir: str | Path, schemes: Mapping[str, Any] | None = None) -> dict[str, Path]:
     """Read a run's raw file and write ``answers.csv`` and ``summary.csv`` beside it.
 
@@ -583,4 +612,8 @@ def parse_run(run_dir: str | Path, schemes: Mapping[str, Any] | None = None) -> 
         path = run_dir / name
         frame.to_csv(path, index=False, lineterminator="\n")
         written[name] = path
+    if not answers.empty and (answers["stage"] == SSOFT).any():
+        path = run_dir / "ssoft.csv"
+        summarise_ssoft(answers, schemes).to_csv(path, index=False, lineterminator="\n")
+        written["ssoft.csv"] = path
     return written

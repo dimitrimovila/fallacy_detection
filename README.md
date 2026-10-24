@@ -274,6 +274,49 @@ Unavailable second-annotator CQ ratings and blind repeats are named in the repor
 Not implemented yet: the predicted scheme condition, the collapsed space, the breakdowns by
 scheme and corpus and the abstention curves of the evaluation.
 
+## Sequential critical questions
+
+The `ssoft` stage asks questions along the revised diagrams, showing all the CQs
+and the earlier answers on the current path. Each node takes one call. The shared
+function `argfallacy.aggregate.expand` routes probabilities with `schemes/burden/v2.yaml`
+and expands node arcs whose cumulative mass is at least 0.02. Terminal arcs are
+never pruned. Different histories at the same CQ remain separate calls.
+`argfallacy.aggregate.a2_pruned` applies the same expansion to independent CQ answers.
+The result keeps terminal, abstention and pruned masses separate; unanswered nodes
+are reported as pending. A probability transformation can be supplied before routing
+and pruning; the default leaves probabilities unchanged.
+
+```bash
+argfallacy run plan configs/ssoft_full_v3.yaml            # 601 first calls
+argfallacy run plan configs/ssoft_nohistory_full_v3.yaml  # 3,162 calls
+```
+
+The first configuration plans further levels during execution. The second sets
+`history: false` and asks every CQ independently, with the same list of questions.
+Both use Qwen, the gold scheme and original probabilities, without calibration.
+The manifest records the expansion policy, prompt and burden hashes; its planned
+count grows as nodes are discovered. Resume requires the same policy and inputs.
+It reuses successful records and the cache, and retries only missing calls.
+
+From the repository root on the cluster, using the existing job script:
+
+```bash
+mkdir -p runs/slurm
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+sbatch serving/slurm/pilot.sbatch configs/ssoft_full_v3.yaml "${stamp}_ssoft_full_v3" qwen3_8_27b
+sbatch serving/slurm/pilot.sbatch configs/ssoft_nohistory_full_v3.yaml "${stamp}_ssoft_nohistory_full_v3" qwen3_8_27b
+```
+
+Keep the same run ID when resubmitting an interrupted job. `argfallacy parse RUN_ID`
+writes `ssoft.csv`, with the stage-two probability columns plus `path` and `depth`.
+These rows are separate from `summary.csv`; `answers.csv` retains each raw attempt.
+The no-history control has an empty path and depth. With history, depth starts at zero.
+
+The other round-two aggregators and `configs/evaluation_round2.yaml` are not yet
+implemented. Out-of-fold temperatures, their use during expansion and the four
+exploratory S-soft configurations are deferred; calibrating an existing run cannot
+recover nodes that its original pruning did not call.
+
 ## License
 
 The code is released under the MIT License (see `LICENSE`). The files in `data/`

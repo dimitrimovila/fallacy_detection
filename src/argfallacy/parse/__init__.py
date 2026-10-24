@@ -17,12 +17,14 @@ from .tables import (
     parse_run,
     shown_verdicts,
     summarise,
+    summarise_ssoft,
     valid_samples,
     validate_against_schema,
 )
 
 __all__ = [
     "parse_run", "parse_answers", "summarise", "parse_row", "parse_content",
+    "summarise_ssoft",
     "logprob_masses", "answer_position", "majority", "valid_samples", "options_for",
     "validate_against_schema", "label_probability", "shown_verdicts",
     "INVALID", "ALL_OPTIONS", "ANSWERS_COLUMNS", "SUMMARY_COLUMNS", "VERDICT_STAGES",

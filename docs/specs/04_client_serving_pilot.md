@@ -63,15 +63,43 @@ A legacy source manifest without a folder means `schemes/v1/`.
 The v3 pairing rule applies to the CQ prompts, not to a judge-only run.
 
 * Stage `judge` (spec 07, section 7): a configuration with `stages: [judge]` and `prompt_version: v1` plans one call per item under its gold scheme, with the samples of each entry, as the zero-shot does. Its keys under `judge` are `answers_from`, the run whose `summary.csv` gives the answers, `answers_model`, the entry whose answers are shown, and `justifications`. The plan reads that `summary.csv`, written by the parser of spec 05, and stops with an error naming the item and the CQ if a CQ of the item's scheme has no row. The answers enter the rendered prompt, so the cache key covers them.
+* Stage `ssoft`: `stages: [ssoft]`, gold condition, `schemes: v2`, `prompt_version: v1`,
+  `history: true` by default and `threshold: 0.02`. It cannot be mixed with other stages.
+  `configs/ssoft_full_v3.yaml` plans 601 first calls; the plan explicitly says that
+  later levels are planned during the run. After each level, the parser reads its
+  answers and the shared function `argfallacy.aggregate.expand` finds the next
+  missing nodes. Distinct histories are distinct calls. Each node takes one sample
+  at the entry's temperature, top_p and top_k, including entries that take several
+  samples in the independent CQ stages. A failed node blocks its descendants until
+  resume; other paths can continue. The rendered history enters the existing cache
+  key without changing the key's fields or the independent prompts.
+* `configs/ssoft_nohistory_full_v3.yaml` sets `history: false`: all 3,162 calls are
+  planned at the start, one per CQ of the item's gold scheme. The list of all CQs
+  remains in the prompt; the history is not shown. Both configurations use the
+  original probabilities without calibration. The four exploratory configurations
+  and temperatures estimated out of fold are deferred. Any future probability
+  transformation must act during expansion, before routing and pruning.
 * `predicted` condition: the plan uses the stage-one predictions of the model itself and generates stage-two calls only for the items whose predicted scheme differs from the gold one; for the others the results of the `gold` condition are valid here too, and the parser knows it.
 
 ### 2.4 Manifest
 `manifest.json` with: `run_id`, full configuration, `model_id` and `display_name`, prompt versions (those of the stages the configuration asks for), schemes version (`folder`, the folder of `schemes/` the configuration names with the key `schemes`, `v1` by default or `v2`; tag, the `version` that every YAML of the folder declares and that the files must share; the files; and hash of their content; a manifest without `folder` was written on `schemes/v1/`, and the parser and the run report read the diagrams of the folder the manifest names), the `max_tokens` of the configuration, start and end timestamps, number of calls planned, executed, served from the cache, failed, and per model the note `logprobs_available`, `revision`, `tier`, `reasoning`, `max_tokens`, `samples`, `temperature`, `top_p`, `top_k` and `serve_args`.
 The manifest describes the whole configuration, whichever entries an invocation executes: the calls planned are those of all the entries; executed, served from the cache and failed are counted over the whole `raw.jsonl` of the run, per entry (`calls_per_model`) and in total; `started_at` is the one of the first invocation, `finished_at` the one of the last. A call counts once: its answered line says executed or served from the cache, and a call with only error lines is failed, so a failure answered on a later try is no longer counted as failed.
 
+For `ssoft`, the manifest records one sample per node, `planning_during_run`, and
+the history setting, threshold and hashes of the initial requests, prompt files,
+answer definitions and burden table. Planned counts grow as new nodes are discovered.
+Changing these inputs or the expansion policy requires a new run ID; resume refuses
+a mismatch before appending records. Successful raw records reconstruct the frontier,
+and calls not yet written can still be served from the disk cache.
+
 ### 2.5 `raw.jsonl`
 One line per call: `run_id`, `item_id`, `stage`, `scheme_condition`, `scheme`, `cq_id` (empty for stage one, the zero-shot and the judge), `sample_index`, `model`, `model_id`, `revision`, `tier`, `reasoning`, `prompt_version`, `json_schema` (the schema sent to the model with that call), `params`, `cache_key`, `from_cache`, `raw_response`, `latency_s`, `error`. The file is append-only. It is read one line at a time, never whole, by the resume, by the counts of the manifest and by the parser: the pilot left 13 GB of it. A line ends only at a newline, so a line separator that the JSON leaves inside a string (U+2028, U+0085) does not cut it.
 `raw_response`, like the value of the cache, is the stored form of the response: all of it, less two redundancies of the logprobs block, which was most of a line. The copy that the server's payload carries in `raw.choices[0].logprobs`, identical to `logprobs`, is left out, and so is every `bytes` field, the UTF-8 of a token or of an alternative written again as a list of integers. On the pilot, one line in twenty, the two copies were about half a line each and `bytes` 38 to 42 per cent of it: the stored form should be about 70 per cent smaller. The parser reads neither. The cache key and `top_logprobs` do not change. The lines and cache entries written before, the pilot's among them, keep both and stay as they are: they read and parse in the same way.
+
+Only `ssoft` lines add `path`, for example `CQ1=no>CQ2=yes`, and `depth`, the number
+of earlier answers (zero at the first node). With `history: false`, `path` is empty
+and `depth` is null. Resume preserves failed attempts and appends each successful
+item/entry/CQ/path once. Independent-stage raw records keep their existing fields.
 
 ## 3. Minimal parser (`argfallacy.parse`, pilot version)
 

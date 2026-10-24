@@ -70,6 +70,8 @@ def _cmd_run_plan(args: argparse.Namespace) -> int:
     print(f"configuration  : {config.name}")
     print(f"items          : {len(items)}")
     print(f"calls          : {report['calls']}")
+    if config.stages == ["ssoft"] and config.history:
+        print("planning       : first calls only; later levels are planned during the run")
     print(f"already cached : {report['cached']}")
     print(f"to do          : {report['missing']}")
     print()

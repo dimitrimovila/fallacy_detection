@@ -1,0 +1,13 @@
+# Path-conditioned CQ calls on the test set; later levels are planned during execution.
+name: ssoft_full_v3
+items:
+  exclude_none_scheme: true
+stages: [ssoft]
+scheme_condition: gold
+schemes: v2
+models: [qwen3_8_27b]
+prompt_version: v1
+history: true
+threshold: 0.02
+generation:
+  max_tokens: 512

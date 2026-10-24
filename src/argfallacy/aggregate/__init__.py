@@ -14,7 +14,6 @@ from .burden import (
     load_burden,
     routes,
 )
-from .checklist import C_GRID, a3_out_of_fold, choose_c, features
 from .diagram import a0, good_terminal, pass_arc
 from .interface import Aggregation, decide, macro_f1, top_terminal
 from .order import (
@@ -40,6 +39,16 @@ from .soft import (
     sources_of,
     traverse_soft,
 )
+from .ssoft import Expansion, NodeCall, a2_pruned, expand, ssoft
+
+
+def __getattr__(name):
+    # Serving and parsing need traversal, but never import the learned models.
+    if name in {"C_GRID", "a3_out_of_fold", "choose_c", "features"}:
+        from . import checklist
+
+        return getattr(checklist, name)
+    raise AttributeError(name)
 
 __all__ = [
     "Aggregation", "decide", "top_terminal", "macro_f1",
@@ -49,4 +58,5 @@ __all__ = [
     "load_burden", "routes", "BURDEN_DIR", "TYPES", "POLICIES", "ABSTAIN", "SPLIT",
     "answer_masses", "mean_masses", "traverse_soft", "source_of", "sources_of",
     "SOURCES", "LOGPROB", "SAMPLE", "VERBAL", "OUTSIDE",
+    "Expansion", "NodeCall", "expand", "a2_pruned", "ssoft",
 ]

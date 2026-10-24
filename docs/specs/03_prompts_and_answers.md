@@ -127,3 +127,24 @@ The v3 pairing rule applies to the CQ prompts, not to a judge-only run.
 The judge does not see the arcs of the diagram: it combines the answers freely. The JSON Schema `schemas/judge_v1.json` is that of `zeroshot_v1` with its own title, and `answer` is narrowed per scheme in the same way. The parser reads a judge line as a zero-shot line.
 
 Acceptance tests: rendering is deterministic; the prompt contains every CQ of the scheme word for word and its answer, and no justification with `justifications: false`; without the section and the sentence it is the zero-shot prompt of the same item.
+
+## 10. Sequential CQs, `ssoft_v1.md`
+
+`render_ssoft(item, scheme, cq, history)` renders `ssoft_v1` on schemes 2.0.
+The template is `stage2_v3.md` with two sections before "The critical question":
+"All the critical questions of this scheme" lists every CQ in YAML order as
+`**CQ1.** <text>`, word for word; "Earlier questions on this argument, and their
+answers" lists the CQs of the current path in order, followed by `Answer: <answer>.`.
+The answers are those of the arcs, without justifications, terminals or diagram edges.
+At the first node the history reads "None: this is the first question.".
+With `history: false`, every CQ instead reads "Not shown: answer this question on its own.".
+
+Before the last sentence of "What to do", the template adds "Take the earlier answers
+as given and do not reconsider them.". Answer definitions come from
+`stage2_v3_answers.yaml`. `schemas/ssoft_v1.json` is the stage-two v3 schema with its
+own title, narrowed per CQ in the same way. The stage has its own version; it does
+not change the v2/v3 pairing of the independent CQ stages.
+
+Acceptance: deterministic rendering; exact CQ text and path order; no justification
+in the history; two histories give different cache keys; removing the two sections
+and the extra sentence recovers the independent stage-two prompt.
