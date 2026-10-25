@@ -1,6 +1,6 @@
 # Spec 08. Evaluation
 
-Version 2.1, 19 October 2026. Version 2 dates from 11 October 2026, version 1 from 10 and 11 September 2026. The spec holds the requirements already decided, the evaluation protocol and, since version 2.1, the order in which the protocol is implemented, with the acceptance tests of its first stage. The changes, with their reasons, are listed at the end. Withdrawn requirements keep their number, so that references to P10, P11 and P12 elsewhere stay valid.
+Version 2.2, 25 October 2026. Version 2.1 dates from 19 October, version 2 from 11 October 2026, version 1 from 10 and 11 September 2026. The spec holds the requirements already decided, the evaluation protocol and the implementation stages. Version 2.2 adds the scoped completion of stage two, specified after the existing round-two results and before reading the new human annotations. The changes, with their reasons, are listed at the end. Withdrawn requirements keep their number, so that references to P10, P11 and P12 elsewhere stay valid.
 
 ## Requirements already decided
 
@@ -214,7 +214,191 @@ and gold origin. The breakdowns of the deciding comparisons follow P3 and P12.
 
 P1 with the scheme predicted by stage one: it first needs a change to the client, which today plans the predicted condition with one prediction per item for every entry and reads no prediction from a run, while P1 asks for the prediction of each entry; then the calls. Then P2 in the collapsed space, P3, P11 for the systems of the first stage, the F1 per class, the integrity table, the table of stage one and the corresponding additions to `summary.html`.
 
+### Scoped stage-two completion (planned, 25 October 2026)
+
+The following scope governs the analyses for thesis-plan sections 6.4.1 and 6.4.2,
+with results to be frozen on 6 November. It does not change saved results, primary
+configurations, the deciding families, or their conditional reading rules. New
+analyses are exploratory, with 95 per cent percentile intervals. P9 stays withdrawn:
+the disagreement analysis below uses measured confidence, not justifications.
+
+**Execution and provenance.** `argfallacy analyze configs/analyses_v1.yaml` writes
+to `evaluations/analyses_v1/`. The configuration names the saved evaluations and
+parsed runs, seed, resamples, processing batch size, and optional external inputs
+`direct_verdict.answers`, `direct_verdict.samples`, and `dq`. Optional inputs default
+to null. Paths are supplied in configuration, never embedded in modules; both human
+files remain outside the repository. Existing evaluation directories, frozen data,
+raw runs, schemes and fitted-system definitions are not modified. Read saved
+out-of-fold verdicts and confidences; recover missing zero-shot and judge confidence
+from the matching parsed runs, verifying the verdicts and recording `p_label` and
+its lower-bound flag. Keep evaluation, system and scheme-version identities explicit.
+No fitting is performed merely to compute a subgroup or a bootstrap replicate.
+
+The manifest records input paths and SHA-256 hashes, source manifests and code
+commits, analysis commit, configuration, software versions, folds, seed, resample
+generators and item order, exclusions, actual denominators, and computed, pending or
+deferred parts with reasons. A missing optional input produces a pending status,
+never invented observations or zero-valued results; malformed supplied inputs fail.
+Analysis code and synthetic acceptance tests are completed and committed before
+new human annotations are opened. New annotations enter no fitted primary system.
+
+**Gold origin and breakdowns.** Add total, fallacy-corpus (LOGIC, Reddit,
+ElecDebate) and scheme-corpus (NLAS, EthiX) results to the thesis tables only:
+main tables of both rounds; deciding and exploratory comparisons; CQ-level scores;
+abstention summaries (AUGRC, AURC and fixed-coverage accuracy); human path and human
+agreement; and the C2 routing curve. Existing rows by scheme or CQ retain that
+detail within each origin. Do not add origin to S-soft answer changes or other
+minor descriptive tables. Conformal summaries retain the origin and scheme views
+already required by spec 09. Report item counts, CQ-pair counts where applicable,
+supported and excluded classes, and undefined metrics. Classes absent from a
+subgroup do not enter its macro averages; Good Argumentation support zero is
+explicit. Preserve the scorer's numeric convention, with a separate undefined flag
+for a metric whose denominator is zero.
+
+Complete main-table breakdowns under P3 and the main table without NLAS for round
+two under P4. New verdict comparisons are also reported by scheme and without
+NLAS, on the common eligible items; preserve P3's small-group rules. Recompute
+subgroup metrics from predictions, not averages of saved metrics. For C2 retain
+the pooled out-of-fold threshold grid and thresholds selected for requested shares;
+report each origin's actual explained share and scores at those same thresholds,
+with intervals at the selected shares. Do not retune thresholds within an origin.
+
+**CQ and human tables.** Extend spec 09 section 2.5 to individual CQs, in total
+and by origin, retaining its binary-label selection and item-level pairing. Do
+not conflate that population with the broader P7 population: identify both and
+their denominators. Retain P7's minimum of 20 annotated items for displayed hard
+human agreement; report smaller counts and withhold the estimate. Preserve
+version compatibility: no 1.1 human target is applied to a rewritten 2.0 CQ.
+S-soft CQ comparisons use only observed, compatible nodes and name that population;
+an unvisited node is not an incorrect answer. Extend historical P8 agreement and
+the human-path reference with origins and item-bootstrap intervals; keep historical
+cross-sheet verdicts separate from paths computed under the gold scheme. Missing
+second-rater CQ data and blind repeats remain identified as missing.
+
+**Abstention.** Retain P11's ordered curve and its discrete-mean AUGRC/AURC,
+including its rule for items without a verdict or confidence. Also export a curve
+at every distinct finite confidence threshold: keep all tied items together, require
+a valid verdict and confidence, and include the empty selection. Report threshold,
+kept and error counts, actual coverage, selective risk and generalized risk. At
+zero coverage selective risk is undefined and generalized risk is zero. This curve
+does not replace the ordered-curve indices; record missing-confidence and missing-
+verdict counts and the maximum operational coverage. Do not imply that each ordered
+point is attainable by a threshold. Fixed-coverage counts use half-up rounding.
+
+Cover the available confidence-bearing systems of both rounds, including A3,
+all five zero-shot entries, both judges, A2, A4, round-two soft variants, C2, C3,
+S-soft and its control. A partial system uses its declared eligible population;
+comparisons use the intersection. Systems without confidence are reference points,
+not artificial rankings. Compute ordered curves, effective-threshold curves and
+summary intervals for total and both origins. Retain the margin check where a true
+terminal distribution is available; a single chosen label is not such a distribution.
+Paired AUGRC differences, system minus reference, are restricted to:
+`C2` against `zeroshot:qwen3_8_27b`; `C4` against `A2.pruned`; `C1` against `A2`;
+`A5` against `zeroshot:qwen3_8_27b`, in total and by origin. These comparisons do
+not decide success. Summary intervals and intervals at fixed coverage are required;
+pointwise confidence bands over the whole curve are not required.
+
+At fixed coverages retain composition by scheme, corpus, gold origin and gold Good
+Argumentation; add human disagreement and Enrico's difficulty when available.
+Report counts, shares among abstained items, and rejection rates within each group.
+For partially observed attributes report known and missing counts and denominators
+among kept, rejected and all eligible items; unknown is not agreement or low difficulty.
+Keep difficulty levels 1 to 5, validate one unambiguous rating per item, and report
+Spearman correlation of difficulty with `1 - confidence`, with an item-bootstrap
+interval, on rated items only. Constant inputs give an undefined correlation.
+
+**Future human input and D+Q.** Accept the app CSV unchanged:
+`item_id,position,verdict,answered_at,revision`, including `_final.csv`. Select the
+greatest revision per item, and the last physical row on equal revisions; repeated
+equal revisions must have the same verdict. Validate nonnegative integer revisions,
+timezone-aware timestamps, canonical terminal labels and membership in the item's
+1.1 menu. Validate positions and item membership against the direct-verdict rows of
+the existing `samples.csv` format (`item_id,sample,scheme,round,position`). Accept a
+partial sample; do not require every sampled item or a 200-item minimum for the
+reader. The planned thesis sample is at least 200 items in blocks. Report answered
+and planned counts, rounds completed or partial, and counts by scheme and origin;
+identify a smaller sample without presenting it as the planned completed sample.
+No extrapolation to unannotated items is made.
+
+Primary disagreement is human direct verdict versus gold. Direct verdict versus
+human path and versus other annotators are separate comparisons on common items;
+the same annotator's direct/path difference is a procedural comparison. Report
+confidence by agreement group and AUROC of `1 - confidence` for disagreement (ties
+count half), with item-bootstrap intervals, and disagreement prevalence among kept,
+rejected and all annotated items. Include the paired human direct/path comparisons
+and every available system scored against the direct verdict as a second reference,
+on explicit common populations; do not replace gold in the primary tables. These
+are associations with observed disagreement, not estimates of a well-measured human
+label distribution. Single-class disagreement samples have undefined AUROC.
+
+Save conformal sets item by item, with evaluation/system/version, item id, fold,
+terminal ids, size, gold inclusion and calibration threshold, using the unchanged
+rule of spec 09 section 7. Link mean set size to agreement/disagreement once the
+annotation exists. Aggregate conformal summaries are insufficient to reconstruct
+item sets. Recover genuine terminal distributions or export sets from the existing
+evaluation calculation to the new analysis directory; do not fabricate distributions
+from a chosen verdict or summary. If deterministic replay of a fitted system is
+unavoidable, separate it from bootstrap work, preserve its folds and settings,
+verify predictions against the saved evaluation, and record replay provenance.
+D+Q adapters are prepared with synthetic normalized inputs; actual run reading
+requires the format and version contract of spec 10. Until then D+Q stays pending.
+Keep the declared verdict and the CQ-derived diagram verdict as distinct systems.
+
+**Other thesis outputs.** Export per-class precision, recall, F1, gold support and
+prediction counts, including Good Argumentation and unsupported classes. For the
+C1 diagnosis identify rare classes by fewer than 20 gold items in the full frozen
+test set, before subsetting; report the class list and mean recall over supported
+rare classes alongside C1 and its references. Export integrity counts for invalid,
+missing, cannot-be-determined and not-applicable answers, and absent verdicts,
+with explicit sample/CQ/item denominators. Reuse the existing stage-one scorer on
+test items only. A collapsed main table is optional only through existing scoring
+code without new scoring machinery; otherwise defer it to level 3. The full
+predicted-scheme verdict condition remains unavailable, distinct from stage-one
+scheme recognition. No new inference is part of these analyses.
+
+**Outputs and resources.** One CSV per statistical table, with explicit evaluation,
+system/version and subset keys: `main_table.csv`, `comparisons.csv`, `per_class.csv`,
+`integrity.csv`, `stage1.csv`, `cq_level.csv`, `cq_level_differences.csv`,
+`human_path.csv`, `human_agreement.csv`, `routing_curve.csv`, `abstention.csv`,
+`abstention_curves.csv`, `abstention_thresholds.csv`, `abstention_differences.csv`,
+`abstention_composition.csv`, `difficulty.csv`, `human_direct.csv`,
+`uncertainty_disagreement.csv`, `conformal_items.csv`, and `conformal.csv`, plus
+`manifest.json` and a self-contained English `summary.html`. Pending tables have
+headers and manifest status, no placeholder measurements. Aggregated metrics use
+four decimals; item confidences, thresholds and probabilities retain enough
+precision to reproduce ordering and ties. The report reads saved tables and shows
+definitions, denominators, intervals, and pending/deferred parts.
+
+Reuse the recorded item ordering, folds, seed and 10,000 paired draws of P12;
+origins and other subgroups filter those whole-test draws, and empty replicates
+are excluded metric by metric with their counts recorded. Retain the existing
+generator-2 protocol for the without-NLAS analysis. Shared indices may be retained
+once or replayed deterministically in batches. Sum CQ contributions per item
+before resampling, as in `eval/c1.py`; process systems and batches sequentially.
+Never allocate resamples-by-CQ-pairs arrays or a resamples-by-items-by-systems
+array, or retain per-system copies of full bootstrap workspaces. Chunking must not
+change draws, ties, estimates or intervals. Record batch size, elapsed time and
+peak process memory. The local target is an 8 GB PC: provide a bounded-memory
+default and measure it before a full run. If replay or analysis remains too heavy,
+provide a CPU-only batch entry point for the Mathematics cluster with explicit
+configuration and resource requirements; do not submit jobs without authorization.
+
+Acceptance checks use synthetic data before new annotations are read: origin and
+class denominators; original metric reproduction; paired subgroup/bootstrap
+alignment; individual-CQ versus pooled totals; tied and empty threshold selections;
+the four AUGRC pairs only; missing attributes and constant-input statistics; app
+revision/final-export equivalence and partial rounds; pending versus malformed
+inputs; per-item conformal summaries matching aggregates; D+Q version gating; and
+batch-size invariance. Verify protected input hashes and report regeneration from
+saved tables. Specifications and code are committed before computing new results.
+
 ## Changes
+
+From version 2.1 to version 2.2, on 25 October 2026, after the saved round-two
+results and before reading new human annotations: scoped stage-two completion,
+thesis-table origins, effective-threshold curves, four exploratory AUGRC pairs,
+difficulty and future-disagreement contracts, per-item conformal export, and
+bounded-memory execution. Existing deciding results and rules are unchanged.
 
 From version 2 to version 2.1, on 19 October 2026, before any result of an aggregator:
 * The section on implementation: two stages, and the acceptance tests of the first. The spec had none, and the decision of 26 October needs only part of the protocol.
