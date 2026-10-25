@@ -131,16 +131,15 @@ Acceptance tests: rendering is deterministic; the prompt contains every CQ of th
 ## 10. Sequential CQs, `ssoft_v1.md`
 
 `render_ssoft(item, scheme, cq, history)` renders `ssoft_v1` on schemes 2.0.
-The template is `stage2_v3.md` with two sections before "The critical question":
+The template is `stage2_v3.md` with the heading "The critical question" renamed
+"The critical question you must answer" and two sections before it:
 "All the critical questions of this scheme" lists every CQ in YAML order as
 `**CQ1.** <text>`, word for word; "Earlier questions on this argument, and their
 answers" lists the CQs of the current path in order, followed by `Answer: <answer>.`.
 The answers are those of the arcs, without justifications, terminals or diagram edges.
-At the first node the history reads "None: this is the first question.".
-With `history: false`, every CQ instead reads "Not shown: answer this question on its own.".
-
 Before the last sentence of "What to do", the template adds "Take the earlier answers
-as given and do not reconsider them.". Answer definitions come from
+as given.". When there is no earlier answer (the first node, and every CQ with
+`history: false`), that section and that sentence are left out. Answer definitions come from
 `stage2_v3_answers.yaml`. `schemas/ssoft_v1.json` is the stage-two v3 schema with its
 own title, narrowed per CQ in the same way. The stage has its own version; it does
 not change the v2/v3 pairing of the independent CQ stages.

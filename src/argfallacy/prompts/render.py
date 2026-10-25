@@ -324,11 +324,9 @@ def render_ssoft(
         raise SchemeError(f"item {item.get('item_id')!r} has no text")
     if cq_id not in scheme.cqs:
         raise SchemeError(f"{scheme.scheme_id}: unknown CQ {cq_id!r}")
-    if history is False:
-        earlier = "Not shown: answer this question on its own."
-    else:
+    lines = []
+    if history is not False:
         node = scheme.start
-        lines = []
         for cq, answer in history:
             if cq != node or answer not in scheme.nodes[cq]:
                 raise SchemeError(f"{scheme.scheme_id}: invalid history at {cq}={answer}")
@@ -336,7 +334,17 @@ def render_ssoft(
             node = scheme.nodes[cq][answer].target
         if node != cq_id:
             raise SchemeError(f"{scheme.scheme_id}: history reaches {node}, not {cq_id}")
-        earlier = "\n\n".join(lines) if lines else "None: this is the first question."
+    # Without earlier answers (first node, or no history) the section and its instruction
+    # are left out, so the prompt adds only the list of the CQs to the stage two prompt.
+    if lines:
+        earlier = (
+            "## Earlier questions on this argument, and their answers\n\n"
+            + "\n\n".join(lines)
+            + "\n\n"
+        )
+        instruction = "Take the earlier answers as given.\n\n"
+    else:
+        earlier = instruction = ""
     filled = _fill_versioned(
         load_template(SSOFT, version),
         {"scheme_name": scheme.name, "schema": scheme.schema,
@@ -344,7 +352,7 @@ def render_ssoft(
          "cq_text": scheme.cqs[cq_id].text,
          "answer_options": _answer_options_block(scheme, cq_id, load_answer_meanings("v3")),
          "all_cqs": "\n\n".join(f"**{cq}.** {scheme.cqs[cq].text}" for cq in scheme.cq_order),
-         "history": earlier},
+         "history": earlier, "history_instruction": instruction},
         prompt_version(SSOFT, version), where=f"{SSOFT}_{version}.md")
     schema = load_json_schema(SSOFT, version)
     schema["properties"]["answer"]["enum"] = list(answer_options(scheme, cq_id))

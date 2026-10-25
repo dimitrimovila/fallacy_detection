@@ -30,7 +30,7 @@ from fakes.llm import FakeBackend
 
 ITEM = {"item_id": "item01", "text": "An argument for the test.", "gold_scheme": "analogy"}
 MODELS = load_models(REPO_ROOT / "tests/fakes/models.yaml")
-INSTRUCTION = "Take the earlier answers as given and do not reconsider them."
+INSTRUCTION = "Take the earlier answers as given."
 
 
 def config(history=True, model="fake_single"):
@@ -179,7 +179,7 @@ def test_expansion_keeps_distinct_histories_and_prunes_only_node_arcs():
     assert sum(pruned.distribution.values()) + pruned.pruned == pytest.approx(1)
 
 
-def test_ssoft_prompt_has_only_the_two_sections_and_instruction_added():
+def test_ssoft_prompt_adds_the_list_of_cqs_and_only_the_earlier_answers_that_exist():
     from argfallacy.client.cache import cache_key
     from argfallacy.client.call import Request
     from argfallacy.prompts import render_ssoft
@@ -189,13 +189,21 @@ def test_ssoft_prompt_has_only_the_two_sections_and_instruction_added():
         cq = scheme.start
         rendered = render_ssoft(ITEM, scheme, cq)
         assert rendered == render_ssoft(ITEM, scheme, cq)
-        for node in scheme.cq_order:
-            assert f"**{node}.** {scheme.cqs[node].text}" in rendered.text
-        assert "None: this is the first question." in rendered.text
-        head, rest = rendered.text.split("## All the critical questions of this scheme")
-        tail = rest[rest.index("## The critical question") :]
+        # at the first node there is no earlier answer: same prompt as without history
+        assert rendered == render_ssoft(ITEM, scheme, cq, history=False)
+        assert "Earlier questions" not in rendered.text
+        assert INSTRUCTION not in rendered.text
+        listed = "\n\n".join(f"**{n}.** {scheme.cqs[n].text}" for n in scheme.cq_order)
+        block = (
+            "## All the critical questions of this scheme\n\n"
+            "These are all the questions asked about this argument, one at a time. Answer only\n"
+            "the question indicated below.\n\n" + listed + "\n\n"
+        )
         reference = render_stage2(ITEM, scheme, cq, "v3")
-        assert (head + tail).replace(INSTRUCTION + "\n\n", "") == reference.text
+        expected = reference.text.replace(
+            "## The critical question\n", block + "## The critical question you must answer\n", 1
+        )
+        assert rendered.text == expected
         assert rendered.answer_options == reference.answer_options
         assert {k: v for k, v in rendered.json_schema.items() if k != "title"} == {
             k: v for k, v in reference.json_schema.items() if k != "title"
@@ -207,9 +215,15 @@ def test_ssoft_prompt_has_only_the_two_sections_and_instruction_added():
     assert f"**CQ1.** {scheme.cqs['CQ1'].text}\nAnswer: yes." in first.text
     request = Request(model_id="fake", prompt=first.text, prompt_version="ssoft_v1", sample_index=0)
     assert cache_key(request) != cache_key(replace(request, prompt=second.text))
-    assert (
-        "Not shown: answer this question on its own."
-        in render_ssoft(ITEM, scheme, "CQ2", history=False).text
+    # with earlier answers: the section and the instruction, and nothing else, are added
+    without = render_ssoft(ITEM, scheme, "CQ1.1", history=False).text
+    section = (
+        "## Earlier questions on this argument, and their answers\n\n"
+        f"**CQ1.** {scheme.cqs['CQ1'].text}\nAnswer: yes.\n\n"
+    )
+    heading = "## The critical question you must answer"
+    assert first.text == without.replace(heading, section + heading, 1).replace(
+        "Answer this question only", INSTRUCTION + "\n\nAnswer this question only", 1
     )
 
 

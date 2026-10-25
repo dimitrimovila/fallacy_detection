@@ -17,15 +17,11 @@ Where:
 ## All the critical questions of this scheme
 
 These are all the questions asked about this argument, one at a time. Answer only
-the question below.
+the question indicated below.
 
 {{all_cqs}}
 
-## Earlier questions on this argument, and their answers
-
-{{history}}
-
-## The critical question
+{{history}}## The critical question you must answer
 
 **{{cq_id}}.** {{cq_text}}
 
@@ -48,9 +44,7 @@ speakers or a question to the reader, evaluate the argument that follows the
 scheme. Do not let your own view on whether the conclusion is true decide the answer,
 unless the question asks about truth.
 
-Take the earlier answers as given and do not reconsider them.
-
-Answer this question only and do not decide whether the argument is fallacious overall.
+{{history_instruction}}Answer this question only and do not decide whether the argument is fallacious overall.
 
 ## Your answer
 

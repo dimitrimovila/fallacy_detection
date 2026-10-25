@@ -132,13 +132,13 @@ S-soft asks the CQs along the diagram, with the earlier answers of the path in v
 
 ### 6.1 The prompt
 
-`prompts/ssoft_v1.md` is `prompts/stage2_v3.md` with two sections added before "The critical question":
+`prompts/ssoft_v1.md` is `prompts/stage2_v3.md` with the heading "The critical question" renamed "The critical question you must answer", and with two sections added before it:
 
 ~~~~text
 ## All the critical questions of this scheme
 
 These are all the questions asked about this argument, one at a time. Answer only
-the question below.
+the question indicated below.
 
 {{all_cqs}}
 
@@ -147,9 +147,9 @@ the question below.
 {{history}}
 ~~~~
 
-and one sentence in "What to do", before its last sentence: "Take the earlier answers as given and do not reconsider them."
+and one sentence in "What to do", before its last sentence: "Take the earlier answers as given."
 
-`{{all_cqs}}` lists every CQ of the scheme in the order of the YAML, word for word, as `**CQ1.** <text>`. `{{history}}` lists the CQs of the path that leads to the node, in the order of the path, each as `**CQ2.** <text>` followed by `Answer: <answer>.`; at the first node it reads "None: this is the first question." The history holds answers only: on a branch the model did not choose, no justification exists. The answers are those of the arcs of the path; the model sees neither the arcs nor the terminals. The answer definitions are those of `prompts/stage2_v3_answers.yaml`. `prompts/schemas/ssoft_v1.json` is `prompts/schemas/stage2_v3.json` with its own title, narrowed per CQ in the same way.
+`{{all_cqs}}` lists every CQ of the scheme in the order of the YAML, word for word, as `**CQ1.** <text>`. `{{history}}` lists the CQs of the path that leads to the node, in the order of the path, each as `**CQ2.** <text>` followed by `Answer: <answer>.` When there is no earlier answer (at the first node, and at every node of the control without history, section 6.5), the section on the earlier questions and the sentence in "What to do" are left out, so that the prompt differs from `prompts/stage2_v3.md` only by the list of the CQs and the heading. The history holds answers only: on a branch the model did not choose, no justification exists. The answers are those of the arcs of the path; the model sees neither the arcs nor the terminals. The answer definitions are those of `prompts/stage2_v3_answers.yaml`. `prompts/schemas/ssoft_v1.json` is `prompts/schemas/stage2_v3.json` with its own title, narrowed per CQ in the same way.
 
 ### 6.2 Expansion
 
@@ -185,7 +185,7 @@ Exploratory, named here:
 
 ### 6.5 The control without history
 
-`C4.nohistory` asks every CQ of the scheme of the item with the prompt of S-soft, the list of all the CQs included, and `{{history}}` rendered at every node as "Not shown: answer this question on its own." Each CQ is asked once per item, with no expansion during the run, so the calls do not depend on the earlier answers: one call per CQ, 3,162 calls for `qwen3_8_27b` on the 601 items. The answers go through the traversal of `A2.pruned`, with the burden table of schemes 2.0 and threshold 0.02.
+`C4.nohistory` asks every CQ of the scheme of the item with the prompt of S-soft, the list of all the CQs included, and without the section on the earlier questions and its sentence in "What to do" (section 6.1). Each CQ is asked once per item, with no expansion during the run, so the calls do not depend on the earlier answers: one call per CQ, 3,162 calls for `qwen3_8_27b` on the 601 items. The answers go through the traversal of `A2.pruned`, with the burden table of schemes 2.0 and threshold 0.02.
 
 Configuration `configs/ssoft_nohistory_full_v3.yaml`: as `configs/ssoft_full_v3.yaml`, with `history: false`. With `history: false` the stage `ssoft` plans every call at the start, and `argfallacy run plan` counts all of them. The lines of `raw.jsonl` have `stage` `ssoft` and an empty `path`, and the parser writes them to `ssoft.csv` with `depth` empty.
 
@@ -256,7 +256,7 @@ On the diagrams of `schemes/v1/` and `schemes/v2/`, on answers written by hand a
 6. Tree: depth at most 3; one tree per scheme; on data where one CQ separates the classes, the tree splits on it.
 7. S-soft: with a fake model whose answers do not depend on the history, S-soft equals `A2.pruned` within 1e-12; terminals, abstention and pruned bucket sum to 1; the routing of P, E, G and D as in A2; a node reached by two paths gets two calls; the pruning threshold holds.
 8. S-soft prompt: rendering is deterministic; every CQ of the scheme is listed word for word; the history lists the CQs of the path in order, with the answers of the arcs and no justification; two histories give two cache keys.
-9. Stage `ssoft` on the fake backend: the expansion ends; the number of calls equals the count made by hand for a fake model with fixed masses; a run interrupted and resubmitted completes without duplicate lines and without repeating a call. With `history: false`, the plan has one call per CQ of the scheme of each item, every prompt renders the history as "Not shown: answer this question on its own.", and the traversal of the answers equals that of `A2.pruned` on the same answers within 1e-12.
+9. Stage `ssoft` on the fake backend: the expansion ends; the number of calls equals the count made by hand for a fake model with fixed masses; a run interrupted and resubmitted completes without duplicate lines and without repeating a call. With `history: false`, the plan has one call per CQ of the scheme of each item, no prompt has the section on the earlier questions or its sentence, and the traversal of the answers equals that of `A2.pruned` on the same answers within 1e-12.
 10. Conformal sets: on scores written by hand, the threshold is the order statistic of section 7.
 11. Deciding comparisons: the percentiles follow m; the second comparison of a component is marked as not read when the first does not pass.
 12. The same seed gives the same outputs.
