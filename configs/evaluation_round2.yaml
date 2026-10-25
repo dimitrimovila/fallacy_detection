@@ -15,8 +15,8 @@ runs:
   judge:
     - 20261021T111110Z_judge_v1
     - 20261021T111110Z_judge_v1_answers_only
-  ssoft: []          # the run of configs/ssoft_full_v3.yaml, once it exists
-  ssoft_nohistory: []  # the run of configs/ssoft_nohistory_full_v3.yaml, once it exists
+  ssoft: [20261025T133031Z_ssoft_full_v3]          # the run of configs/ssoft_full_v3.yaml
+  ssoft_nohistory: [20261025T133031Z_ssoft_nohistory_full_v3]  # the run of configs/ssoft_nohistory_full_v3.yaml
 # a guard: the command computes the reference model and stops if it is another
 reference_model: qwen3_8_27b
 # one seed for the folds and the resamples, the same as round 1
