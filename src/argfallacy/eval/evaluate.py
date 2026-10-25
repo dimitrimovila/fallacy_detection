@@ -42,7 +42,7 @@ from ..aggregate import (
     sources_of,
 )
 from ..aggregate.interface import TIE
-from ..annotations import ITEMS_FILE
+from ..annotations import ANNOTATIONS_FILE, ITEMS_FILE
 from ..client.run import GOLD, read_manifest, schemes_dir_of
 from ..labels import label_space
 from ..parse import ALL_OPTIONS, INVALID
@@ -79,6 +79,8 @@ class EvaluationConfig:
     resamples: int = 10000
     folds: int = FOLDS
     m: int = 5
+    cq_label_exclusion: list[str] = field(default_factory=list)
+    """Round 2 only: the schemes whose CQ labels an exploratory C1 leaves out."""
 
     @classmethod
     def load(cls, path: str | Path) -> EvaluationConfig:
@@ -137,6 +139,10 @@ class Scorer:
             label, _ = predicted_fallacy_class(key, "fine", self.vocab)
             self._classes[key] = -1 if label is None else self.index[label]
         return self._classes[key]
+
+    def correct(self, predicted: Sequence[str | None]) -> np.ndarray:
+        """Whether each prediction is its gold class; no verdict is wrong."""
+        return np.array([self._class(raw) for raw in predicted]) == self.gold
 
     def metrics(self, predicted: Sequence[str | None]) -> dict[str, np.ndarray]:
         p = np.array([self._class(raw) for raw in predicted])
@@ -436,8 +442,17 @@ def _summary(card: list[tuple[str, str]], main: pd.DataFrame, decide: pd.DataFra
 
 
 def evaluate(config: EvaluationConfig, runs_dir: str | Path, out_root: str | Path = EVALUATIONS_DIR,
-             items_path: str | Path = ITEMS_FILE) -> Path:
-    """Compute the first stage of the evaluation and write it into ``out_root/<name>/``."""
+             items_path: str | Path = ITEMS_FILE,
+             annotations_path: str | Path = ANNOTATIONS_FILE, progress=None) -> Path:
+    """Compute the evaluation and write it into ``out_root/<name>/``: the first stage, or
+    round 2 when the configuration names its runs."""
+    from .round2 import evaluate_round2, is_round2
+
+    if is_round2(config):
+        return evaluate_round2(config, runs_dir, out_root, items_path, annotations_path,
+                               progress)
+    if config.cq_label_exclusion:
+        raise SchemeError("cq_label_exclusion belongs to a round 2 configuration")
     runs_dir = Path(runs_dir)
     items = load_test_set(items_path).sort_values("item_id").reset_index(drop=True)
     ids = items["item_id"].tolist()
@@ -632,7 +647,8 @@ def evaluate(config: EvaluationConfig, runs_dir: str | Path, out_root: str | Pat
                  missing, config.m, len(ids), len(ids_n)), encoding="utf-8")
     from .cq import write_cq_report
 
-    write_cq_report(runs_dir / answers_run, out, items_path=items_path)
+    write_cq_report(runs_dir / answers_run, out, items_path=items_path,
+                    annotations_path=annotations_path)
     with (out / "summary.md").open("a", encoding="utf-8") as stream:
         stream.write("\nCQ diagnostics and human agreement: [cq_report.md](cq_report.md).\n")
     from .html_report import write_summary

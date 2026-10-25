@@ -217,8 +217,10 @@ Exploratory comparisons, named here: C4 against `C4.nohistory`, the effect of th
 * `verdicts.csv` (spec 07, section 9), with the systems `C1`, `C2`, `C3`, `C4`, `C1.hard`, `C4.path`, `C4.nohistory`, `A2.pruned`, and the exploratory systems named `C1.<combiner>.<supervision>.<traversal>`, with `@2.0` for those on schemes 2.0;
 * `cq_combined.csv`: one row per item, CQ, combiner and supervision, with the fold, `p_first` and the mass outside the arcs;
 * `round2_choices.csv`: the hyperparameters chosen in each fold, component and scheme;
-* `cq_level.csv` (section 2.5), `routing_curve.csv` (section 3), `conformal.csv` (section 7), one CSV per table of section 8;
-* the sections of round 2 in `summary.html`: deciding comparisons, the level of each CQ, the supervision factor, the routing curve as a figure, S-soft, conformal sets.
+* `cq_level.csv`, `cq_level_differences.csv` and `human_path.csv` (section 2.5), `routing_curve.csv` (section 3), `ssoft_changes.csv` (the answers that change, section 6.4), `abstention.csv`, `abstention_curves.csv`, `abstention_composition.csv` and `conformal.csv` (section 7), `main_table.csv` with every system, and one CSV per table of section 8: `deciding.csv`, `deciding_breakdowns.csv`, `exploratory.csv`;
+* the sections of round 2 in `summary.html`: deciding comparisons, the level of each CQ, the supervision factor, the routing curve as a figure, S-soft, abstention curves as a figure, conformal sets, and what was not computed.
+
+A configuration is read as one of round 2 when its `runs` name `answers_schemes_2`, `ssoft` or `ssoft_nohistory`. The schemes left out by the exploratory C1 of section 2.4 are written in the configuration, since no scheme name is written in the code.
 
 The configuration:
 
@@ -240,6 +242,7 @@ seed: 20261019
 resamples: 10000
 folds: 5
 m: 4
+cq_label_exclusion: [example, cause_to_effect, correlation_to_cause]
 ```
 
 ## 10. Acceptance tests

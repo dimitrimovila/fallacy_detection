@@ -271,8 +271,9 @@ by CQ number. Identical duplicate annotation rows count once; conflicting CQ rat
 stop the report. Conflicting or coarse human verdicts are excluded and counted.
 Unavailable second-annotator CQ ratings and blind repeats are named in the report.
 
-Not implemented yet: the predicted scheme condition, the collapsed space, the breakdowns by
-scheme and corpus and the abstention curves of the evaluation.
+Not implemented yet: the predicted scheme condition, the collapsed space, and the breakdowns
+by scheme and corpus and the abstention curves of the first stage (round two has its own, see
+below).
 
 ## Combining critical-question answers
 
@@ -326,8 +327,8 @@ A2 of the reference entry and A4 for comparison.
 The CQ report includes agreement, Brier scores and paired 95 per cent bootstrap
 intervals overall and by scheme; all CQs of an item move together.
 `human_path_reference` reports the human diagram path as a descriptive reference,
-including coverage over annotated items and the test set. The round-two evaluator
-configuration and its command integration remain to be implemented.
+including coverage over annotated items and the test set. The evaluation of round
+two runs all of this on the real runs (see "Round-two evaluation").
 
 ## Routing and learned trees
 
@@ -431,10 +432,47 @@ writes `ssoft.csv`, with the stage-two probability columns plus `path` and `dept
 These rows are separate from `summary.csv`; `answers.csv` retains each raw attempt.
 The no-history control has an empty path and depth. With history, depth starts at zero.
 
-The other round-two aggregators and `configs/evaluation_round2.yaml` are not yet
-implemented. Out-of-fold temperatures, their use during expansion and the four
-exploratory S-soft configurations are deferred; calibrating an existing run cannot
-recover nodes that its original pruning did not call.
+Out-of-fold temperatures, their use during expansion and the four exploratory S-soft
+configurations are deferred; calibrating an existing run cannot recover nodes that its
+original pruning did not call.
+
+## Round-two evaluation
+
+```bash
+argfallacy evaluate configs/evaluation_round2.yaml        # evaluations/round2/
+```
+
+A configuration whose `runs` name `answers_schemes_2`, `ssoft` or `ssoft_nohistory` is
+evaluated as round two. The command computes C1 (every combiner, supervision and
+traversal on full run v2, the unsupervised, gold-fitted and transferred ones on full run
+v3), C2 and its curve, C3 with the pooled recalibration and the tree on the reference
+answers, A2.pruned, and C4, C4.path and C4.nohistory from the `ssoft.csv` of the runs
+listed under `ssoft` and `ssoft_nohistory`; with those lists empty, C4 and its
+comparisons are listed as missing and the rest is computed. The zero-shot run of the
+reference model must have `p_label`, a feature of C2 and the confidence of its abstention
+curve: a `summary.csv` without it is refused, so parse that run again where its
+`raw.jsonl` is. `cq_label_exclusion` names the schemes whose CQ labels the exploratory
+`C1.annotation_exclusion` leaves out; it is scored on the other schemes.
+
+The four deciding comparisons (C1, C2, C3 and C4 against their references, and the second
+comparison of C1 and C3 against the zero-shot) have their interval at level 1 - 0.05/m with
+m = 4. A second comparison is marked as not read when the first does not pass, and a
+component not computed keeps its place in m. Beside them, at 95 per cent: accuracy and
+balanced accuracy, the same comparisons by gold origin, by scheme and without NLAS, and the
+exploratory comparisons. Abstention curves (AUGRC, AURC, selective accuracy at 100, 95,
+90, 80 and 70 per cent coverage, the composition of the abstained items) cover every system
+with a confidence; conformal sets at alpha 0.10, with thresholds from the other four folds,
+cover the systems with a distribution over the terminals.
+
+It writes `manifest.json` (runs, seed, folds, m, primary configurations, grids, what was
+not computed and why), `verdicts.csv`, `main_table.csv`, `deciding.csv`,
+`deciding_breakdowns.csv`, `exploratory.csv`, `cq_combined.csv`, `round2_choices.csv`,
+`cq_level.csv`, `cq_level_differences.csv`, `human_path.csv`, `routing_curve.csv`,
+`ssoft_changes.csv`, `abstention.csv`, `abstention_curves.csv`,
+`abstention_composition.csv`, `conformal.csv` and `summary.html`, which
+`argfallacy report summary evaluations/round2` redraws from those tables. The nested
+cross-fitting of C2 and C3 refits C1 several hundred times: on runs of the size of the
+test set the command takes about ten minutes on a laptop, most of it in C3.
 
 ## License
 

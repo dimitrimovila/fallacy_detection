@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
+from functools import cached_property
 from typing import Any
 
 import numpy as np
@@ -46,14 +47,29 @@ class C1Dataset:
     hard: np.ndarray
     x: np.ndarray
 
-    @property
-    def questions(self) -> tuple[tuple[str, str], ...]:
-        return tuple(dict.fromkeys(zip(self.pairs.scheme, self.pairs.cq_id, strict=True)))
+    # The pairs never change after construction, so what is derived from them is
+    # computed once: nested cross-fitting reads it thousands of times.
+    @cached_property
+    def pair_keys(self) -> tuple[tuple[str, str, str], ...]:
+        """(item, scheme, CQ) of every pair, in order."""
+        return tuple(zip(self.pairs.item_id, self.pairs.scheme, self.pairs.cq_id, strict=True))
 
-    @property
+    @cached_property
+    def groups(self) -> tuple[tuple[str, str, tuple[tuple[int, str], ...]], ...]:
+        """Each item, in order of first appearance, with its scheme and its (pair, CQ) list."""
+        out: dict[str, tuple[str, list]] = {}
+        for index, (item, scheme, cq) in enumerate(self.pair_keys):
+            out.setdefault(item, (scheme, []))[1].append((index, cq))
+        return tuple((item, scheme, tuple(rows)) for item, (scheme, rows) in out.items())
+
+    @cached_property
+    def questions(self) -> tuple[tuple[str, str], ...]:
+        return tuple(dict.fromkeys((scheme, cq) for _, scheme, cq in self.pair_keys))
+
+    @cached_property
     def question_index(self) -> np.ndarray:
         index = {q: i for i, q in enumerate(self.questions)}
-        return np.array([index[q] for q in zip(self.pairs.scheme, self.pairs.cq_id, strict=True)])
+        return np.array([index[(scheme, cq)] for _, scheme, cq in self.pair_keys])
 
     def with_features(self) -> C1Dataset:
         present = np.isfinite(self.splits)
@@ -68,15 +84,13 @@ class C1Dataset:
         target = np.full(len(self.pairs), np.nan)
         if labels is None or labels.empty:
             return target
-        keys = ["item_id", "scheme", "cq_id"]
-        if labels.duplicated(keys).any():
+        keys = list(zip(labels.item_id, labels.scheme, labels.cq_id, strict=True))
+        if len(set(keys)) != len(keys):
             raise SchemeError("duplicate CQ labels need explicit provenance")
         if not labels.target.isin([0, 1]).all():
             raise SchemeError("CQ training targets must be binary")
-        lookup = labels.set_index(keys).target.to_dict()
-        for index, row in enumerate(self.pairs.itertuples(index=False)):
-            target[index] = lookup.get((row.item_id, row.scheme, row.cq_id), np.nan)
-        return target
+        lookup = dict(zip(keys, labels.target, strict=True))
+        return np.array([lookup.get(key, np.nan) for key in self.pair_keys], dtype=float)
 
 
 def _probability(value, context):

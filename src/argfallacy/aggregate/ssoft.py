@@ -37,13 +37,20 @@ class NodeCall:
 
 @dataclass(frozen=True)
 class Expansion(Aggregation):
-    """Terminal, abstention, pruned and pending masses partition the initial mass."""
+    """Terminal, abstention, pruned and pending masses partition the initial mass.
+
+    ``single_path`` is the path that follows the arc with the larger routed mass at
+    every node, ending on ``path_verdict``; ``best_path`` is the path to a terminal
+    with the highest mass.
+    """
 
     pruned: float
     pending: float
     frontier: tuple[NodeCall, ...]
     visited: tuple[NodeCall, ...]
     path_verdict: str | None
+    single_path: History = ()
+    best_path: History = ()
 
 
 def node_masses(
@@ -119,6 +126,7 @@ def expand(
         if edge.is_terminal:
             path_verdict = edge.target
             break
+    history: History = ()
     if completed:
         _, history, probabilities, terminal = max(completed, key=lambda entry: entry[0])
         path = (
@@ -148,6 +156,8 @@ def expand(
         tuple(frontier),
         tuple(visited),
         path_verdict,
+        greedy,
+        history,
     )
 
 

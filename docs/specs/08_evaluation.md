@@ -196,9 +196,23 @@ The renderer keeps the saved values and intervals, embeds calibration figures,
 records table fingerprints and labels oracle baselines and unavailable conditions.
 It does not yet implement every table listed in P14.
 
+### Round 2
+
+`argfallacy evaluate configs/evaluation_round2.yaml` computes the family of spec 09 into
+`evaluations/round2/`, with the folds and resamples of this spec and its own m (P10).
+It implements P11 for the systems of spec 09, section 7: items sorted by decreasing
+confidence, ties by `item_id`; an item with a verdict but no confidence follows every
+item with one, and an item without a verdict comes last and counts as an error; the
+level c keeps the first round(c·N) items, halves rounded up. `abstention.csv` has
+AUGRC, AURC and the selective accuracy at each level with 95 per cent intervals, and
+the AUGRC of the margin as a check for the systems with a distribution;
+`abstention_curves.csv` the observed curves, drawn in `summary.html`;
+`abstention_composition.csv` the abstained items by Good Argumentation, scheme, corpus
+and gold origin. The breakdowns of the deciding comparisons follow P3 and P12.
+
 ### Remaining stage two work
 
-P1 with the scheme predicted by stage one: it first needs a change to the client, which today plans the predicted condition with one prediction per item for every entry and reads no prediction from a run, while P1 asks for the prediction of each entry; then the calls. Then P2 in the collapsed space, P3, P11, the F1 per class, the integrity table, the table of stage one and the corresponding additions to `summary.html`.
+P1 with the scheme predicted by stage one: it first needs a change to the client, which today plans the predicted condition with one prediction per item for every entry and reads no prediction from a run, while P1 asks for the prediction of each entry; then the calls. Then P2 in the collapsed space, P3, P11 for the systems of the first stage, the F1 per class, the integrity table, the table of stage one and the corresponding additions to `summary.html`.
 
 ## Changes
 

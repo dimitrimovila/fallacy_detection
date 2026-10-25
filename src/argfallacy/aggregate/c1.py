@@ -110,6 +110,8 @@ def training_labels(data, labels, ids, config, repeats=None):
         for q, group in paired.groupby(["scheme", "cq_id"]):
             if len(group) >= 10 and (group.target == group.target_repeat).mean() < 0.6:
                 excluded.add(q)
+    if not excluded:
+        return own, excluded
     keep = [(s, q) not in excluded for s, q in zip(own.scheme, own.cq_id, strict=True)]
     return own.loc[keep], excluded
 
@@ -220,17 +222,17 @@ def aggregate_combined(
     if len(p) != len(data.pairs) or not np.isfinite(p).all() or ((p < 0) | (p > 1)).any():
         raise SchemeError("invalid combined CQ probabilities")
     codes, output = hard_codes(data, p), {}
-    for item, group in data.pairs.groupby("item_id", sort=False):
-        scheme = data.schemes[group.scheme.iloc[0]]
+    for item, scheme_id, rows in data.groups:
+        scheme = data.schemes[scheme_id]
         masses, answers = {}, {}
-        for i, pair in group.iterrows():
-            a, b = scheme.answer_space(pair.cq_id)
-            masses[pair.cq_id] = {
+        for i, cq in rows:
+            a, b = scheme.answer_space(cq)
+            masses[cq] = {
                 a: (1 - data.outside[i]) * p[i],
                 b: (1 - data.outside[i]) * (1 - p[i]),
                 OUTSIDE: data.outside[i],
             }
-            answers[pair.cq_id] = {
+            answers[cq] = {
                 "answer": (a if codes[i] == 0 else b) if codes[i] != 2 else CANNOT_BE_DETERMINED
             }
         if traversal == "hard":
@@ -239,7 +241,7 @@ def aggregate_combined(
             terminals, abstention, arcs = traverse_soft(
                 scheme, masses, data.routing[scheme.scheme_id]
             )
-            by_cq = {row.cq_id: i for i, row in group.iterrows()}
+            by_cq = {cq: i for i, cq in rows}
 
             def note(cq, by_cq=by_cq):
                 i = by_cq[cq]
@@ -315,6 +317,18 @@ def c1_out_of_fold(
         selected = data.pair_indices(test)
         p[selected] = model.predict(data)[selected]
     return _result(data, p, config, choices, models, folds)
+
+
+def retraverse(data: C1Dataset, source: C1Result, config: C1Config) -> C1Result:
+    """The combined answers of ``source`` through the traversal of ``config``, with no new
+    fit: a traversal changes no combined answer."""
+    same = ("combiner", "supervision", "exclude_schemes", "unstable")
+    if any(getattr(source.config, f) != getattr(config, f) for f in same) or (
+        len(source.combined) != len(data.pairs)
+    ):
+        raise SchemeError("only the traversal of a combination over every pair can change")
+    p = source.combined.p_first.to_numpy(dtype=float)
+    return _result(data, p, config, source.choices, source.models, source.folds)
 
 
 def transfer_c1(source: C1Result, target: C1Dataset, name=None) -> C1Result:

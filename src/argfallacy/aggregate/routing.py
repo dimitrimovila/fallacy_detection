@@ -266,8 +266,9 @@ class C2Result:
     def at_tau(self, tau):
         if len(self.fixed_sides) != 1:
             raise ValueError("the tau curve requires exactly two sides")
-        predictions, records = {}, self.records.copy()
-        for k, row in records.iterrows():
+        predictions, sides, explained = {}, [], []
+        # the columns are assigned once: the curve calls this for every threshold
+        for row in self.records.itertuples(index=False):
             choice = route(
                 self.upstream[row.item_id],
                 self.fixed_sides[0].aggregations.get(row.item_id, decide({}, 1.0, "missing")),
@@ -276,7 +277,9 @@ class C2Result:
                 tau,
             )
             predictions[row.item_id] = choice.aggregation
-            records.loc[k, ["side", "explained"]] = [choice.side, choice.explained]
+            sides.append(choice.side)
+            explained.append(choice.explained)
+        records = self.records.assign(side=sides, explained=explained)
         return replace(self, aggregations=predictions, records=records)
 
 

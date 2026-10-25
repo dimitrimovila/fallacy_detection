@@ -127,10 +127,11 @@ def _cmd_evaluate(args: argparse.Namespace) -> int:
     from .schemes import SchemeError
 
     try:
-        out = evaluate(EvaluationConfig.load(args.config), runs_dir=default_runs_dir())
+        out = evaluate(EvaluationConfig.load(args.config), runs_dir=default_runs_dir(),
+                       progress=lambda step: print(f"  {step}", flush=True))
     except SchemeError as error:
         raise SystemExit(str(error)) from None
-    print(f"  {out / 'summary.md'}")
+    print(f"  {out / ('summary.md' if (out / 'summary.md').is_file() else 'summary.html')}")
     return 0
 
 

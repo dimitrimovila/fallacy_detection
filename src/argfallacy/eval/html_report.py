@@ -424,6 +424,8 @@ def write_summary(folder, judge_audit=None, revised_cqs=None):
         return json.loads(path.read_text(encoding="utf-8"))
 
     manifest = metadata(folder / "manifest.json")
+    if manifest.get("round") == 2:
+        return write_round2_summary(folder)
     main = read(folder / "main_table.csv")
     decide = read(folder / "deciding.csv")
     deciding_level = f"{100 * (1 - .05 / manifest.get('m', 5)):g}%"
@@ -735,3 +737,422 @@ def write_summary(folder, judge_audit=None, revised_cqs=None):
     path = folder / "summary.html"
     path.write_text(document, encoding="utf-8")
     return path
+
+
+# ------------------------------------------------------------------ round 2
+
+ROUND2_METHODS = {
+    "C1": "C1 · combined CQ answers, soft diagram",
+    "C1.hard": "C1.hard · combined answers, hard diagram",
+    "C2": "C2 · routing between diagram and zero-shot",
+    "C3": "C3 · scheme trees on the combined answers",
+    "C4": "C4 · S-soft",
+    "C4.path": "C4.path · single S-soft path",
+    "C4.nohistory": "C4.nohistory · S-soft without history",
+    "A2.pruned": "A2.pruned · independent answers, same pruning",
+    "A2": "A2 · probabilistic diagram (round 1)",
+    "A4": "A4 · equal-weight ensemble (round 1)",
+    "A5": "A5 · LLM judge with explanations",
+    "A5.answers_only": "A5 · LLM judge, answers only",
+    "C2.A0": "C2.A0 · routing with the reference diagram",
+    "C3.pooled": "C3.pooled · recalibrated terminal masses",
+    "A3.tree": "A3.tree · trees on the reference answers",
+    "majority": "Majority per scheme (oracle)",
+}
+OUTCOMES = {"improvement": "pill", "no measurable difference": "pill neutral"}
+PALETTE = ("#176aa2", "#c4622d", "#24938b", "#8a4fb5", "#b8912f", "#b15b76", "#4d6b85",
+           "#5d9c3f")
+
+
+def _read_optional(path, read):
+    """A saved table, or an empty one when the evaluation wrote no columns."""
+    try:
+        return read(path)
+    except pd.errors.EmptyDataError:
+        return pd.DataFrame()
+
+
+def _figure(series, x_label, y_label, points=()):
+    """Lines on the unit square: ``series`` is (name, colour, [(x, y)]), ``points`` is
+    (colour, x, y, low, high) drawn with a vertical interval."""
+    width, height, left, right, top, bottom = 640, 330, 52, 14, 12, 42
+
+    def x(v):
+        return left + v * (width - left - right)
+
+    def y(v):
+        return top + (1 - v) * (height - top - bottom)
+
+    parts = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{E(y_label)}">']
+    for tick in (0, 0.25, 0.5, 0.75, 1):
+        parts.append(f'<line x1="{x(0)}" x2="{x(1)}" y1="{y(tick):.1f}" y2="{y(tick):.1f}" '
+                     'stroke="#dbe3ec"/>'
+                     f'<text x="{left - 6}" y="{y(tick) + 4:.1f}" font-size="11" '
+                     f'text-anchor="end" fill="#526477">{tick:g}</text>'
+                     f'<text x="{x(tick):.1f}" y="{height - bottom + 16}" font-size="11" '
+                     f'text-anchor="middle" fill="#526477">{tick:g}</text>')
+    for name, colour, values in series:
+        line = " ".join(f"{x(a):.1f},{y(b):.1f}" for a, b in values)
+        parts.append(f'<polyline points="{line}" fill="none" stroke="{colour}" '
+                     f'stroke-width="2"><title>{E(name)}</title></polyline>')
+    for colour, a, b, low, high in points:
+        if pd.notna(low) and pd.notna(high):
+            parts.append(f'<line x1="{x(a):.1f}" x2="{x(a):.1f}" y1="{y(low):.1f}" '
+                         f'y2="{y(high):.1f}" stroke="{colour}" stroke-width="1.5"/>')
+        parts.append(f'<circle cx="{x(a):.1f}" cy="{y(b):.1f}" r="3.5" fill="{colour}"/>')
+    parts.append(f'<text x="{(x(0) + x(1)) / 2:.1f}" y="{height - 6}" font-size="12" '
+                 f'text-anchor="middle" fill="#172638">{E(x_label)}</text>'
+                 f'<text transform="translate(13 {(y(0) + y(1)) / 2:.1f}) rotate(-90)" '
+                 f'font-size="12" text-anchor="middle" fill="#172638">{E(y_label)}</text></svg>')
+    legend = "".join(f'<span><i class="swatch" style="background:{c}"></i>{E(n)}</span>'
+                     for n, c, _ in series)
+    return f'<div class="figure">{"".join(parts)}</div><div class="legend">{legend}</div>'
+
+
+def write_round2_summary(folder):
+    """The page of a round 2 evaluation, from its saved tables only."""
+    folder = Path(folder)
+    inputs = {}
+
+    def read(path):
+        inputs[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+        return pd.read_csv(path)
+
+    manifest_path = folder / "manifest.json"
+    inputs[str(manifest_path)] = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    tables = {name: _read_optional(folder / f"{name}.csv", read) for name in (
+        "main_table", "deciding", "deciding_breakdowns", "exploratory", "cq_level",
+        "cq_level_differences", "human_path", "routing_curve", "abstention",
+        "abstention_curves", "abstention_composition", "conformal", "ssoft_changes")}
+    names = {k: v.get("display_name", k) for k, v in load_models().items()}
+    level = f"{100 * manifest['deciding_level']:g}%"
+
+    def label(name):
+        prefix, sep, rest = name.partition(":")
+        if sep and prefix in ("A0", "zeroshot", "entry"):
+            model, at, version = rest.partition("@")
+            kind = {"A0": "Diagram", "zeroshot": "Zero-shot", "entry": "Entry"}[prefix]
+            return f"{kind}{' ' + version if at else ''} · {names.get(model, model)}"
+        return ROUND2_METHODS.get(name, name)
+
+    def pill(outcome):
+        kind = OUTCOMES.get(outcome, "pill neutral")
+        return f'<td><span class="{kind}">{E(outcome)}</span></td>'
+
+    def triple(row, metric, difference=True, reverse=False):
+        return cell(row.get(metric if not difference else f"{metric}_difference"),
+                    row.get(f"{metric}_low"), row.get(f"{metric}_high"), difference, reverse)
+
+    main = tables["main_table"]
+    by_system = main.set_index("system") if len(main) else pd.DataFrame()
+    decide = tables["deciding"]
+    sections = []
+
+    # overview
+    card = [("Evaluation", manifest["name"]), ("Date", manifest["date"]),
+            ("Commit", manifest.get("commit") or "unknown"),
+            ("Full run v2", manifest["runs"]["answers"]),
+            ("Full run v3", manifest["runs"].get("answers_schemes_2") or "none"),
+            ("S-soft runs", ", ".join(manifest["runs"].get("ssoft") or []) or "none"),
+            ("Control without history",
+             ", ".join(manifest["runs"].get("ssoft_nohistory") or []) or "none"),
+            ("Reference model", label(f"A0:{manifest['reference_model']}").split(" · ")[-1]),
+            ("Items", f"{manifest['items']} ({manifest['items_without_nlas']} without NLAS)"),
+            ("Seed, resamples, folds", f"{manifest['seed']}, {manifest['resamples']:,}, "
+                                       f"{manifest['folds']['k']}"),
+            ("Deciding level", f"m = {manifest['m']}: {level} intervals")]
+    cards = "".join(
+        f'<div class="card"><span>{E(r.hypothesis)} · {E(label(r.system))}</span>'
+        f"<strong>{'—' if pd.isna(r.macro_f1_difference) else f'{r.macro_f1_difference:+.3f}'}"
+        f"</strong><span>Δ macro F1 against {E(label(r.reference))}</span><br>"
+        f'<span class="{OUTCOMES.get(r.outcome, "pill neutral")}">{E(r.outcome)}</span></div>'
+        for r in decide.itertuples() if not r.read_after or r.read)
+    overview = (f'<div class="cards">{cards}</div>'
+                + table(["", ""], [f"<tr><th>{E(k)}</th><td class=\"text\">{E(v)}</td></tr>"
+                                   for k, v in card]))
+    sections.append(section(
+        "overview", "Round 2 at a glance",
+        "Second family of aggregators, fixed before its results. Fine label space, gold "
+        "scheme condition. Cards show the first comparison of each component and every "
+        "second comparison that was read.", overview))
+
+    # deciding comparisons
+    rows = []
+    for r in decide.to_dict("records"):
+        rows.append(f"<tr><th>{E(r['hypothesis'])}<br><small>{E(label(r['system']))} vs "
+                    f"{E(label(r['reference']))}</small></th>"
+                    + triple(r, "macro_f1") + pill(r["outcome"])
+                    + triple(r, "accuracy") + triple(r, "balanced_accuracy") + "</tr>")
+    content = table(["Comparison", f"Δ macro F1 · {level} CI", "Outcome", "Δ accuracy · 95%",
+                     "Δ balanced accuracy · 95%"], rows)
+    breakdown = tables["deciding_breakdowns"]
+    if len(breakdown):
+        rows = [f"<tr><th>{E(r['hypothesis'])} · {E(r['kind'])}: {E(r['subset'])}"
+                + (" ⚑" if r["flagged"] else "") + f"</th><td>{r['n_items']}</td>"
+                f"<td>{r['n_classes']}</td>" + triple(r, "macro_f1") + triple(r, "accuracy")
+                + triple(r, "balanced_accuracy") + "</tr>"
+                for r in breakdown.to_dict("records")]
+        content += ("<details><summary>By gold origin, by scheme and without NLAS "
+                    "(95%, decide nothing)</summary>"
+                    + table(["Comparison · subset", "Items", "Classes", "Δ macro F1",
+                             "Δ accuracy", "Δ balanced accuracy"], rows)
+                    + '<p class="note">⚑ marks a scheme with fewer than 30 items. Breakdowns '
+                    "reuse the resamples of the whole test set; without NLAS has its own.</p>"
+                    "</details>")
+    sections.append(section(
+        "deciding", "Deciding comparisons",
+        f"Macro F1, paired bootstrap, Bonferroni across the {manifest['m']} components: each "
+        f"interval at {level}. An improvement only if the interval excludes zero. Within a "
+        "component the second comparison is read only after the first passes; a component "
+        "not computed keeps its place in m. Against the zero-shot an interval below zero is "
+        "the cost of the diagram, and one containing zero is no measurable difference, not "
+        "equivalence. Accuracy and balanced accuracy are reported beside, at 95%.", content))
+
+    # systems
+    rows = []
+    for r in main.to_dict("records"):
+        rows.append(f"<tr><th>{E(label(r['system']))}<br><small><code>{E(r['system'])}</code> · "
+                    f"{E(r['role'])} · schemes {E(r['schemes'])}</small></th>"
+                    f"<td>{r['n_items']}</td>"
+                    + "".join(cell(r[m], r[f"{m}_low"], r[f"{m}_high"]) for m in METRICS)
+                    + "</tr>")
+    sections.append(section(
+        "systems", "Every system",
+        "Each system on its own items, with 95% intervals. Exploratory systems decide "
+        "nothing. The majority per scheme is an in-sample oracle.",
+        table(["System", "Items", *METRICS.values()], rows)))
+
+    # CQ level and supervision
+    level_table = tables["cq_level"]
+    content = ""
+    if len(level_table):
+        whole = level_table[level_table.scheme == "all"]
+        rows = [f"<tr><th>{E(label(r['system']))}</th><td>{r['n']}</td>"
+                + triple(r, "agreement", False) + triple(r, "brier", False, True) + "</tr>"
+                for r in whole.to_dict("records")]
+        content += table(["Combiner or entry", "Labelled pairs", "Agreement", "Brier ↓"], rows)
+        rows = [f"<tr><th>{E(r['scheme'])} · {E(label(r['system']))}</th><td>{r['n']}</td>"
+                + triple(r, "agreement", False) + triple(r, "brier", False, True) + "</tr>"
+                for r in level_table[level_table.scheme != "all"].to_dict("records")]
+        content += ("<details><summary>By scheme</summary>"
+                    + table(["Scheme · system", "Pairs", "Agreement", "Brier ↓"], rows)
+                    + "</details>")
+        differences = tables["cq_level_differences"]
+        rows = [f"<tr><th>{E(label(r['system']))} vs {E(label(r['reference']))}</th>"
+                f"<td>{r['n']}</td>" + triple(r, "agreement") + triple(r, "brier")
+                + "</tr>" for r in differences[differences.scheme == "all"].to_dict("records")]
+        content += ("<details><summary>Paired differences (95%)</summary>"
+                    + table(["Comparison", "Pairs", "Δ agreement", "Δ Brier"], rows)
+                    + "</details>")
+    human = tables["human_path"]
+    if len(human):
+        h = human.iloc[0]
+        content += (f'<p class="note">Reference line, declared as such: the path of the human '
+                    f"answers through the diagram 1.1 reaches a verdict on {h.usable_items} of "
+                    f"{h.test_items} items; on them accuracy {h.accuracy:.3f}, macro F1 "
+                    f"{h.macro_f1:.3f}.</p>")
+    sections.append(section(
+        "cq-level", "The level of each CQ",
+        "Agreement of the hard combined answer with the binary human CQ labels (an answer "
+        "outside the arcs disagrees) and Brier score of p_first; every pair of an item moves "
+        "together in the resamples. Exploratory.", content))
+
+    rows = []
+    for combiner, supervision, mark in (("majority", "none", "(a)"),
+                                        ("dawid_skene", "none", "(a)"),
+                                        ("weighted", "cq", "(b)"), ("stacking", "cq", "(b)"),
+                                        ("stacking", "gold", "(c)")):
+        soft = "C1" if (combiner, supervision) == ("stacking", "cq") else \
+            f"C1.{combiner}.{supervision}.soft"
+        hard = "C1.hard" if soft == "C1" else soft.removesuffix(".soft") + ".hard"
+        cq_row = (level_table[(level_table.system == f"C1.{combiner}.{supervision}")
+                              & (level_table.scheme == "all")] if len(level_table) else [])
+        got = cq_row.iloc[0] if len(cq_row) else {}
+        rows.append(
+            f"<tr><th>{mark} {E(combiner.replace('_', ' '))}, supervision "
+            f"{E(supervision)}</th>"
+            + "".join(cell(by_system.loc[n, "macro_f1"], by_system.loc[n, "macro_f1_low"],
+                           by_system.loc[n, "macro_f1_high"]) if n in by_system.index
+                      else '<td class="empty">—</td>' for n in (soft, hard))
+            + cell(got.get("agreement"), got.get("agreement_low"), got.get("agreement_high"))
+            + "</tr>")
+    content = table(["Combination", "Macro F1 · soft", "Macro F1 · hard", "CQ agreement"], rows)
+    explored = tables["exploratory"]
+    supervision_rows = explored[explored.question.str.startswith("supervision")] \
+        if len(explored) else explored
+    content += table(["Comparison", "Δ macro F1 · 95%"], [
+        f"<tr><th>{E(r['system'])} vs {E(r['reference'])}<br><small>{E(r['question'])}"
+        f"</small></th>" + triple(r, "macro_f1") + "</tr>"
+        for r in supervision_rows.to_dict("records")])
+    sections.append(section(
+        "supervision", "The supervision factor",
+        "(a) no labels, (b) human CQ labels, (c) gold verdicts through the diagram; (b) and "
+        "(c) share the stacking family and its centre. Similar verdicts: the CQ labels and the "
+        "gold ask the same of the answers. (c) above (b) with lower CQ agreement: the gain "
+        "bends the answers away from what their questions ask.", content))
+
+    # routing curve
+    curve = tables["routing_curve"]
+    if len(curve):
+        line = curve[curve.requested_share.isna()].sort_values(["explained_share", "tau"])
+        asked = curve[curve.requested_share.notna()]
+        figure = _figure(
+            [("Macro F1", PALETTE[0], list(zip(line.explained_share, line.macro_f1,
+                                               strict=True))),
+             ("Accuracy", PALETTE[1], list(zip(line.explained_share, line.accuracy,
+                                               strict=True)))],
+            "share of verdicts explained by the diagram", "score",
+            [(PALETTE[0], r.explained_share, r.macro_f1, r.macro_f1_low, r.macro_f1_high)
+             for r in asked.itertuples() if r.attainable]
+            + [(PALETTE[1], r.explained_share, r.accuracy, r.accuracy_low, r.accuracy_high)
+               for r in asked.itertuples() if r.attainable])
+        rows = [f"<tr><th>{r.requested_share:.0%}</th>"
+                + (f"<td>{r.tau:+.4f}</td><td>{r.explained_share:.3f}</td>"
+                   + cell(r.macro_f1, r.macro_f1_low, r.macro_f1_high)
+                   + cell(r.accuracy, r.accuracy_low, r.accuracy_high)
+                   if r.attainable else '<td colspan="4" class="empty">not attainable</td>')
+                + "</tr>" for r in asked.itertuples()]
+        content = figure + table(["Requested share", "τ", "Share reached", "Macro F1 · 95%",
+                                  "Accuracy · 95%"], rows)
+    else:
+        content = '<p class="empty">C2 was not computed.</p>'
+    sections.append(section(
+        "routing", "The cost of staying explainable",
+        "C2 with every threshold τ from −1 to 1: the diagram where P_d ≥ P_z − τ. Agreeing "
+        "verdicts count as explained by the diagram. Thresholds are read on the pooled "
+        "out-of-fold estimates and fixed across resamples. Descriptive.", content))
+
+    # S-soft
+    shown = [n for n in ("C4", "C4.path", "C4.nohistory", "A2.pruned",
+                         f"A0:{manifest['reference_model']}@2.0") if n in by_system.index]
+    content = metric_table(main[main.system.isin(shown)], label) if shown else ""
+    if "C4" not in by_system.index:
+        content += ('<p class="note">No S-soft run yet: C4, C4.path, C4.nohistory and their '
+                    "comparisons are listed as missing; H4 is not computed and m stays "
+                    f"{manifest['m']}.</p>")
+    else:
+        content += (f'<p class="note">Items with pending mass (calls missing from the run): '
+                    f"{manifest.get('ssoft_items_with_pending_mass', 0)}.</p>")
+        ssoft_rows = explored[explored.system.str.startswith("C4")] if len(explored) else []
+        if len(ssoft_rows):
+            content += table(["Comparison", "Δ macro F1 · 95%"], [
+                f"<tr><th>{E(label(r['system']))} vs {E(label(r['reference']))}<br><small>"
+                f"{E(r['question'])}</small></th>" + triple(r, "macro_f1") + "</tr>"
+                for r in ssoft_rows.to_dict("records")])
+        changes = tables["ssoft_changes"]
+        if len(changes):
+            content += ("<details><summary>Answers that change on the most probable path"
+                        "</summary>" + table(["Scheme · CQ", "Nodes", "Changed", "Share"], [
+                            f"<tr><th>{E(r.scheme)} · {E(r.cq_id)}</th><td>{r.nodes}</td>"
+                            f"<td>{r.changed}</td>" + cell(r.share) + "</tr>"
+                            for r in changes.itertuples()]) + "</details>")
+    sections.append(section(
+        "ssoft", "S-soft",
+        "The CQs asked along the diagram 2.0 with the earlier answers of the path in view, "
+        "branches kept above mass 0.02, against A2.pruned on the answers of full run v3 with "
+        "the same burden table and pruning.", content))
+
+    # uncertainty
+    abstained = tables["abstention"]
+    content = ""
+    if len(abstained):
+        levels = [c.removeprefix("selective_accuracy_") for c in abstained.columns
+                  if c.startswith("selective_accuracy_") and c[-1].isdigit()]
+        rows = [f"<tr><th>{E(label(r['system']))}</th>"
+                + triple(r, "augrc", False, True) + triple(r, "aurc", False, True)
+                + "".join(triple(r, f"selective_accuracy_{v}", False) for v in levels)
+                + cell(r.get("augrc_margin"), reverse=True) + "</tr>"
+                for r in abstained.to_dict("records")]
+        content += table(["System", "AUGRC ↓", "AURC ↓",
+                          *[f"Accuracy at {v}%" for v in levels], "AUGRC by margin ↓"], rows)
+        curves = tables["abstention_curves"]
+        drawn = [n for n in ("C1", "C2", "C3", "C4", "A2", "A4",
+                             f"zeroshot:{manifest['reference_model']}", "A5")
+                 if len(curves) and n in set(curves.system)]
+        if drawn:
+            content += _figure(
+                [(label(n), PALETTE[k % len(PALETTE)],
+                  list(zip(curves[curves.system == n].coverage,
+                           curves[curves.system == n].selective_risk, strict=True)))
+                 for k, n in enumerate(drawn)], "coverage", "selective risk")
+        kinds = tables["abstention_composition"]
+        if len(kinds):
+            own = kinds[kinds.kind == "good argumentation"]
+            good = (own.assign(share=own.share.where(own.value == "yes", 0.0))
+                    .pivot_table(index="system", columns="coverage", values="share",
+                                 aggfunc="sum", sort=False))
+            good = good.reindex(columns=sorted(good.columns, reverse=True))
+            rows = [f"<tr><th>{E(label(system))}</th>"
+                    + "".join(cell(good.loc[system].get(c)) for c in good.columns) + "</tr>"
+                    for system in good.index]
+            content += ("<details><summary>Composition of the abstained items</summary>"
+                        '<p class="note">Share of Good Argumentation (gold) among the items '
+                        "each system abstains on; abstention_composition.csv also has scheme, "
+                        "corpus and gold origin.</p>"
+                        + table(["System", *[f"at {c:.0%}" for c in good.columns]], rows)
+                        + "</details>")
+    conformal = tables["conformal"]
+    if len(conformal):
+        whole = conformal[conformal.kind == "all"]
+        content += "<h3>Conformal sets</h3>" + table(
+            ["System", "Coverage", "Mean size", "One verdict"],
+            [f"<tr><th>{E(label(r.system))}</th>" + cell(r.coverage)
+             + f"<td>{r.mean_size:.2f}</td>" + cell(r.singleton_share) + "</tr>"
+             for r in whole.itertuples()])
+        rows = [f"<tr><th>{E(label(r.system))} · {E(r.kind)}: {E(r.subset)}</th>"
+                f"<td>{r.n_items}</td>" + cell(r.coverage) + f"<td>{r.mean_size:.2f}</td>"
+                + cell(r.singleton_share) + "</tr>"
+                for r in conformal[conformal.kind != "all"].itertuples()]
+        content += ("<details><summary>By gold origin and by scheme</summary>"
+                    + table(["System · subset", "Items", "Coverage", "Mean size",
+                             "One verdict"], rows) + "</details>")
+    sections.append(section(
+        "uncertainty", "Uncertainty",
+        "Abstention curves: items by decreasing confidence; AUGRC is the mean share of items "
+        "given a wrong verdict instead of an abstention. Items without a verdict come last "
+        "and count as errors. Conformal sets at α = "
+        f"{manifest['conformal_alpha']:g}: thresholds from the gold of the other four folds. "
+        "All exploratory.", content))
+
+    # exploratory and missing
+    rows = [f"<tr><th>{E(label(r['system']))} vs {E(label(r['reference']))}<br><small>"
+            f"{E(r['question'])}</small></th><td>{r['n_items']}</td>"
+            + triple(r, "macro_f1") + "</tr>" for r in explored.to_dict("records")]
+    sections.append(section(
+        "exploratory", "Exploratory comparisons",
+        "Named in spec 09 or each exploratory system against the diagram on its own run. "
+        "95% intervals; they support no claim.",
+        table(["Comparison", "Items", "Δ macro F1 · 95%"], rows)))
+    missing = "".join(f"<li><strong>{E(k)}</strong>: {E(v)}</li>"
+                      for k, v in manifest.get("missing", {}).items())
+    sections.append(section(
+        "missing", "Not computed", "Named systems and comparisons without a result, and why.",
+        f"<ul>{missing or '<li>None.</li>'}</ul>"))
+    sections.append(section(
+        "sources", "Scope and reproducibility",
+        "Every value is read from a saved CSV of this evaluation; the page fits nothing.",
+        "<details><summary>Input fingerprints (SHA-256)</summary><pre>"
+        + E(json.dumps(inputs, indent=2)) + "</pre></details>"))
+
+    nav = [("overview", "Overview"), ("deciding", "Deciding"), ("systems", "Systems"),
+           ("cq-level", "CQ level"), ("supervision", "Supervision"), ("routing", "Routing"),
+           ("ssoft", "S-soft"), ("uncertainty", "Uncertainty"),
+           ("exploratory", "Exploratory"), ("missing", "Missing"), ("sources", "Sources")]
+    document = (
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        f"<title>Round 2 · {E(manifest['name'])}</title><style>{CSS}</style></head>"
+        '<body><main><div class="eyebrow">Walton schemes · round 2</div>'
+        "<h1>Combining, routing and learning from critical questions</h1><nav>"
+        + "".join(f'<a href="#{key}">{E(text)}</a>' for key, text in nav)
+        + '<button id="print" type="button">Print / Save PDF</button></nav>'
+        + "".join(sections)
+        + "<footer>Self-contained report · the CSV tables and the manifest remain the "
+        "reference.</footer></main>"
+        f"<script>{SCRIPT}</script></body></html>"
+    )
+    path = folder / "summary.html"
+    path.write_text(document, encoding="utf-8")
+    return path
+
