@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "argfallacy"
 version = "0.1.0"
-description = "Combining uncertain answers to Walton's critical questions: explainable fallacy detection with several LLMs"
+description = "Explainable fallacy detection through Walton's schemes"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Dumitru Movila" }]

@@ -443,7 +443,7 @@ def write_summary(folder, judge_audit=None, revised_cqs=None):
         prefix, sep, model = name.partition(":")
         if sep:
             return (
-                {"A0": "Diagram", "zeroshot": "Direct verdict", "ceiling": "Oracle ceiling"}.get(
+                {"A0": "Diagram", "zeroshot": "Zero-shot", "ceiling": "Oracle ceiling"}.get(
                     prefix, prefix
                 )
                 + " · "
@@ -461,7 +461,7 @@ def write_summary(folder, judge_audit=None, revised_cqs=None):
     if f"zeroshot:{reference}" in by_system.index:
         cards.append(
             (
-                "Direct verdict · same model",
+                "Zero-shot · same model",
                 by_system.loc[f"zeroshot:{reference}"],
                 "Text + gold scheme → verdict; no CQ answers",
             )
@@ -494,7 +494,7 @@ def write_summary(folder, judge_audit=None, revised_cqs=None):
         intro += (
             "<p>The LLM judge "
             + ("improves on" if significant else "does not measurably improve on")
-            + " the diagram. Its comparison with direct classification is a separate question: "
+            + " the diagram. Its comparison with zero-shot classification is a separate question: "
             + f"macro F1 difference {judge.zeroshot_macro_f1_difference:+.3f}, "
             f"95% interval [{judge.zeroshot_macro_f1_low:.3f}, "
             f"{judge.zeroshot_macro_f1_high:.3f}]. "
@@ -583,7 +583,7 @@ def write_summary(folder, judge_audit=None, revised_cqs=None):
             "Aggregator",
             f"Δ macro F1 vs diagram · {deciding_level} CI",
             "Decision vs diagram",
-            "Δ macro F1 vs direct verdict · 95% CI",
+            "Δ macro F1 vs zero-shot · 95% CI",
         ],
         rows,
     )
@@ -603,7 +603,7 @@ def write_summary(folder, judge_audit=None, revised_cqs=None):
             f"correction across {manifest.get('m', 5)} primary configurations. "
             "Only A2–A4 answer the "
             "soft-answer/ensemble criterion; A1 and A5 answer different questions. "
-            "The direct-verdict comparison is exploratory.",
+            "The zero-shot comparison is exploratory.",
             comparisons,
         )
     )
@@ -619,7 +619,7 @@ def write_summary(folder, judge_audit=None, revised_cqs=None):
         labels = {
             "diagram_full_v2": "Original diagram · v2",
             "diagram_full_v3": "Revised diagram · v3",
-            "direct": "Direct verdict · original label menu",
+            "direct": "Zero-shot · original label menu",
             "judge_full_v2": "Judge v2 · explanations",
             "judge_full_v2_answers_only": "Judge v2 · answers only",
             "judge_full_v3": "Judge v3 · explanations",

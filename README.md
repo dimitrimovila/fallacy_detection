@@ -264,7 +264,7 @@ argfallacy report summary evaluations/decision_v2 --judge-audit evaluations/judg
 The page can be copied on its own and opened offline. `evaluate` regenerates the
 core evaluation page; rerun the presentation command to include the optional audits.
 The earlier `scratch/report_prototype/summary_report.py` is an exploratory report
-for diagram and direct predictions, not the current evaluation renderer.
+for diagram and zero-shot predictions, not the current evaluation renderer.
 
 Human CQ comparisons require the original schemes; revised questions are not joined
 by CQ number. Identical duplicate annotation rows count once; conflicting CQ ratings
