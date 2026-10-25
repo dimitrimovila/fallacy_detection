@@ -281,14 +281,15 @@ def _path(history) -> str:
 
 
 def ssoft_systems(schemes, routing, ids, gold_scheme, v3_rows, history_rows, control_rows,
-                  source=LOGPROB, threshold=PRUNING) -> tuple[dict[str, dict], pd.DataFrame, int]:
+                  source=LOGPROB, threshold=PRUNING
+                  ) -> tuple[dict[str, dict], pd.DataFrame, dict[str, list[str]]]:
     """A2.pruned on the answers of full run v3 and, when their rows exist, C4, C4.path
     and C4.nohistory; with the answers that change on the most probable path of C4,
-    and the number of items with pending mass."""
+    and the items with pending mass in each run; incomplete systems are left out."""
     out: dict[str, dict] = {"A2.pruned": {
         i: a2_pruned(schemes[gold_scheme[i]], v3_rows[i], routing[gold_scheme[i]], source,
                      threshold) for i in ids}}
-    changes, pending = [], 0
+    changes, pending = [], {"ssoft": [], "ssoft_nohistory": []}
     if len(history_rows):
         by_item = {i: g.to_dict("records") for i, g in history_rows.groupby("item_id")}
         out["C4"], out["C4.path"] = {}, {}
@@ -296,7 +297,8 @@ def ssoft_systems(schemes, routing, ids, gold_scheme, v3_rows, history_rows, con
             scheme = schemes[gold_scheme[i]]
             rows = by_item.get(i, [])
             result = ssoft(scheme, rows, routing[scheme.scheme_id], source, threshold)
-            pending += result.pending > 0
+            if result.pending > 0:
+                pending["ssoft"].append(i)
             out["C4"][i] = result
             out["C4.path"][i] = _single(result.path_verdict,
                                         f"single path: {_path(result.single_path) or 'none'}")
@@ -307,11 +309,17 @@ def ssoft_systems(schemes, routing, ids, gold_scheme, v3_rows, history_rows, con
                 before = (v3_rows[i].get(cq) or {}).get("answer")
                 changes.append({"scheme": scheme.scheme_id, "cq_id": cq,
                                 "changed": given != before})
+        if pending["ssoft"]:
+            del out["C4"], out["C4.path"]
+            changes = []
     if len(control_rows):
         by_item = {i: g.to_dict("records") for i, g in control_rows.groupby("item_id")}
         out["C4.nohistory"] = {
             i: ssoft(schemes[gold_scheme[i]], by_item.get(i, []), routing[gold_scheme[i]],
                      source, threshold, history=False) for i in ids}
+        pending["ssoft_nohistory"] = [i for i in ids if out["C4.nohistory"][i].pending > 0]
+        if pending["ssoft_nohistory"]:
+            del out["C4.nohistory"]
     table = pd.DataFrame(changes, columns=["scheme", "cq_id", "changed"])
     if len(table):
         per_cq = table.groupby(["scheme", "cq_id"]).changed.agg(["size", "sum"]).reset_index()
@@ -572,7 +580,7 @@ def evaluate_round2(config: EvaluationConfig, runs_dir: str | Path,
 
     # C4: S-soft and its control, against A2.pruned on full run v3
     say("C4")
-    changes, pending = pd.DataFrame(), 0
+    changes, pending = pd.DataFrame(), {"ssoft": [], "ssoft_nohistory": []}
     if revised_run:
         history_rows, source_name = _ssoft_rows(runs_dir, config.runs.get("ssoft") or [], True,
                                                 folder3, reference, scheme_of)
@@ -581,6 +589,9 @@ def evaluate_round2(config: EvaluationConfig, runs_dir: str | Path,
         found, changes, pending = ssoft_systems(
             schemes3, routing3, ids, scheme_of, rows3[reference], history_rows, control_rows,
             source_name)
+        for key, rows in (("ssoft", history_rows), ("ssoft_nohistory", control_rows)):
+            if config.runs.get(key) and not len(rows):
+                pending[key] = list(ids)
         described = {
             "A2.pruned": ("comparison", f"A2 on the answers of {reference} in full run v3, "
                                         f"burden 2.0, pruning {PRUNING}"),
@@ -593,7 +604,9 @@ def evaluate_round2(config: EvaluationConfig, runs_dir: str | Path,
             add(name, aggregations, described[name][0], "2.0", described[name][1])
     for name, key in (("C4", "ssoft"), ("C4.path", "ssoft"), ("C4.nohistory", "ssoft_nohistory")):
         if name not in systems:
-            missing[name] = f"no S-soft run (runs.{key} is empty)"
+            missing[name] = ("incomplete S-soft run: pending mass for items "
+                             + ", ".join(pending[key]) if pending[key]
+                             else f"no S-soft run (runs.{key} is empty)")
     if "C4" not in systems:
         missing["the answers that change on the path of C4"] = missing["C4"]
     missing.update({
@@ -800,7 +813,9 @@ def evaluate_round2(config: EvaluationConfig, runs_dir: str | Path,
         "cq_label_exclusion": list(config.cq_label_exclusion),
         "cq_labels": len(labels),
         "pruning": PRUNING, "conformal_alpha": ALPHA, "coverage_levels": list(LEVELS),
-        "ssoft_items_with_pending_mass": pending,
+        "ssoft_pending_items": {"count": len(pending["ssoft"]), "item_ids": pending["ssoft"]},
+        "ssoft_nohistory_pending_items": {"count": len(pending["ssoft_nohistory"]),
+                                          "item_ids": pending["ssoft_nohistory"]},
         "missing": missing,
         "commit": _commit(), "date": datetime.now(UTC).isoformat(timespec="seconds"),
         "software_versions": {package: version(package)

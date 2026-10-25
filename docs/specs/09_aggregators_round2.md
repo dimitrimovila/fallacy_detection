@@ -222,6 +222,8 @@ Exploratory comparisons, named here: C4 against `C4.nohistory`, the effect of th
 
 A configuration is read as one of round 2 when its `runs` name `answers_schemes_2`, `ssoft` or `ssoft_nohistory`. The schemes left out by the exploratory C1 of section 2.4 are written in the configuration, since no scheme name is written in the code.
 
+An incomplete S-soft history or control run excludes its systems and comparisons without lowering m, records "incomplete S-soft run" and the affected item ids as missing, stores their count and ids separately in `manifest.json` as `ssoft_pending_items` and `ssoft_nohistory_pending_items`, and identifies the incomplete run and count in `summary.html`, while `A2.pruned` and the rest of the evaluation remain computed.
+
 The configuration:
 
 ```yaml

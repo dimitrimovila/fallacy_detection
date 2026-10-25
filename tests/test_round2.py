@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+from shutil import copytree
 
 import numpy as np
 import pandas as pd
@@ -388,13 +389,80 @@ def test_the_ssoft_runs_give_c4_and_its_control(tmp_path):
                                                                    abs=1e-12)
             assert found[name][item].pruned == pytest.approx(reference.pruned, abs=1e-12)
         assert found["C4.path"][item].verdict == reference.path_verdict
-    assert pending == 0
+    assert pending == {"ssoft": [], "ssoft_nohistory": []}
+    for item in scheme_of:
+        assert found["C4"][item] == found["C4.nohistory"][item]
     assert changes.set_index("scheme").loc["all", "changed"] == 0
     # a run with history is not the control, and the reverse
     with pytest.raises(SchemeError, match="without history"):
         _ssoft_rows(hand["runs"], ["ss"], False, folder, "m0", scheme_of)
     with pytest.raises(SchemeError, match="with history"):
         _ssoft_rows(hand["runs"], ["ssn"], True, folder, "m0", scheme_of)
+
+
+@pytest.fixture(scope="module")
+def complete_ssoft_round2(tmp_path_factory):
+    root = tmp_path_factory.mktemp("complete_ssoft")
+    hand = write_runs(root, {"analogy": 10, "example": 5}, ssoft=True)
+    out = evaluate(hand["config"], hand["runs"], hand["out"], hand["items"],
+                   hand["annotations"])
+    return hand, out
+
+
+@pytest.mark.parametrize("incomplete", [("ss",), ("ssn",), ("ss", "ssn")])
+def test_incomplete_ssoft_runs_exclude_only_their_systems(
+        complete_ssoft_round2, tmp_path, incomplete):
+    hand, complete = complete_ssoft_round2
+    runs = tmp_path / "runs"
+    copytree(hand["runs"], runs)
+    missing_item = next(iter(hand["own3"]))
+    for run in incomplete:
+        path = runs / run / "ssoft.csv"
+        rows = pd.read_csv(path)
+        rows[rows.item_id != missing_item].to_csv(path, index=False)
+    out = evaluate(hand["config"], runs, tmp_path / "evaluations", hand["items"],
+                   hand["annotations"])
+    excluded = ({"C4", "C4.path"} if "ss" in incomplete else set()) | (
+        {"C4.nohistory"} if "ssn" in incomplete else set())
+    manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["m"] == 4
+    assert "ssoft_items_with_pending_mass" not in manifest
+    for run, field, names in (
+            ("ss", "ssoft_pending_items", ("C4", "C4.path")),
+            ("ssn", "ssoft_nohistory_pending_items", ("C4.nohistory",))):
+        expected = [missing_item] if run in incomplete else []
+        assert manifest[field] == {"count": len(expected), "item_ids": expected}
+        for name in names:
+            if expected:
+                assert manifest["missing"][name] == (
+                    f"incomplete S-soft run: pending mass for items {missing_item}")
+            else:
+                assert name not in manifest["missing"]
+    for filename in ("verdicts.csv", "main_table.csv", "abstention.csv", "conformal.csv"):
+        before, after = pd.read_csv(complete / filename), pd.read_csv(out / filename)
+        assert excluded.isdisjoint(after.system)
+        pd.testing.assert_frame_equal(
+            before[~before.system.isin(excluded)].reset_index(drop=True), after)
+    deciding = pd.read_csv(out / "deciding.csv").set_index("hypothesis")
+    assert bool(deciding.loc["H4", "computed"]) == ("ss" not in incomplete)
+    assert deciding.loc["H4", "level"] == 1 - 0.05 / 4
+    if "ss" in incomplete:
+        assert "incomplete S-soft run" in deciding.loc["H4", "outcome"]
+        assert missing_item in deciding.loc["H4", "outcome"]
+        assert (out / "ssoft_changes.csv").read_text().strip() == "scheme,cq_id,changed"
+    explored = pd.read_csv(out / "exploratory.csv")
+    assert excluded.isdisjoint(explored.system) and excluded.isdisjoint(explored.reference)
+    for a, b in (("C4", "C4.nohistory"), ("C4.nohistory", "A2.pruned")):
+        if a in excluded or b in excluded:
+            reason = manifest["missing"][f"{a} against {b}"]
+            assert "incomplete S-soft run" in reason and missing_item in reason
+    for filename in ("cq_combined.csv", "cq_level.csv", "cq_level_differences.csv",
+                     "human_path.csv", "routing_curve.csv"):
+        assert (out / filename).read_bytes() == (complete / filename).read_bytes(), filename
+    page = (out / "summary.html").read_text(encoding="utf-8")
+    for run, description in (("ss", "history"), ("ssn", "control without history")):
+        message = f"Incomplete S-soft {description} run: 1 item with pending mass"
+        assert (message in page) == (run in incomplete)
 
 
 def test_a_zero_shot_summary_without_p_label_is_refused(tmp_path):

@@ -1027,13 +1027,20 @@ def write_round2_summary(folder):
     shown = [n for n in ("C4", "C4.path", "C4.nohistory", "A2.pruned",
                          f"A0:{manifest['reference_model']}@2.0") if n in by_system.index]
     content = metric_table(main[main.system.isin(shown)], label) if shown else ""
-    if "C4" not in by_system.index:
+    pending_history = manifest.get("ssoft_pending_items", {}).get("count", 0)
+    pending_control = manifest.get("ssoft_nohistory_pending_items", {}).get("count", 0)
+    for run, count in (("history", pending_history), ("control without history", pending_control)):
+        if count:
+            item = "item" if count == 1 else "items"
+            content += (f'<p class="note">Incomplete S-soft {run} run: {count} {item} with '
+                        "pending mass; its systems and comparisons are not computed.</p>")
+    if "C4" not in by_system.index and not (pending_history or pending_control):
         content += ('<p class="note">No S-soft run yet: C4, C4.path, C4.nohistory and their '
                     "comparisons are listed as missing; H4 is not computed and m stays "
                     f"{manifest['m']}.</p>")
-    else:
+    elif "C4" in by_system.index:
         content += (f'<p class="note">Items with pending mass (calls missing from the run): '
-                    f"{manifest.get('ssoft_items_with_pending_mass', 0)}.</p>")
+                    f"{pending_history}.</p>")
         ssoft_rows = explored[explored.system.str.startswith("C4")] if len(explored) else []
         if len(ssoft_rows):
             content += table(["Comparison", "Δ macro F1 · 95%"], [
