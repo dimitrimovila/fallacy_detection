@@ -86,6 +86,17 @@ def cq_evaluation(
     for i, row in enumerate(indices, 1):
         counts[i] = np.bincount(row, minlength=len(item_ids))
     positions = {item: i for i, item in enumerate(item_ids)}
+
+    def resampled(item_ids_of_rows, *values):
+        """The sum over the pairs of each value, in the observed sample and in every resample.
+
+        A pair weighs as many times as its item is drawn, so the values are first summed per
+        item and then multiplied by the counts of the items: the same sums, without building
+        a matrix of resamples by pairs."""
+        index = np.fromiter((positions[i] for i in item_ids_of_rows), dtype=int)
+        per_item = [np.bincount(index, weights=v, minlength=len(item_ids)) for v in values]
+        return [counts @ v for v in per_item]
+
     keys = ["item_id", "scheme", "cq_id"]
     if labels.duplicated(keys).any() or predictions.duplicated(["system", *keys]).any():
         raise SchemeError("duplicate paired CQ evaluation rows")
@@ -116,14 +127,15 @@ def cq_evaluation(
             ]
             correct = (rows.answer.to_numpy() == np.array(truth)).astype(float)
             squared = (rows.p_first.to_numpy() - rows.target.to_numpy()) ** 2
-            weights = counts[:, [positions[i] for i in rows.item_id]]
-            total = weights.sum(axis=1)
+            total, correct_sum, squared_sum = resampled(
+                rows.item_id, np.ones(len(rows)), correct, squared
+            )
             metrics = {
                 "agreement": np.divide(
-                    weights @ correct, total, out=np.full(len(total), np.nan), where=total > 0
+                    correct_sum, total, out=np.full(len(total), np.nan), where=total > 0
                 ),
                 "brier": np.divide(
-                    weights @ squared, total, out=np.full(len(total), np.nan), where=total > 0
+                    squared_sum, total, out=np.full(len(total), np.nan), where=total > 0
                 ),
             }
             arrays[system] = (rows, metrics)
@@ -141,8 +153,6 @@ def cq_evaluation(
             common = left.merge(right, on=keys, suffixes=("", "_reference"), validate="one_to_one")
             if common.empty:
                 continue
-            weights = counts[:, [positions[i] for i in common.item_id]]
-            total = weights.sum(axis=1)
             truth = np.array(
                 [
                     data.schemes[r.scheme].answer_space(r.cq_id)[0 if r.target else 1]
@@ -157,9 +167,12 @@ def cq_evaluation(
                 - (common.p_first_reference - common.target) ** 2
             ).to_numpy()
             record = {"system": system, "reference": reference, "scheme": scheme, "n": len(common)}
-            for name, delta in [("agreement", agreement), ("brier", brier)]:
+            total, agreement_sum, brier_sum = resampled(
+                common.item_id, np.ones(len(common)), agreement, brier
+            )
+            for name, delta_sum in [("agreement", agreement_sum), ("brier", brier_sum)]:
                 values = np.divide(
-                    weights @ delta, total, out=np.full(len(total), np.nan), where=total > 0
+                    delta_sum, total, out=np.full(len(total), np.nan), where=total > 0
                 )
                 finite = values[1:][np.isfinite(values[1:])]
                 low, high = np.quantile(finite, [0.025, 0.975]) if len(finite) else (np.nan, np.nan)
