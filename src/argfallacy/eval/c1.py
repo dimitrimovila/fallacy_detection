@@ -65,11 +65,14 @@ def cq_evaluation(
     indices=None,
     seed=20261019,
     resamples=10000,
+    allow_missing=False,
 ) -> CQEvaluation:
     """Pair-weighted scores; every sampled item brings all of its CQ pairs together.
 
     Supply the evaluation's existing resample indices to share them with other
     tables. Scheme breakdowns reuse whole-test resamples without stratification.
+    With ``allow_missing``, agreement retains every hard answer and Brier uses only
+    finite probabilities, with its own support; the paired Brier uses common support.
     """
     item_ids = list(data.items.item_id)
     if indices is None:
@@ -119,27 +122,33 @@ def cq_evaluation(
             rows = part[part.system == system]
             if rows.empty:
                 continue
-            if not np.isfinite(rows.p_first).all() or not rows.p_first.between(0, 1).all():
+            present = np.isfinite(rows.p_first.to_numpy())
+            if (np.isinf(rows.p_first.to_numpy()).any()
+                    or not rows.loc[present, "p_first"].between(0, 1).all()
+                    or (not allow_missing and not present.all())):
                 raise SchemeError(f"{system}: invalid CQ evaluation probabilities")
             truth = [
                 data.schemes[r.scheme].answer_space(r.cq_id)[0 if r.target else 1]
                 for r in rows.itertuples(index=False)
             ]
             correct = (rows.answer.to_numpy() == np.array(truth)).astype(float)
-            squared = (rows.p_first.to_numpy() - rows.target.to_numpy()) ** 2
-            total, correct_sum, squared_sum = resampled(
-                rows.item_id, np.ones(len(rows)), correct, squared
+            squared = np.where(present, (rows.p_first.to_numpy() - rows.target.to_numpy()) ** 2, 0)
+            total, correct_sum, squared_sum, probability_total = resampled(
+                rows.item_id, np.ones(len(rows)), correct, squared, present.astype(float)
             )
             metrics = {
                 "agreement": np.divide(
                     correct_sum, total, out=np.full(len(total), np.nan), where=total > 0
                 ),
                 "brier": np.divide(
-                    squared_sum, total, out=np.full(len(total), np.nan), where=total > 0
+                    squared_sum, probability_total, out=np.full(len(total), np.nan),
+                    where=probability_total > 0
                 ),
             }
             arrays[system] = (rows, metrics)
             record = {"system": system, "scheme": scheme, "n": len(rows)}
+            if allow_missing:
+                record["brier_n"] = int(present.sum())
             for name, values in metrics.items():
                 finite = values[1:][np.isfinite(values[1:])]
                 low, high = np.quantile(finite, [0.025, 0.975]) if len(finite) else (np.nan, np.nan)
@@ -166,13 +175,18 @@ def cq_evaluation(
                 (common.p_first - common.target) ** 2
                 - (common.p_first_reference - common.target) ** 2
             ).to_numpy()
+            present = np.isfinite(common.p_first) & np.isfinite(common.p_first_reference)
+            brier = np.where(present, brier, 0)
             record = {"system": system, "reference": reference, "scheme": scheme, "n": len(common)}
-            total, agreement_sum, brier_sum = resampled(
-                common.item_id, np.ones(len(common)), agreement, brier
+            if allow_missing:
+                record["brier_n"] = int(present.sum())
+            total, agreement_sum, brier_sum, probability_total = resampled(
+                common.item_id, np.ones(len(common)), agreement, brier, present.astype(float)
             )
             for name, delta_sum in [("agreement", agreement_sum), ("brier", brier_sum)]:
+                denominator = probability_total if name == "brier" else total
                 values = np.divide(
-                    delta_sum, total, out=np.full(len(total), np.nan), where=total > 0
+                    delta_sum, denominator, out=np.full(len(total), np.nan), where=denominator > 0
                 )
                 finite = values[1:][np.isfinite(values[1:])]
                 low, high = np.quantile(finite, [0.025, 0.975]) if len(finite) else (np.nan, np.nan)

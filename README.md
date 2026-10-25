@@ -194,10 +194,17 @@ parse and the format check for each pair in order, stopping at the first failure
 For D+Q the order is pilot v3, pilot v2, zero-shot schemes v2, the existing
 zero-shot v1 repeated, full v3 and full v2. Resubmission reuses successful calls.
 
-The D+Q evaluation is specified separately and remains to be implemented. Its
-reserved run lists under `runs` in `configs/evaluation_round2.yaml` are
-`zeroshot_schemes_2`, `zeroshot_rerun`, `dq` and `dq_schemes_2`; the current
-configuration and round-two results are unchanged.
+The D+Q evaluation reads the optional run lists `zeroshot_schemes_2`,
+`zeroshot_rerun`, `dq` and `dq_schemes_2` under `runs` in
+`configs/evaluation_round2.yaml`, initially empty. It checks schemes folder,
+content hash, prompt version and item coverage. Incomplete runs exclude their
+systems and name the missing items. D+Q adds only `dq_` CSVs, `manifest.dq` and a
+final section of `summary.html`; existing round-two CSVs remain unchanged.
+It computes the declared verdict, hard and soft CQ traversals, consistency,
+CQ-level diagnostics, replication and abstention. H_DQ is its own family of one
+comparison at 95%, with the reading rule based on the 1.1 control. Round-two
+models are released before D+Q and its bootstrap uses the existing item draws.
+The C2 extensions and their routing-curve and choices files remain deferred.
 
 The judge stage (`stages: [judge]`) gives the same prompt plus the answers of one entry of a
 run to the critical questions of the scheme, read from the `summary.csv` of that run, which

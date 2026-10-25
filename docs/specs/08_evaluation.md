@@ -210,6 +210,58 @@ the AUGRC of the margin as a check for the systems with a distribution;
 `abstention_composition.csv` the abstained items by Good Argumentation, scheme, corpus
 and gold origin. The breakdowns of the deciding comparisons follow P3 and P12.
 
+The D+Q evaluation of spec 10 runs after these tables are written, in a separate
+module, with the same item order, folds and bootstrap draws. The fitted round-two
+objects are released before this part starts. The independent without-NLAS draws
+are generated once with round two and reused here too. No D+Q system enters an
+existing round-two CSV; all sixteen CSVs of spec 10 section 8.2 remain byte-identical
+with the four new run keys absent, empty or populated.
+
+`runs.zeroshot_schemes_2`, `runs.zeroshot_rerun`, `runs.dq` and
+`runs.dq_schemes_2` are optional lists, initially empty. Their manifests must name
+the expected schemes folder, its current content hash and the expected prompt
+version. A mismatch stops evaluation. A run whose reference entry lacks verdict
+rows for eligible items excludes its systems and records the missing item ids;
+other run groups remain available. Present invalid or empty verdicts count as
+wrong. Non-reference entries are also checked for complete item coverage.
+
+The new systems are the declared D+Q verdict, `DQ.path` from A0 on its hard CQ
+answers, and `DQ.soft` from `A2.pruned` at threshold 0.02 with the burden table of
+that version. The source follows each entry's regime; entries relying on verbal
+confidence have no DQ.soft because CQ rows carry no stated confidence. Consistency
+requires a non-stopped path equal to the declared verdict. Departures identify the
+first chosen arc losing that verdict, or the stop; absent declared verdicts have
+no departure CQ and are reported explicitly. A tied positive maximum counts in
+the share whose declared verdict is most probable under DQ.soft.
+
+H_DQ compares the reference model's D+Q 2.0 with its matched zero-shot 2.0, on macro
+F1 with the 2.5 and 97.5 bootstrap percentiles. It is its own family of one, separate
+from m = 4. Only an interval above zero supports improvement. The reading is
+`robust` only when the D+Q 1.1 minus repeated-zero-shot point estimate is positive;
+otherwise an improvement is `possibly tuning`, including when that control is
+missing. Other outcomes have reading `not applicable`. Accuracy, balanced accuracy,
+origin and scheme breakdowns, and without-NLAS results are reported beside it.
+The named secondary and exploratory comparisons of spec 10 section 6.2, including
+S-soft against the zero-shot 2.0 menus, do not decide success.
+
+For the CQ comparison, the shared binary-label selection and item-sum bootstrap
+of spec 09 section 2.5 are reused. Both sources use the parsed `p_logprob` of the
+first answer, including outside-arc mass, as named in spec 10; it is not conditioned
+on choosing an arc. Hard agreement includes all labelled pairs; Brier excludes
+missing probabilities without imputation and reports `brier_n`. Paired Brier
+differences use the pairs with a probability in both sources. The new CQ file
+distinguishes level and paired-difference rows. Scheme and origin shares filter
+whole-test draws; empty resamples do not contribute to their intervals.
+
+The outputs are `dq_verdicts.csv`, `dq_main_table.csv`, `dq_deciding.csv` (always
+written, with outcome `missing` until its inputs exist), `dq_deciding_breakdowns.csv`,
+`dq_exploratory.csv`, `dq_consistency.csv`, `dq_departures.csv`, `dq_cq_level.csv`,
+`dq_cq_changes.csv`, `dq_replication.csv`, `dq_abstention.csv` and
+`dq_abstention_curves.csv`. The zero-shot replication split is found by rendering
+both prompts. `manifest.json` adds `dq`, and `summary.html` adds a final D+Q section
+from these saved tables, with abstention curves as a figure. C2 extensions of spec
+10 section 7, `dq_routing_curve.csv` and `dq_choices.csv` remain deferred.
+
 ### Remaining stage two work
 
 P1 with the scheme predicted by stage one: it first needs a change to the client, which today plans the predicted condition with one prediction per item for every entry and reads no prediction from a run, while P1 asks for the prediction of each entry; then the calls. Then P2 in the collapsed space, P3, P11 for the systems of the first stage, the F1 per class, the integrity table, the table of stage one and the corresponding additions to `summary.html`.

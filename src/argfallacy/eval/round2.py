@@ -414,6 +414,24 @@ def evaluate_round2(config: EvaluationConfig, runs_dir: str | Path,
                     out_root: str | Path = EVALUATIONS_DIR, items_path: str | Path = ITEMS_FILE,
                     annotations_path: str | Path = ANNOTATIONS_FILE,
                     progress: Callable[[str], None] | None = None) -> Path:
+    """Write round two, release its fitted models, then compute the separate D+Q part."""
+    import gc
+
+    out, items, folds, indices, without_indices, labels = _round2_tables(
+        config, runs_dir, out_root, items_path, annotations_path, progress)
+    gc.collect()
+    from .dq import evaluate_dq
+    from .html_report import write_summary
+
+    evaluate_dq(config, runs_dir, out, items, folds, indices, without_indices, labels=labels,
+                progress=progress)
+    write_summary(out)
+    return out
+
+
+def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
+                   out_root: str | Path, items_path: str | Path,
+                   annotations_path: str | Path, progress: Callable[[str], None] | None):
     """Compute round 2 and write it into ``out_root/<name>/``."""
     say = progress or (lambda message: None)
     runs_dir = Path(runs_dir)
@@ -676,8 +694,8 @@ def evaluate_round2(config: EvaluationConfig, runs_dir: str | Path,
     groups += [("scheme", sid, [p for p, i in enumerate(ids) if scheme_of[i] == sid])
                for sid in sorted(set(scheme_of.values()))]
     parts = [(kind, value, subset(tuple(p))) for kind, value, p in groups]
-    without = Subset(gold, np.array(nlas_free), weights(
-        resample_indices(config.seed, len(nlas_free), config.resamples, 2), len(nlas_free)))
+    without_indices = resample_indices(config.seed, len(nlas_free), config.resamples, 2)
+    without = Subset(gold, np.array(nlas_free), weights(without_indices, len(nlas_free)))
     parts.append(("without NLAS", "without NLAS", without))
     breakdown = []
     for h in family:
@@ -823,7 +841,4 @@ def evaluate_round2(config: EvaluationConfig, runs_dir: str | Path,
     }
     (out / "manifest.json").write_text(json.dumps(record, indent=2, default=str) + "\n",
                                        encoding="utf-8")
-    from .html_report import write_summary
-
-    write_summary(out)
-    return out
+    return out, items, folds, indices, without_indices, labels

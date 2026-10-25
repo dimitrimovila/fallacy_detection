@@ -1136,16 +1136,22 @@ def write_round2_summary(folder):
     sections.append(section(
         "missing", "Not computed", "Named systems and comparisons without a result, and why.",
         f"<ul>{missing or '<li>None.</li>'}</ul>"))
+    dq_content = dq_section(folder, manifest, read) if "dq" in manifest else None
     sections.append(section(
         "sources", "Scope and reproducibility",
         "Every value is read from a saved CSV of this evaluation; the page fits nothing.",
         "<details><summary>Input fingerprints (SHA-256)</summary><pre>"
         + E(json.dumps(inputs, indent=2)) + "</pre></details>"))
 
+    if dq_content is not None:
+        sections.append(dq_content)
+
     nav = [("overview", "Overview"), ("deciding", "Deciding"), ("systems", "Systems"),
            ("cq-level", "CQ level"), ("supervision", "Supervision"), ("routing", "Routing"),
            ("ssoft", "S-soft"), ("uncertainty", "Uncertainty"),
            ("exploratory", "Exploratory"), ("missing", "Missing"), ("sources", "Sources")]
+    if "dq" in manifest:
+        nav.append(("dq", "D+Q"))
     document = (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -1162,4 +1168,88 @@ def write_round2_summary(folder):
     path = folder / "summary.html"
     path.write_text(document, encoding="utf-8")
     return path
+
+
+def dq_section(folder, manifest, read):
+    """The separate D+Q section, using only saved tables and manifest metadata."""
+    tables = {name: _read_optional(folder / f"dq_{name}.csv", read) for name in (
+        "deciding", "deciding_breakdowns", "main_table", "consistency", "departures",
+        "cq_level", "cq_changes", "replication", "exploratory", "abstention",
+        "abstention_curves")}
+
+    def values(frame, keys, metrics):
+        if frame.empty:
+            return '<p class="note">Not computed; see the missing inputs below.</p>'
+        rows = []
+        for r in frame.to_dict("records"):
+            rows.append("<tr>" + "".join(
+                f'<td class="text">{E(r[k]) if k in r and pd.notna(r[k]) else ""}</td>'
+                for k in keys)
+                        + "".join(cell(r.get(m), r.get(f"{m.removesuffix('_difference')}_low"),
+                                       r.get(f"{m.removesuffix('_difference')}_high"),
+                                       difference=m.endswith("_difference")) for m in metrics)
+                        + "</tr>")
+        return table([*keys, *metrics], rows)
+
+    def part(identifier, title, content):
+        return f'<h3 id="dq-{identifier}">{E(title)}</h3>' + content
+
+    decide = tables["deciding"]
+    primary = values(decide, ["hypothesis", "system", "reference", "outcome", "reading", "reason"],
+                     ["macro_f1_difference"])
+    primary += ('<p class="note">H_DQ is a family of one comparison, with a 95% paired '
+                "interval. An improvement is robust only when the point estimate of D+Q 1.1 "
+                "against the repeated zero-shot is positive. Zero inside the interval means "
+                "no measurable difference, not equivalence.</p>")
+    content = part("primary", "The primary comparison", primary)
+    beside = values(decide, ["hypothesis"], ["accuracy_difference", "balanced_accuracy_difference"])
+    beside += values(tables["deciding_breakdowns"], ["kind", "subset", "n_items", "flagged"],
+                     ["macro_f1_difference", "accuracy_difference", "balanced_accuracy_difference"])
+    beside += "<details><summary>Every D+Q and matched-control system</summary>" + values(
+        tables["main_table"], ["system", "schemes", "n_items"], list(METRICS)) + "</details>"
+    content += part("breakdowns", "Reported beside the primary comparison", beside)
+    content += part("consistency", "Consistency and departures", values(
+        tables["consistency"], ["system", "kind", "subset", "n_items", "n_paths", "n_consistent"],
+        ["consistent", "stopped", "agreement_on_paths", "declared_mass", "declared_is_max",
+         "declared_accuracy_consistent", "path_accuracy_consistent",
+         "declared_accuracy_other", "path_accuracy_other"])
+        + values(tables["departures"], ["system", "scheme", "cq_id", "answer", "reason",
+                                        "gold_origin", "count", "n_items"], ["share"]))
+    content += part("cq-level", "The level of each CQ", values(
+        tables["cq_level"], ["kind", "system", "reference", "scheme", "n", "brier_n"],
+        ["agreement", "brier", "agreement_difference", "brier_difference"])
+        + '<p class="note">Brier uses the parsed p_logprob on the same item/CQ pairs in '
+        "both sources, including mass outside the arcs. Missing probabilities are not "
+        "imputed; brier_n gives their support. All pairs of an item move together.</p>"
+        + values(tables["cq_changes"], ["system", "reference", "scheme", "cq_id", "n_items"],
+                 ["changed", "first", "first_reference"]))
+    content += part("exploratory", "Secondary and exploratory comparisons", values(
+        tables["exploratory"], ["comparison", "system", "reference", "subset", "n_items"],
+        ["macro_f1_difference"])
+        + values(tables["replication"], ["system", "reference", "subset", "n_items"], ["agreement"])
+        + '<p class="note">The 2.0 questions were written with full-run-v2 test errors in '
+        "view. Comparisons using those questions can favour D+Q or S-soft. Secondary and "
+        "exploratory intervals decide nothing.</p>")
+    uncertainty = values(tables["abstention"], ["kind", "system", "reference", "n_items"],
+                         ["augrc", "aurc", *[f"selective_accuracy_{round(100 * v)}"
+                                             for v in (1.0, 0.95, 0.9, 0.8, 0.7)],
+                          "augrc_difference"])
+    curves = tables["abstention_curves"]
+    if len(curves):
+        reference = manifest["reference_model"]
+        names = [n for n in curves.system.unique()
+                 if n.split(":", 1)[-1].removesuffix("@2.0") == reference]
+        uncertainty += _figure([
+            (name, PALETTE[k % len(PALETTE)], list(zip(
+                curves.loc[curves.system == name, "coverage"],
+                curves.loc[curves.system == name, "selective_risk"], strict=True)))
+            for k, name in enumerate(names)], "coverage", "selective risk")
+    content += part("abstention", "Abstention", uncertainty)
+    missing = manifest["dq"].get("missing", {})
+    content += part("missing", "What was not computed", "<ul>" + "".join(
+        f"<li><strong>{E(k)}</strong>: {E(v)}</li>" for k, v in missing.items()) + "</ul>")
+    return section("dq", "D+Q and the direct verdict with the 2.0 menus",
+                   "Gold scheme condition, fine label space, shared round-two folds and item "
+                   "resamples. A missing or invalid verdict is wrong. D+Q routing is deferred.",
+                   content)
 
