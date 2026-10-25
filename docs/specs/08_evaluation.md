@@ -256,11 +256,13 @@ whole-test draws; empty resamples do not contribute to their intervals.
 The outputs are `dq_verdicts.csv`, `dq_main_table.csv`, `dq_deciding.csv` (always
 written, with outcome `missing` until its inputs exist), `dq_deciding_breakdowns.csv`,
 `dq_exploratory.csv`, `dq_consistency.csv`, `dq_departures.csv`, `dq_cq_level.csv`,
-`dq_cq_changes.csv`, `dq_replication.csv`, `dq_abstention.csv` and
-`dq_abstention_curves.csv`. The zero-shot replication split is found by rendering
+`dq_cq_changes.csv`, `dq_replication.csv`, `dq_abstention.csv`,
+`dq_abstention_curves.csv`, `dq_routing_curve.csv` and `dq_choices.csv`.
+The zero-shot replication split is found by rendering
 both prompts. `manifest.json` adds `dq`, and `summary.html` adds a final D+Q section
-from these saved tables, with abstention curves as a figure. C2 extensions of spec
-10 section 7, `dq_routing_curve.csv` and `dq_choices.csv` remain deferred.
+from these saved tables, with abstention curves as a figure. The exploratory C2
+families of spec 10 section 7 use the same folds and resamples, with C1 cross-fitted
+inside each training partition. S-soft enters only the family of schemes 2.0.
 
 ### Remaining stage two work
 

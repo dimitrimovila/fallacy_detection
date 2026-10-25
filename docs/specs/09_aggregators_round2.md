@@ -88,6 +88,8 @@ On the 2,656 labelled pairs, for each combiner of full run v2 and for each entry
 * Explanation: the side chosen, its explanation, and P_d and P_z.
 * Exploratory: A0 of the reference model as the diagram side; on schemes 2.0, stacking (b) of full run v3 against the zero-shot with the 2.0 menus (spec 10), when it exists; more sides, D+Q (spec 10) and S-soft, when their runs exist, with one regression per side and the side with the highest estimate chosen.
 
+The C2 families with D+Q and S-soft are defined in spec 10, section 7.
+
 ## 4. C3, a learned model that stays explainable
 
 * One decision tree per scheme (scikit-learn `DecisionTreeClassifier`, criterion gini, `class_weight="balanced"`, fixed `random_state`), on the training items of the scheme. Features: for each CQ of the scheme, in the order of the YAML, the combined `p_first` and the mass outside the arcs of C1, cross-fitted (section 1). Target: the gold verdict; the items whose gold is not a terminal of their scheme stay out of training, as in A3. Grid: `max_depth` in 1, 2 and 3; `min_samples_leaf` in 1, 3 and 5; inner criterion the macro F1 of the pooled inner verdicts. With one class among the training items, that class.

@@ -25,6 +25,9 @@ class Side:
     name: str
     aggregations: Mapping[str, Aggregation]
     p_label: Mapping[str, float] | None = None
+    consistent: Mapping[str, bool] | None = None
+    explained: bool = False
+    schemes_version: str | None = None
 
     def __post_init__(self):
         for item, value in (self.p_label or {}).items():
@@ -108,7 +111,7 @@ def _multi_route(predictions, probabilities):
     return selected
 
 
-def routing_features(inputs: CQInputs, zero: Side, ids):
+def routing_features(inputs: CQInputs, zero: Side, ids, *, extra_sides=()):
     """Entropy in bits on the most probable diagram path; no label is read."""
     metadata = inputs.data.items.set_index("item_id")
     by_item = dict(tuple(inputs.rows(ids).groupby("item_id", sort=False)))
@@ -151,7 +154,17 @@ def routing_features(inputs: CQInputs, zero: Side, ids):
                 "scheme": scheme.scheme_id,
             }
         )
-    return pd.DataFrame(records, columns=FEATURES)
+    frame = pd.DataFrame(records, columns=FEATURES)
+    for side in extra_sides:
+        confidence = (
+            side.p_label
+            if side.p_label is not None
+            else {i: a.confidence for i, a in side.aggregations.items()}
+        )
+        frame[f"{side.name}.confidence"] = [confidence.get(i, np.nan) for i in ids]
+        if side.consistent is not None:
+            frame[f"{side.name}.consistent"] = [bool(side.consistent.get(i, False)) for i in ids]
+    return frame
 
 
 @dataclass(frozen=True)
@@ -159,6 +172,8 @@ class Router:
     models: tuple
     mean_p_label: float
     schemes: tuple[str, ...]
+    extra_means: tuple[tuple[str, float], ...] = ()
+    extra_binary: tuple[str, ...] = ()
 
     def transform(self, frame):
         values = frame[list(FEATURES[:-1])].to_numpy(dtype=float, copy=True)
@@ -169,13 +184,27 @@ class Router:
             if self.schemes
             else np.empty((len(frame), 0))
         )
-        return np.column_stack([values, missing, onehot])
+        extra = []
+        for column, mean in self.extra_means:
+            own = frame[column].to_numpy(dtype=float, copy=True)
+            absent = ~np.isfinite(own)
+            own[absent] = mean
+            extra.extend([own, absent])
+        extra.extend(frame[c].to_numpy(dtype=float) for c in self.extra_binary)
+        return np.column_stack([values, missing, onehot, *extra])
 
     @classmethod
     def fit(cls, frame, targets, c, seed):
         observed = pd.to_numeric(frame.p_label, errors="coerce").dropna()
         mean = float(observed.mean()) if len(observed) else 0.5
-        skeleton = cls((), mean, tuple(sorted(frame.scheme.unique())))
+        extra_means = []
+        for column in frame.columns:
+            if column.endswith(".confidence"):
+                observed = pd.to_numeric(frame[column], errors="coerce")
+                observed = observed[np.isfinite(observed)]
+                extra_means.append((column, float(observed.mean()) if len(observed) else 0.5))
+        binary = tuple(c for c in frame.columns if c.endswith(".consistent"))
+        skeleton = cls((), mean, tuple(sorted(frame.scheme.unique())), tuple(extra_means), binary)
         x, targets = skeleton.transform(frame), np.asarray(targets, dtype=float)
         if targets.ndim != 2 or len(targets) != len(frame):
             raise ValueError("router targets must have one row per training item")
@@ -230,8 +259,8 @@ def _choose(source, fixed, train):
     for fitting, validation in inner_partitions(train, source.seed):
         training, testing = source.partition(fitting, validation)
         x, v = (
-            routing_features(training, fixed[0], fitting),
-            routing_features(testing, fixed[0], validation),
+            routing_features(training, fixed[0], fitting, extra_sides=fixed[1:]),
+            routing_features(testing, fixed[0], validation, extra_sides=fixed[1:]),
         )
         y, truth = _targets(training, fixed, fitting), _targets(testing, fixed, validation)
         valid = np.isfinite(truth)
@@ -284,7 +313,7 @@ class C2Result:
 
 
 def c2_out_of_fold(
-    source, zero: Side, folds=None, *, tau=0.0, extra_sides=(), name="C2"
+    source, zero: Side, folds=None, *, tau=0.0, extra_sides=(), name="C2", schemes_version=None
 ) -> C2Result:
     data = source.data
     folds = dict(folds) if folds is not None else assign_folds(data.items, source.seed)
@@ -294,6 +323,10 @@ def c2_out_of_fold(
         raise ValueError("additional sides need distinct names and tau zero")
     metadata = data.items.set_index("item_id")
     for side in fixed:
+        if side.schemes_version is not None and schemes_version != side.schemes_version:
+            raise SchemeError(
+                f"{side.name}: schemes {side.schemes_version} cannot enter {schemes_version}"
+            )
         for item in data.items.item_id:
             prediction = side.aggregations.get(item)
             if (
@@ -312,7 +345,7 @@ def c2_out_of_fold(
         training, testing = source.partition(train, test)
         penalties = _choose(source, fixed, train)
         model = Router.fit(
-            routing_features(training, zero, train),
+            routing_features(training, zero, train, extra_sides=extra_sides),
             _targets(training, fixed, train),
             penalties,
             source.seed,
@@ -321,7 +354,7 @@ def c2_out_of_fold(
         choices.append(
             {"fold": fold, "component": name, "C": dict(zip(names, penalties, strict=True))}
         )
-        probability = model.predict(routing_features(testing, zero, test))
+        probability = model.predict(routing_features(testing, zero, test, extra_sides=extra_sides))
         for item, given, p in zip(test, _sides(testing, fixed, test), probability, strict=True):
             if not extra_sides:
                 choice = route(*given, *p, tau)
@@ -332,6 +365,13 @@ def c2_out_of_fold(
                 else:
                     j = selected
                     choice = _pick(given[j], p[j], names[j], dict(zip(names, p, strict=True)))
+                    verdict = choice.aggregation.verdict
+                    explained = verdict == given[0].verdict or any(
+                        verdict == prediction.verdict
+                        and (side.explained or bool((side.consistent or {}).get(item, False)))
+                        for side, prediction in zip(fixed, given[1:], strict=True)
+                    )
+                    choice = replace(choice, explained=explained)
             upstream[item], predictions[item] = given[0], choice.aggregation
             records.append(
                 {

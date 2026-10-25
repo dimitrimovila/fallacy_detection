@@ -1175,19 +1175,24 @@ def dq_section(folder, manifest, read):
     tables = {name: _read_optional(folder / f"dq_{name}.csv", read) for name in (
         "deciding", "deciding_breakdowns", "main_table", "consistency", "departures",
         "cq_level", "cq_changes", "replication", "exploratory", "abstention",
-        "abstention_curves")}
+        "abstention_curves", "routing_curve", "choices")}
 
     def values(frame, keys, metrics):
         if frame.empty:
             return '<p class="note">Not computed; see the missing inputs below.</p>'
+
+        def formatted(row, metric):
+            stem = ("explained" if metric == "explained_share"
+                    else metric.removesuffix("_difference"))
+            return cell(row.get(metric), row.get(f"{stem}_low"), row.get(f"{stem}_high"),
+                        difference=metric.endswith("_difference"))
+
         rows = []
         for r in frame.to_dict("records"):
             rows.append("<tr>" + "".join(
                 f'<td class="text">{E(r[k]) if k in r and pd.notna(r[k]) else ""}</td>'
                 for k in keys)
-                        + "".join(cell(r.get(m), r.get(f"{m.removesuffix('_difference')}_low"),
-                                       r.get(f"{m.removesuffix('_difference')}_high"),
-                                       difference=m.endswith("_difference")) for m in metrics)
+                        + "".join(formatted(r, m) for m in metrics)
                         + "</tr>")
         return table([*keys, *metrics], rows)
 
@@ -1245,11 +1250,38 @@ def dq_section(folder, manifest, read):
                 curves.loc[curves.system == name, "selective_risk"], strict=True)))
             for k, name in enumerate(names)], "coverage", "selective risk")
     content += part("abstention", "Abstention", uncertainty)
+    routing = tables["exploratory"]
+    if "comparison" in routing:
+        routing = routing[routing.comparison == "C2"]
+    routing_content = values(routing, ["system", "reference", "n_items"],
+                             ["macro_f1_difference", "explained_share"])
+    curve = tables["routing_curve"]
+    if len(curve):
+        line = curve[curve.requested_share.isna()].sort_values(["explained_share", "tau"])
+        routing_content += _figure([
+            ("Macro F1", PALETTE[0], list(zip(line.explained_share, line.macro_f1, strict=True))),
+            ("Accuracy", PALETTE[1], list(zip(line.explained_share, line.accuracy, strict=True)))
+        ], "share of verdicts explained by C1@2.0", "score")
+        routing_content += values(curve[curve.requested_share.notna()],
+                                  ["requested_share", "tau", "attainable"],
+                                  ["explained_share", "macro_f1", "accuracy"])
+    routing_content += ('<p class="note">All routing comparisons here are exploratory. '
+                        "C2@2.0 uses two sides and threshold zero; its curve varies the threshold. "
+                        "C2.dq adds D+Q on schemes 1.1. C2.dq@2.0 adds D+Q and S-soft on "
+                        "schemes 2.0. A verdict is explained when it equals C1, C4, or a "
+                        "consistent D+Q verdict. Added confidences use training-item mean "
+                        "imputation and a missing indicator. C1 is cross-fitted within every "
+                        "training partition, fitting the original CQ labels for transfer "
+                        "to 2.0.</p>")
+    routing_content += "<details><summary>Routing and upstream hyperparameters</summary>" + values(
+        tables["choices"], ["component", "fold", "parameter", "value", "training_items"], []
+    ) + "</details>"
+    content += part("routing", "Exploratory routing with D+Q and S-soft", routing_content)
     missing = manifest["dq"].get("missing", {})
     content += part("missing", "What was not computed", "<ul>" + "".join(
         f"<li><strong>{E(k)}</strong>: {E(v)}</li>" for k, v in missing.items()) + "</ul>")
     return section("dq", "D+Q and the direct verdict with the 2.0 menus",
                    "Gold scheme condition, fine label space, shared round-two folds and item "
-                   "resamples. A missing or invalid verdict is wrong. D+Q routing is deferred.",
+                   "resamples. A missing or invalid verdict is wrong.",
                    content)
 

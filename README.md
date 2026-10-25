@@ -204,7 +204,9 @@ It computes the declared verdict, hard and soft CQ traversals, consistency,
 CQ-level diagnostics, replication and abstention. H_DQ is its own family of one
 comparison at 95%, with the reading rule based on the 1.1 control. Round-two
 models are released before D+Q and its bootstrap uses the existing item draws.
-The C2 extensions and their routing-curve and choices files remain deferred.
+Exploratory routing adds `C2@2.0` and its `dq_routing_curve.csv`, `C2.dq` on
+schemes 1.1, and `C2.dq@2.0` with D+Q and S-soft on schemes 2.0. The selected
+penalties, including nested C1 fits, are recorded in `dq_choices.csv`.
 
 The judge stage (`stages: [judge]`) gives the same prompt plus the answers of one entry of a
 run to the critical questions of the scheme, read from the `summary.csv` of that run, which
@@ -431,9 +433,14 @@ terminals of each item's scheme.
 For revised schemes, `C1CrossFitter(revised_data, labels, seed, fit_data=data)`
 fits only the original CQ labels and predicts the revised signals; supply the
 zero-shot with matching revised menus. Additional fixed predictions, including
-D+Q and S-soft when available, enter C2 as `extra_sides=(Side(name, predictions),)`.
-Each side gets a correctness regression on the same features; the largest
+D+Q and S-soft when available, enter C2 as `extra_sides=(Side(name, predictions,
+p_label=confidence, consistent=flags, schemes_version=version),)`. D+Q supplies
+consistency flags; S-soft instead sets `explained=True`. Pass `schemes_version`
+to the router as well. Each added confidence uses training-mean imputation and a
+missing indicator; D+Q also supplies its consistency with its path. Each side
+gets a correctness regression on the shared features; the largest
 estimate among available sides wins, with ties to the diagram then input order.
+A final verdict counts as explained when it equals C1, C4 or a consistent D+Q.
 Use the `name` argument to identify exploratory results and parameter choices.
 
 ## Sequential critical questions

@@ -49,6 +49,8 @@ DQ_FILES = (
     "dq_replication.csv",
     "dq_abstention.csv",
     "dq_abstention_curves.csv",
+    "dq_routing_curve.csv",
+    "dq_choices.csv",
 )
 
 
@@ -291,8 +293,6 @@ def test_round2_csvs_unchanged_and_new_outputs_are_isolated(evaluated_variants):
         assert len({(out / name).read_bytes() for out in outputs}) == 1, name
     for out in outputs:
         assert all((out / name).is_file() for name in DQ_FILES)
-        assert not (out / "dq_routing_curve.csv").exists()
-        assert not (out / "dq_choices.csv").exists()
         assert set(p.name for p in out.glob("*.csv")) == set(LEGACY_FILES) | set(DQ_FILES)
     absent = pd.read_csv(outputs[0] / "dq_deciding.csv").iloc[0]
     assert absent.outcome == "missing"
@@ -311,8 +311,29 @@ def test_round2_csvs_unchanged_and_new_outputs_are_isolated(evaluated_variants):
         f"DQ.soft:{REFERENCE}@2.0",
         f"zeroshot:{REFERENCE}@2.0",
         f"zeroshot.rerun:{REFERENCE}",
+        "C2@2.0",
+        "C2.dq",
+        "C2.dq@2.0",
     } == set(systems.system)
-    assert not systems.system.str.startswith("C2").any()
+    choices = pd.read_csv(outputs[2] / "dq_choices.csv")
+    assert set(choices.component) >= {"C2@2.0", "C2.dq", "C2.dq@2.0"}
+    assert "C C4" not in set(choices.loc[choices.component == "C2.dq", "parameter"])
+    assert "C C4" in set(choices.loc[choices.component == "C2.dq@2.0", "parameter"])
+    assert pd.read_csv(outputs[2] / "dq_routing_curve.csv").requested_share.notna().sum() == 5
+    comparisons = pd.read_csv(outputs[2] / "dq_exploratory.csv")
+    assert set(zip(comparisons.system, comparisons.reference, strict=True)) >= {
+        ("C2@2.0", f"zeroshot:{REFERENCE}@2.0"),
+        ("C2.dq", f"zeroshot:{REFERENCE}"),
+        ("C2.dq@2.0", f"zeroshot:{REFERENCE}@2.0"),
+        ("C2.dq@2.0", f"DQ:{REFERENCE}@2.0"),
+    }
+    for entry in (
+        "C2 with S-soft as another side",
+        "C2 with D+Q as another side",
+        "C2 on schemes 2.0",
+        "C4 against the zero-shot with the 2.0 menus",
+    ):
+        assert "D+Q section" in manifest["missing"][entry]
     assert list(systems.columns) == list(pd.read_csv(outputs[2] / "verdicts.csv", nrows=0).columns)
     assert list(pd.read_csv(outputs[2] / "dq_main_table.csv").columns) == list(
         pd.read_csv(outputs[2] / "main_table.csv", nrows=0).columns
@@ -326,6 +347,7 @@ def test_round2_csvs_unchanged_and_new_outputs_are_isolated(evaluated_variants):
         "dq-cq-level",
         "dq-exploratory",
         "dq-abstention",
+        "dq-routing",
         "dq-missing",
     ]:
         assert f'id="{anchor}"' in page
@@ -408,9 +430,12 @@ def test_incomplete_run_excludes_only_its_systems(evaluated_variants, tmp_path):
     systems = set(pd.read_csv(out / "dq_verdicts.csv").system)
     assert f"DQ:{REFERENCE}" in systems and f"DQ:{REFERENCE}@2.0" not in systems
     assert f"zeroshot:{REFERENCE}@2.0" in systems
+    assert {"C2.dq", "C2@2.0"} <= systems and "C2.dq@2.0" not in systems
     assert pd.read_csv(out / "dq_deciding.csv").iloc[0].outcome == "missing"
     missing = json.loads((out / "manifest.json").read_text())["dq"]["missing"]
     assert any(missing_item in str(reason) for reason in missing.values())
+    record = json.loads((out / "manifest.json").read_text())
+    assert not record["missing"]["C2 with S-soft as another side"].startswith("computed")
 
 
 def test_prompt_replication_split_is_found_by_rendering(evaluated_variants):

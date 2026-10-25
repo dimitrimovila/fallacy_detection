@@ -21,6 +21,7 @@ from ..paths import SCHEMES_ROOT
 from ..prompts import DQ, ZEROSHOT, render_zeroshot
 from ..schemes import SchemeError, load_all, load_vocabulary
 from .c1 import cq_evaluation, cq_labels
+from .dq_routing import routing_systems
 from .evaluate import METRICS, Scores, difference, weights
 from .round2 import ORIGINS, SMALL_SCHEME, Subset, System, _difference, _finite_interval
 from .uncertainty import LEVELS, abstention, cumulative_errors
@@ -774,6 +775,30 @@ def evaluate_dq(
     paired = Paired(items, indices, without_indices)
     ids = paired.ids
     legacy = _legacy_systems(out, reference, ids)
+    if groups and labels is None:
+        if annotations_path is None:
+            raise SchemeError("D+Q evaluation requires the frozen CQ labels")
+        labels = cq_labels(load_annotations(annotations_path), items, schemes["v1"])
+    routed, routing_origins, curve, choices, explained, routing_missing = routing_systems(
+        config,
+        runs_dir,
+        items,
+        schemes,
+        systems,
+        legacy,
+        provenance,
+        cq_rows,
+        labels,
+        folds,
+        indices,
+        consistency_case,
+        progress,
+    )
+    systems.update(routed)
+    provenance.update(routing_origins)
+    missing.update(routing_missing)
+    _save(out, "dq_routing_curve.csv", curve)
+    _save(out, "dq_choices.csv", choices)
     available = {**legacy, **{n: s.aggregations for n, s in systems.items()}}
     predicted = {
         n: [values.get(i, Aggregation(None, None, {}, 1.0, "missing")).verdict for i in ids]
@@ -875,6 +900,10 @@ def evaluate_dq(
         ("5", f"DQ.soft:{reference}@2.0", "C4.nohistory", "one generation with verdicts in view"),
         ("8", f"zeroshot:{reference}@2.0", f"zeroshot:{reference}", "menus and server"),
         ("C4", "C4", f"zeroshot:{reference}@2.0", "S-soft against the matched 2.0 menus"),
+        ("C2", "C2@2.0", f"zeroshot:{reference}@2.0", "two-side routing, 2.0"),
+        ("C2", "C2.dq", f"zeroshot:{reference}", "three-side routing, 1.1"),
+        ("C2", "C2.dq@2.0", f"zeroshot:{reference}@2.0", "four-side routing, 2.0"),
+        ("C2", "C2.dq@2.0", f"DQ:{reference}@2.0", "routing against the D+Q side, 2.0"),
     ]
     exploratory = []
     for comparison, a, b, question in pairs:
@@ -900,7 +929,17 @@ def evaluate_dq(
                     **{f"macro_f1_{k}": v for k, v in d.items()},
                 }
             )
-    _save(out, "dq_exploratory.csv", exploratory, COMPARISON_COLUMNS)
+            if a in explained:
+                value, low, high = paired.ratio(explained[a], np.ones(len(items)))
+                exploratory[-1].update(
+                    explained_share=value, explained_low=low, explained_high=high
+                )
+    _save(
+        out,
+        "dq_exploratory.csv",
+        exploratory,
+        [*COMPARISON_COLUMNS, "explained_share", "explained_low", "explained_high"],
+    )
 
     replication = []
     for a, b, subset, mask in [
@@ -1011,10 +1050,11 @@ def evaluate_dq(
             ],
         ],
     )
-    uncertainty, curves = _abstention_tables(systems, paired, reference)
+    uncertainty, curves = _abstention_tables(
+        {n: s for n, s in systems.items() if n not in routed}, paired, reference
+    )
     _save(out, "dq_abstention.csv", uncertainty)
     _save(out, "dq_abstention_curves.csv", curves)
-    missing["C2 families"] = "section 7 is deferred; no D+Q routing systems computed"
     record = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
     record["dq"] = {
         "runs": {key: config.runs.get(key, []) for key in RUNS},
@@ -1028,10 +1068,18 @@ def evaluate_dq(
         "cq_probability": "parsed p_logprob, including outside-arc mass; no imputation",
         "bootstrap": "shared round-two item indices; independent without-NLAS indices",
     }
-    if "C4" in available and f"zeroshot:{reference}@2.0" in systems:
-        record["missing"]["C4 against the zero-shot with the 2.0 menus"] = (
-            "computed in the D+Q section (dq_exploratory.csv)"
-        )
+    pointers = {
+        "C2 with S-soft as another side": "C2.dq@2.0" in routed,
+        "C2 with D+Q as another side": any(n in routed for n in ("C2.dq", "C2.dq@2.0")),
+        "C2 on schemes 2.0": "C2@2.0" in routed,
+        "C4 against the zero-shot with the 2.0 menus": "C4" in available
+        and f"zeroshot:{reference}@2.0" in systems,
+    }
+    for entry, computed in pointers.items():
+        if computed:
+            record["missing"][entry] = "computed in the D+Q section (dq_exploratory.csv)"
+        elif str(record["missing"].get(entry, "")).startswith("computed in the D+Q section"):
+            record["missing"][entry] = "not computed; missing inputs listed in the D+Q section"
     (out / "manifest.json").write_text(
         json.dumps(record, indent=2, default=str) + "\n", encoding="utf-8"
     )
