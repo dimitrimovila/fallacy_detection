@@ -1,0 +1,14 @@
+# The same sample as pilot2, with the revised questions and menus.
+name: dq_pilot_v3
+items:
+  n: 50
+  seed: 20260911
+  min_per_scheme: 4
+  exclude_none_scheme: true
+stages: [dq]
+schemes: v2
+scheme_condition: gold
+models: [qwen3_8_27b]
+prompt_version: v1
+generation:
+  max_tokens: 512

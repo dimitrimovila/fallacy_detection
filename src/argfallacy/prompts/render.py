@@ -41,6 +41,8 @@ ZEROSHOT_VERSION = "v1"
 JUDGE_VERSION = "v1"
 SSOFT = "ssoft"
 SSOFT_VERSION = "v1"
+DQ = "dq"
+DQ_VERSION = "v1"
 
 CANNOT_BE_DETERMINED = "cannot_be_determined"
 """The third option, a choice of this project: the diagrams and the prompts described in
@@ -429,7 +431,7 @@ def render_zeroshot(
             "schema": scheme.schema,
             "variables": _variables_block(scheme),
             "text": text,
-            "verdicts": "\n".join(f"* `{v.shown}`: {v.definition}" for v in listed),
+            "verdicts": _verdicts_block(listed),
         },
         prompt_version(ZEROSHOT, version),
         where=f"{ZEROSHOT}_{version}.md",
@@ -443,6 +445,53 @@ def render_zeroshot(
         answer_options=tuple(v.shown for v in listed),
         json_schema=verdict_schema(scheme, version, vocabulary),
     )
+
+
+def _verdicts_block(listed: tuple[Verdict, ...]) -> str:
+    return "\n".join(f"* `{v.shown}`: {v.definition}" for v in listed)
+
+
+def render_dq(
+    item: Mapping[str, Any], scheme: Scheme, definitions: Mapping[str, Any],
+    version: str = DQ_VERSION, vocabulary: Mapping[str, Any] | None = None,
+) -> RenderedPrompt:
+    """All CQ answers, in YAML order, followed by a freely chosen verdict."""
+    text = str(item.get("text") or "").strip()
+    if not text:
+        raise SchemeError(f"item {item.get('item_id')!r} has no text")
+    questions = []
+    for cq in scheme.cq_order:
+        listed = listed_options(scheme, cq, definitions)
+        lines = [f"**{cq}.** {scheme.cqs[cq].text}",
+                 "Options: " + ", ".join(f"`{a}`" for a, _ in listed) + "."]
+        if cq in (definitions.get("per_cq") or {}).get(scheme.scheme_id, {}):
+            lines.extend(f"* `{a}`: {meaning}" for a, meaning in listed)
+        questions.append("\n".join(lines))
+    shown = verdicts(scheme, vocabulary)
+    schema = load_json_schema(DQ, version)
+    schema["properties"]["verdict"]["enum"] = [v.shown for v in shown]
+    schema["properties"] = {
+        **{cq: {"type": "string", "enum": list(answer_options(scheme, cq))}
+           for cq in scheme.cq_order},
+        **schema["properties"],
+    }
+    schema["required"] = list(schema["properties"])
+    schema["title"] += f"_{scheme.scheme_id}"
+    example = json.dumps({cq: "<one of the answers of this question>" for cq in scheme.cq_order})
+    example = example[:-1] + (
+        ', "verdict": "<one of the verdicts above, written exactly as listed>", '
+        '"confidence": <integer from 0 to 100>, "justification": "<at most two sentences>"}'
+    )
+    filled = _fill_versioned(
+        load_template(DQ, version),
+        {"scheme_name": scheme.name, "schema": scheme.schema,
+         "variables": _variables_block(scheme), "text": text,
+         "questions": "\n\n".join(questions), "na_definition": definitions["na"],
+         "verdicts": _verdicts_block(shown), "answer_example": example},
+        prompt_version(DQ, version), where=f"{DQ}_{version}.md",
+    )
+    return RenderedPrompt(filled, DQ, prompt_version(DQ, version), scheme.scheme_id,
+                          None, tuple(v.shown for v in shown), schema)
 
 
 def _answers_block(scheme: Scheme, answers: Mapping[str, tuple[str | None, str | None]],

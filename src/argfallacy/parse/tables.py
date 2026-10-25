@@ -38,6 +38,7 @@ from jsonschema import Draft202012Validator
 from ..labels import scheme_ids
 from ..prompts import (
     CANNOT_BE_DETERMINED,
+    DQ,
     JUDGE,
     NOT_APPLICABLE,
     SSOFT,
@@ -86,6 +87,12 @@ def shown_verdicts(scheme: Any) -> dict[str, str]:
     return {v.shown: v.terminal for v in verdicts(scheme, _vocabulary())}
 
 
+def _verdict_row(row: Mapping[str, Any]) -> bool:
+    return row.get("stage") in VERDICT_STAGES or (
+        row.get("stage") == DQ and not row.get("cq_id")
+    )
+
+
 def options_for(
     row: Mapping[str, Any], schemes: Mapping[str, Any] | None = None
 ) -> tuple[str, ...]:
@@ -98,7 +105,7 @@ def options_for(
         return SCHEME_IDS
     schemes = schemes if schemes is not None else load_all()
     scheme = schemes.get(row.get("scheme"))
-    if row.get("stage") in VERDICT_STAGES:
+    if _verdict_row(row):
         if scheme is None:
             raise SchemeError(f"{row.get('stage')} row of item {row.get('item_id')!r} has no "
                               f"known scheme: {row.get('scheme')!r}")
@@ -362,9 +369,65 @@ def parse_answers(
     rows: Iterable[Mapping[str, Any]], schemes: Mapping[str, Any] | None = None
 ) -> pd.DataFrame:
     schemes = schemes if schemes is not None else load_all()
-    parsed = [parse_row(row, schemes) for row in rows]
+    parsed = []
+    for row in rows:
+        if row.get("stage") == DQ:
+            parsed.extend(parse_dq_row(row, schemes))
+        else:
+            parsed.append(parse_row(row, schemes))
     extra = ["path", "depth"] if any(row["stage"] == SSOFT for row in parsed) else []
+    if any(row["stage"] == DQ for row in parsed):
+        extra.append("keys_in_order")
     return pd.DataFrame(parsed, columns=[*ANSWERS_COLUMNS, *extra])
+
+
+def keys_in_order(content: str | None, schema: Mapping[str, Any] | None) -> bool:
+    """Check the final object's key order against the schema sent with its call."""
+    parsed = parse_content(content)
+    return parsed is not None and schema is not None and (
+        list(parsed) == list(schema.get("properties", {}))
+    )
+
+
+def parse_dq_row(
+    row: Mapping[str, Any], schemes: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """Validate the whole object once; expand its CQ values and its verdict separately."""
+    scheme = schemes.get(row.get("scheme"))
+    if scheme is None:
+        raise SchemeError(f"dq row of item {row.get('item_id')!r} has no known scheme: "
+                          f"{row.get('scheme')!r}")
+    raw = row.get("raw_response") or {}
+    parsed = parse_content(raw.get("content"))
+    valid = (not row.get("error") and parsed is not None
+             and validate_against_schema(parsed, row.get("json_schema")))
+    ordered = keys_in_order(raw.get("content"), row.get("json_schema"))
+    output = []
+    # Reuse the established row shape, without treating the object as a single answer.
+    base = parse_row({**row, "stage": "stage2", "cq_id": scheme.cq_order[0]}, schemes)
+    for cq in [*scheme.cq_order, ""]:
+        key = cq or "verdict"
+        options = answer_options(scheme, cq) if cq else tuple(shown_verdicts(scheme))
+        ok = bool(valid and parsed.get(key) in options)
+        answer = str(parsed[key]) if ok else INVALID
+        out = {**base, "stage": DQ, "cq_id": cq, "parse_ok": ok,
+               "answer": answer, "keys_in_order": ordered,
+               "confidence": None, "justification": None,
+               "p_label": None, "p_label_lower_bound": None, "logprob_partial": False}
+        for option in (*ALL_OPTIONS, *SCHEME_IDS):
+            out[f"p_logprob_{option}"] = None
+        if cq:
+            masses, partial = logprob_masses(raw.get("logprobs"), options, key)
+            out.update({f"p_logprob_{a}": mass for a, mass in masses.items()})
+            out["logprob_partial"] = partial
+        elif ok:
+            out["answer"] = shown_verdicts(scheme)[answer]
+            out["confidence"] = parsed.get("confidence")
+            out["justification"] = parsed.get("justification")
+            out["p_label"], out["p_label_lower_bound"] = label_probability(
+                raw.get("logprobs"), options, answer, key)
+        output.append(out)
+    return output
 
 
 def valid_samples(group: pd.DataFrame) -> pd.DataFrame:
@@ -459,7 +522,7 @@ def _label_probabilities(
     """
     if hard == INVALID or zero_row is None:
         return {}
-    verdict = stage in VERDICT_STAGES
+    verdict = stage in (*VERDICT_STAGES, DQ)
     if not several:
         confidence = _number(zero_row["confidence"])
         out = {"p_verbal": None if confidence is None else confidence / 100.0}
@@ -548,7 +611,7 @@ def summarise(
         else:
             hard = zero_row["answer"] if zero_row is not None else INVALID
 
-        if stage == STAGE1 or stage in VERDICT_STAGES:
+        if stage == STAGE1 or _verdict_row({"stage": stage, "cq_id": cq_id}):
             probabilities = _label_probabilities(stage, valid, zero_row, several, hard)
         else:
             probabilities = _answer_probabilities(valid, zero_row, options, several)
@@ -561,8 +624,11 @@ def summarise(
             "invalid_count": int((group["answer"] == INVALID).sum()),
             "justification": _justification(valid, zero_row, several, hard),
             **probabilities,
+            **({"keys_in_order": bool(group["keys_in_order"].fillna(False).all())}
+               if "keys_in_order" in answers else {}),
         })
-    return pd.DataFrame(records, columns=SUMMARY_COLUMNS).sort_values(
+    extra = ["keys_in_order"] if "keys_in_order" in answers else []
+    return pd.DataFrame(records, columns=[*SUMMARY_COLUMNS, *extra]).sort_values(
         ["model", "item_id", "stage", "cq_id"]
     ).reset_index(drop=True)
 

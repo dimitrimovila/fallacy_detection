@@ -137,7 +137,11 @@ class FakeBackend:
         if self.latency_s:
             time.sleep(self.latency_s)
 
-        options, key = _options_and_key(response_format)
+        schema = (response_format or {}).get("json_schema", {}).get("schema", {})
+        enum_properties = {k: tuple(v["enum"]) for k, v in schema.get("properties", {}).items()
+                           if "enum" in v}
+        options, key = (next(iter((v, k) for k, v in enum_properties.items()))
+                        if len(enum_properties) > 1 else _options_and_key(response_format))
         seed_value = _digest(prompt, model, str(int(seed or 0)))
         answer = options[seed_value % len(options)]
         confidence = 50 + (seed_value % 50)
@@ -146,9 +150,22 @@ class FakeBackend:
         if any(marker in prompt for marker in self.invalid_on):
             answer_tokens = [_token("I am not going to answer that.", -0.1)]
         else:
-            body = json.dumps({key: answer, "confidence": confidence,
-                               "justification": "Because the text says so."})
-            answer_tokens = self._json_tokens(body, key, answer, options)
+            if len(enum_properties) > 1:
+                values = {}
+                for k, prop in schema["properties"].items():
+                    if k in enum_properties:
+                        admitted = enum_properties[k]
+                        values[k] = admitted[_digest(prompt, model, str(int(seed or 0)), k)
+                                             % len(admitted)]
+                    elif prop.get("type") == "integer":
+                        values[k] = confidence
+                    else:
+                        values[k] = "Because the text says so."
+                answer_tokens = self._object_tokens(values, enum_properties)
+            else:
+                body = json.dumps({key: answer, "confidence": confidence,
+                                   "justification": "Because the text says so."})
+                answer_tokens = self._json_tokens(body, key, answer, options)
         tokens = thinking + answer_tokens
 
         message = {"role": "assistant",
@@ -168,6 +185,23 @@ class FakeBackend:
                       "completion_tokens": len(tokens),
                       "total_tokens": len(prompt.split()) + len(tokens)},
         }
+
+    def _object_tokens(self, values: dict, enum_properties: dict) -> list[dict[str, Any]]:
+        """Every property in schema order, with alternatives at each enum value."""
+        tokens = []
+        for index, (key, value) in enumerate(values.items()):
+            prefix = "{" if index == 0 else ", "
+            if key in enum_properties:
+                # Reuse the single-value tokenizer, replacing only its opening brace.
+                body = json.dumps({key: value})
+                part = self._json_tokens(body, key, value, enum_properties[key])
+                part[0] = _token(prefix + '"')
+                part[-1] = _token('"')
+                tokens.extend(part)
+            else:
+                tokens.append(_token(prefix + json.dumps(key) + ": " + json.dumps(value)))
+        tokens.append(_token("}"))
+        return tokens
 
     def _json_tokens(self, body: str, key: str, answer: str,
                      options: tuple[str, ...]) -> list[dict[str, Any]]:

@@ -109,6 +109,13 @@ The parser takes the name shown back to the terminal id through the same file, a
 
 Acceptance tests: rendering is deterministic; the admitted verdicts, in the JSON Schema and in the prompt, are the terminals of the scheme, in the order above; ad hominem has no Good Argumentation; every name shown is read back as its terminal id, and a name not shown (the full `label` of an ad hominem variant) is `invalid`.
 
+The same `zeroshot_v1` also accepts `schemes: v2`, through
+`configs/zeroshot_schemes_v2.yaml`. It changes only the scheme files: rendering
+the 601 frozen test items gives 409 identical prompts and 192 different ones.
+The identical prompts have identical cache keys with the same entry and parameters.
+The version pairing of the independent CQ prompts applies only to `stage1` and
+`stage2`; `judge` accepts both scheme folders, and `ssoft` remains restricted to v2.
+
 ## 9. Judge, `judge_v1.md`
 
 The prompt of A5, the LLM judge (spec 07, section 7): `zeroshot_v1.md` with two changes, so that the only difference from the zero-shot is the answers. Version `judge_v1`, rendered by `render_judge(item, scheme, answers, justifications)`.
@@ -147,3 +154,20 @@ not change the v2/v3 pairing of the independent CQ stages.
 Acceptance: deterministic rendering; exact CQ text and path order; no justification
 in the history; two histories give different cache keys; removing the two sections
 and the extra sentence recovers the independent stage-two prompt.
+
+## 11. CQs and a direct verdict, `dq_v1.md`
+
+`render_dq(item, scheme, definitions)` renders the prompt of spec 10, section 2.
+It shares the scheme, text and verdict blocks with the zero-shot prompt, adds all
+CQs verbatim in YAML order, and requests their answers before a freely chosen
+verdict. Options follow `listed_options`. Only entries under `per_cq` print their
+definitions; the default yes/no definitions are absent. `cannot_be_determined`
+and `na` are defined once for the whole list. No arc or terminal id is shown.
+
+The answer definitions follow the schemes folder: `stage2_v2_answers.yaml` for
+v1 and `stage2_v3_answers.yaml` for v2. The renderer builds the call schema from
+`schemas/dq_v1.json`: one property per CQ with its `answer_options` enum, followed
+by `verdict` (the names shown for that scheme), `confidence` and `justification`.
+Every property is required and additional properties are refused. Confidence
+and justification describe the verdict only. The prompt requests the keys in
+that exact order; the format report verifies it after the calls.

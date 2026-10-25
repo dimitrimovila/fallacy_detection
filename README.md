@@ -164,6 +164,41 @@ run) and `configs/zeroshot_pilot.yaml` (the 50 pilot items, two entries), run an
 the same commands. The parser writes the verdict as its terminal id, with the probability of
 the label chosen in `p_label`.
 
+`configs/zeroshot_schemes_v2.yaml` uses the same zero-shot prompt and five entries
+with `schemes: v2`. For the 601 test items, rendering gives 409 identical prompts
+and cache keys across the two folders, and 192 different prompts.
+
+The `dq` stage answers every critical question and then declares a verdict in one
+generation. `configs/dq_full_v3.yaml` uses schemes 2.0; `configs/dq_full_v2.yaml`
+uses schemes 1.1. Both contain the five zero-shot entries and plan 601 calls for
+`qwen3_8_27b`. `configs/dq_pilot_v3.yaml` and `configs/dq_pilot_v2.yaml` contain
+only that entry and the same 50 items as `configs/pilot2.yaml`. The definitions
+follow the schemes folder and their file and SHA-256 enter the manifest.
+The CQ keys precede `verdict`, `confidence` and `justification` in the schema.
+Parsing writes one row per CQ and one verdict row, with `keys_in_order` in both
+tables only for runs containing `dq`. CQ rows have their own logprob masses and
+no stated confidence; the verdict row has `p_label` and the stated confidence.
+
+```bash
+argfallacy run plan configs/dq_full_v3.yaml --model qwen3_8_27b
+argfallacy report format <run_id> --model qwen3_8_27b
+sbatch serving/slurm/runs.sbatch qwen3_8_27b <config> <run_id> [<config> <run_id> ...]
+```
+
+The format report reads a parsed `dq` or `zeroshot` run, without gold labels or
+accuracy. It fails on absent or failed calls, invalid or truncated answers,
+keys outside schema order and, for entries with logprobs, missing CQ masses or
+verdict probabilities. Outside-arc answer shares per scheme and CQ are informational.
+`runs.sbatch` starts the entry once, runs the smoke test, then runs plan, execute,
+parse and the format check for each pair in order, stopping at the first failure.
+For D+Q the order is pilot v3, pilot v2, zero-shot schemes v2, the existing
+zero-shot v1 repeated, full v3 and full v2. Resubmission reuses successful calls.
+
+The D+Q evaluation is specified separately and remains to be implemented. Its
+reserved run lists under `runs` in `configs/evaluation_round2.yaml` are
+`zeroshot_schemes_2`, `zeroshot_rerun`, `dq` and `dq_schemes_2`; the current
+configuration and round-two results are unchanged.
+
 The judge stage (`stages: [judge]`) gives the same prompt plus the answers of one entry of a
 run to the critical questions of the scheme, read from the `summary.csv` of that run, which
 must have been parsed first: `configs/judge_full_v2.yaml` (601 items, `qwen3_8_27b` reading its own

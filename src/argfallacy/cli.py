@@ -121,6 +121,26 @@ def _cmd_parse(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_report_format(args: argparse.Namespace) -> int:
+    from .client.run import default_runs_dir
+    from .format_report import check_format
+    from .schemes import SchemeError
+
+    try:
+        checks, shares = check_format(default_runs_dir() / args.run_id, args.model)
+    except (SchemeError, ValueError, KeyError) as error:
+        print(str(error), file=sys.stderr)
+        return 1
+    for entry, group in checks.groupby("model", sort=False):
+        print(f"\n{entry}")
+        print(group.drop(columns="model").to_string(index=False))
+        own = shares[shares["model"] == entry]
+        if not own.empty:
+            print("\nOutside-arc answer shares (informational):")
+            print(own.drop(columns="model").to_string(index=False))
+    return int(checks.empty or checks["failed"].gt(0).any())
+
+
 def _cmd_evaluate(args: argparse.Namespace) -> int:
     from .client.run import default_runs_dir
     from .eval.evaluate import EvaluationConfig, evaluate
@@ -252,6 +272,10 @@ def build_parser() -> argparse.ArgumentParser:
         )
         report_cmd.set_defaults(func=_cmd_report_run)
         if group == "report":
+            format_cmd = commands.add_parser("format", help="check verdict response formats")
+            format_cmd.add_argument("run_id")
+            format_cmd.add_argument("--model", help="restrict checks to one manifest entry")
+            format_cmd.set_defaults(func=_cmd_report_format)
             cqs_cmd = commands.add_parser("cqs", help="CQ diagnostics and human agreement")
             cqs_cmd.add_argument("run_id")
             cqs_cmd.add_argument("--out", required=True, help="an evaluation output folder")

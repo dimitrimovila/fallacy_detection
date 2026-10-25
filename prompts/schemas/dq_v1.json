@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "dq_v1",
+  "description": "Critical-question answers followed by a verdict. CQ properties and the verdict enum are filled per scheme.",
+  "type": "object",
+  "properties": {
+    "verdict": {"type": "string"},
+    "confidence": {"type": "integer", "minimum": 0, "maximum": 100},
+    "justification": {"type": "string"}
+  },
+  "required": ["verdict", "confidence", "justification"],
+  "additionalProperties": false
+}

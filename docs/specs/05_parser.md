@@ -5,7 +5,7 @@ Depends on: 03, 04. Used by: the run report (spec 04, section 4), 07, 08.
 
 ## 1. Purpose
 
-The parser turns `raw.jsonl` into the two tables that every later step reads: `answers.csv`, one row per call, and `summary.csv`, one row per item, stage, scheme condition, scheme, CQ and model. The minimal parser was written for the report of the pilot. The aggregators of spec 07 need columns it does not write, and three of its columns have no meaning at stage one. This spec adds the first and fixes the second. Parsing a run again regenerates both tables; no call is made again.
+The parser turns `raw.jsonl` into the two tables that every later step reads: `answers.csv`, one row per call (D+Q expands each call as stated in section 12), and `summary.csv`, one row per item, stage, scheme condition, scheme, CQ and model. The minimal parser was written for the report of the pilot. The aggregators of spec 07 need columns it does not write, and three of its columns have no meaning at stage one. This spec adds the first and fixes the second. Parsing a run again regenerates both tables; no call is made again.
 
 The module `src/argfallacy/parse/minimal.py` is renamed `src/argfallacy/parse/tables.py`, since it is no longer the minimal version. `argfallacy.parse` exports the same names as before, so no caller changes, and the command stays `argfallacy parse RUN_ID`.
 
@@ -37,7 +37,7 @@ The samples of an entry are drawn in the same way, so sample 0 has no special st
 
 ## 5. `summary.csv`, stages whose answer is a label
 
-At stage one the answer is a scheme id; at the verdict stages it is a terminal id. The verdict stages are `zeroshot` and the stage `judge` that spec 07 adds; the parser lists them in one constant. At these stages the probabilities refer to the hard answer, the label chosen:
+At stage one the answer is a scheme id; at the verdict stages it is a terminal id. The verdict stages are `zeroshot` and the stage `judge` that spec 07 adds; the parser lists them in one constant. The verdict row of `dq` follows these same rules (section 12). At these stages the probabilities refer to the hard answer, the label chosen:
 * `p_logprob`, stage one only: the mass of the hard answer, from the columns of section 3. With one sample, that of sample 0; with several, the mean over the valid samples that have masses. At the verdict stages `p_logprob` stays empty, since a name can take several tokens.
 * `p_label`, a new column of `summary.csv`, verdict stages only: with one sample, `p_label` of sample 0. With several, the mean over the valid samples of `p_label` where the sample's answer is the hard answer and 0 where it is another label; a sample with the hard answer and no `p_label` is left out, and `p_label` is empty when no sample with the hard answer has one. `p_label_lower_bound`, also new in `summary.csv`, is true if any value used is a lower bound.
 * `p_verbal`: with one sample, the confidence of sample 0 over 100. With several, the mean over the valid samples of confidence/100 where the sample's answer is the hard answer and 0 where it is another label.
@@ -92,6 +92,27 @@ with only failed attempts stays as one invalid row. No raw record is rewritten.
 
 The client uses these same parser functions while planning the next level; this
 does not change independent-stage parsing or cause the client to write CSV files.
+
+## 12. `dq`, several answers in one object
+
+A D+Q raw line expands to one row per CQ in YAML order and one verdict row
+with empty `cq_id`. Every row shares the cache key, finish reason and whole-object
+schema validation: a schema failure makes all its rows invalid. A CQ row reads
+its own exact key through `answer_position` and `logprob_masses`, including when
+both `CQ1` and `CQ1.1`, or `CQ2` and `CQ2.1`, occur. It has no confidence or
+justification. The verdict row maps the shown name under `verdict` to a terminal
+id and reads `p_label` with that key; it retains confidence and justification.
+
+`keys_in_order` compares the final JSON object's keys with the call schema's
+property order. An object with reordered keys remains `parse_ok`, with this
+flag false. The column appears in both tables only when the raw input contains
+`dq`; the summary flag is true only when all rows in its sample group are in order.
+Tables of every other run retain their current columns.
+
+CQ summaries follow section 4, with an empty `p_verbal`. Verdict summaries follow
+section 5. With multiple samples, each CQ and the verdict have their own majority,
+using the existing tie rule; no confidence is supplied for CQ ties. The probabilities
+of later CQ values are conditional on the earlier values actually generated.
 
 ## References
 

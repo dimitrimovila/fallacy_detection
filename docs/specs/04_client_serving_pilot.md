@@ -63,6 +63,15 @@ A legacy source manifest without a folder means `schemes/v1/`.
 The v3 pairing rule applies to the CQ prompts, not to a judge-only run.
 
 * Stage `judge` (spec 07, section 7): a configuration with `stages: [judge]` and `prompt_version: v1` plans one call per item under its gold scheme, with the samples of each entry, as the zero-shot does. Its keys under `judge` are `answers_from`, the run whose `summary.csv` gives the answers, `answers_model`, the entry whose answers are shown, and `justifications`. The plan reads that `summary.csv`, written by the parser of spec 05, and stops with an error naming the item and the CQ if a CQ of the item's scheme has no row. The answers enter the rendered prompt, so the cache key covers them.
+* Stage `dq`: `stages: [dq]`, gold condition, `prompt_version: v1`, either schemes
+  folder; it cannot be mixed with another stage. It plans one call per item and
+  sample, with empty `cq_id`, containing all CQ answers and a declared verdict.
+  Definitions follow the schemes folder in one shared selection: v1 uses
+  `stage2_v2_answers.yaml`, v2 uses `stage2_v3_answers.yaml`.
+* The pairing of `schemes: v2` with `prompt_version: v3`, in both directions,
+  applies to configurations containing `stage1` or `stage2` only. Zero-shot and
+  D+Q accept either folder with v1; judge accepts both, and S-soft keeps its own
+  v2-only rule.
 * Stage `ssoft`: `stages: [ssoft]`, gold condition, `schemes: v2`, `prompt_version: v1`,
   `history: true` by default and `threshold: 0.02`. It cannot be mixed with other stages.
   `configs/ssoft_full_v3.yaml` plans 601 first calls; the plan explicitly says that
@@ -92,8 +101,13 @@ Changing these inputs or the expansion policy requires a new run ID; resume refu
 a mismatch before appending records. Successful raw records reconstruct the frontier,
 and calls not yet written can still be served from the disk cache.
 
+For `dq`, `answer_definitions` records `file` (relative to the repository) and
+`sha256` for the selected answer-definitions file. D+Q raw records preserve the
+schema's property order for the format check. Other stages keep their current
+raw serialization and cache-key fields.
+
 ### 2.5 `raw.jsonl`
-One line per call: `run_id`, `item_id`, `stage`, `scheme_condition`, `scheme`, `cq_id` (empty for stage one, the zero-shot and the judge), `sample_index`, `model`, `model_id`, `revision`, `tier`, `reasoning`, `prompt_version`, `json_schema` (the schema sent to the model with that call), `params`, `cache_key`, `from_cache`, `raw_response`, `latency_s`, `error`. The file is append-only. It is read one line at a time, never whole, by the resume, by the counts of the manifest and by the parser: the pilot left 13 GB of it. A line ends only at a newline, so a line separator that the JSON leaves inside a string (U+2028, U+0085) does not cut it.
+One line per call: `run_id`, `item_id`, `stage`, `scheme_condition`, `scheme`, `cq_id` (empty for stage one, the zero-shot, the judge and D+Q), `sample_index`, `model`, `model_id`, `revision`, `tier`, `reasoning`, `prompt_version`, `json_schema` (the schema sent to the model with that call), `params`, `cache_key`, `from_cache`, `raw_response`, `latency_s`, `error`. The file is append-only. It is read one line at a time, never whole, by the resume, by the counts of the manifest and by the parser: the pilot left 13 GB of it. A line ends only at a newline, so a line separator that the JSON leaves inside a string (U+2028, U+0085) does not cut it.
 `raw_response`, like the value of the cache, is the stored form of the response: all of it, less two redundancies of the logprobs block, which was most of a line. The copy that the server's payload carries in `raw.choices[0].logprobs`, identical to `logprobs`, is left out, and so is every `bytes` field, the UTF-8 of a token or of an alternative written again as a list of integers. On the pilot, one line in twenty, the two copies were about half a line each and `bytes` 38 to 42 per cent of it: the stored form should be about 70 per cent smaller. The parser reads neither. The cache key and `top_logprobs` do not change. The lines and cache entries written before, the pilot's among them, keep both and stay as they are: they read and parse in the same way.
 
 Only `ssoft` lines add `path`, for example `CQ1=no>CQ2=yes`, and `depth`, the number
@@ -151,6 +165,26 @@ A third stage, `zeroshot` (spec 03, section 8): one prompt per item, under the s
 The parser reads a zero-shot row as a stage-two row, with three differences. The admitted answers are the names the prompt showed, and `answer` holds the terminal id the name stands for, read back through `labels/fallacies.yaml`; a name outside the enumeration is `invalid`. The `p_logprob_*` columns stay empty, since a name can take several tokens and two names can share the first one; `p_label` holds instead the probability of the label chosen, over the ways of writing it: a model can split the same name into tokens in different ways (Qwen3.8 wrote `C`, `irc`, `um`, `stantial`), and the product along the path written alone undercounts it. Reading the value token by token, k is the first position where the text written so far, that token included, can become only the label chosen; `p_label` is the product of the probabilities of the tokens chosen before k, times the sum, at k, of the probabilities of every alternative in `top_logprobs` that, after the text written before k, can become only the label chosen, the token chosen included. After k nothing is multiplied: every continuation the grammar admits completes the same label. Before k the text is shared by several labels (Appeal to Nature and Appeal to Tradition): an alternative there that is another way of writing a prefix of the label chosen is not recovered, `p_label` is a lower bound, and `p_label_lower_bound` is true. It is the probability at temperature 1 over the tokens the grammar admits (section 4.1); a row whose answer is not a label has no `p_label`. In `summary.csv` the hard answer follows the regime of the entry (sample 0, or the majority of the valid samples with the tie rule of section 3), and the probabilities are those of the verdict chosen (spec 05, section 5): `p_label`, `p_verbal` and `p_sample`, with `p_logprob` empty. The pilot report does not read this stage.
 
 The stage `judge` (section 2.3) is read in the same way, its lines with `stage` `judge`, the scheme of the prompt and an empty `cq_id`; the run report does not read it either. Its two configurations, `configs/judge_full_v2.yaml` (the 601 items of the test set, `qwen3_8_27b` reading its own answers in full run v2 with their justifications) and `configs/judge_full_v2_answers_only.yaml` (the same without justifications), plan 601 calls each and run with `pilot.sbatch` like the others.
+
+### 4.3 Format check and ordered runs
+
+`argfallacy report format RUN_ID [--model ENTRY]` reads `manifest.json`,
+`raw.jsonl` and `answers.csv` of a parsed zero-shot or D+Q run. For every planned
+call of each selected entry it checks a successful response, `parse_ok`, no
+`length` finish reason, and keys in the schema's property order. Entries with
+`logprobs_available` also require `p_label` on verdict rows and every admitted
+`p_logprob_<answer>` mass on D+Q CQ rows. A successful retry supersedes its error
+attempts. Missing calls fail the check, including those with no raw line.
+It prints one table per entry and returns nonzero on any failure. Shares of
+`cannot_be_determined` and `na` per scheme and CQ are informational. No gold,
+annotations or accuracy are read.
+
+`serving/slurm/runs.sbatch ENTRY CONFIG RUN_ID [CONFIG RUN_ID ...]` uses the
+SBATCH directives of `pilot.sbatch` and sources `common.sh`. It serves the entry
+once, runs the smoke test, then plan, execute, parse and format check for each
+pair in order. Any failure stops the job before the next pair. A resubmission
+with the same arguments reuses successful calls. The D+Q order is pilot v3,
+pilot v2, zero-shot schemes v2, zero-shot v1 repeated, full v3, full v2.
 
 ## 5. Acceptance tests
 

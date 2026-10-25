@@ -31,19 +31,22 @@ import yaml
 from ..paths import REPO_ROOT, SCHEMES_DIR, SCHEMES_ROOT
 from ..prompts import (
     DEFAULT_VERSION,
+    DQ,
     JUDGE,
     SSOFT,
     STAGE1,
     STAGE2,
     ZEROSHOT,
+    load_answer_meanings,
     prompt_version,
+    render_dq,
     render_judge,
     render_stage1,
     render_stage2,
     render_zeroshot,
 )
 from ..schemes import load_all
-from ..schemes.loader import SchemeError
+from ..schemes.loader import SchemeError, load_vocabulary
 from .cache import RUNS_DIR, ResponseCache, cache_key
 from .call import RawResponse, Request, ask, dumps
 
@@ -115,6 +118,10 @@ class RunConfig:
     raw: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        if DQ in self.stages and (
+            self.stages != [DQ] or self.scheme_condition != GOLD or self.prompt_version != "v1"
+        ):
+            raise SchemeError("dq requires stages [dq], gold condition and prompt_version v1")
         if SSOFT in self.stages:
             if (self.stages != [SSOFT] or self.scheme_condition != GOLD
                     or self.schemes != V2_SCHEMES or self.prompt_version != "v1"):
@@ -131,7 +138,7 @@ class RunConfig:
         if self.schemes not in SCHEMES_FOLDERS:
             raise SchemeError(f"{self.name}: schemes must be one of {list(SCHEMES_FOLDERS)}, "
                               f"not {self.schemes!r}")
-        if self.stages not in ([JUDGE], [SSOFT]) and (
+        if {STAGE1, STAGE2} & set(self.stages) and (
             (self.prompt_version == V3_PROMPTS) != (self.schemes == V2_SCHEMES)
         ):
             raise SchemeError(
@@ -156,6 +163,13 @@ class RunConfig:
     @property
     def schemes_dir(self) -> Path:
         return SCHEMES_ROOT / self.schemes
+
+
+def dq_definitions_path(config: RunConfig) -> Path:
+    """The answer definitions follow the scheme files, independently of the D+Q version."""
+    from ..prompts.render import answers_path
+
+    return answers_path({"v1": "v2", "v2": "v3"}[config.schemes])
 
 
 def max_tokens_for(spec: Mapping[str, Any], config: RunConfig) -> int:
@@ -278,6 +292,10 @@ def plan(
     calls: list[PlannedCall] = []
     judged = (judge_answers(config, runs_dir if runs_dir is not None else default_runs_dir())
               if JUDGE in config.stages else {})
+    definitions = (load_answer_meanings(dq_definitions_path(config).stem.split("_")[1])
+                   if DQ in config.stages else None)
+    vocabulary = (load_vocabulary(check_schemes=False)
+                  if {DQ, ZEROSHOT} & set(config.stages) else None)
 
     for model_name in entries:
         spec = model_spec(model_name, models)
@@ -310,15 +328,26 @@ def plan(
                         max_tokens=max_tokens, logprobs=logprobs,
                         **identity,
                     ))
-            if not {STAGE2, ZEROSHOT, JUDGE} & set(config.stages):
+            if not {STAGE2, ZEROSHOT, JUDGE, DQ} & set(config.stages):
                 continue
 
             scheme_id = _scheme_for(item, config, predictions)
             if scheme_id is None or scheme_id not in schemes:
                 continue
             scheme = schemes[scheme_id]
+            if DQ in config.stages:
+                rendered = render_dq(item, scheme, definitions, config.prompt_version, vocabulary)
+                for sample in range(samples):
+                    calls.append(PlannedCall(
+                        model=model_name, model_id=spec["model_id"], item_id=item_id,
+                        stage=DQ, scheme=scheme_id, cq_id=None, sample_index=sample,
+                        prompt=rendered.text, prompt_version=rendered.prompt_version,
+                        json_schema=rendered.json_schema,
+                        max_tokens=max_tokens, logprobs=logprobs,
+                        **identity,
+                    ))
             if ZEROSHOT in config.stages:
-                rendered = render_zeroshot(item, scheme, config.prompt_version)
+                rendered = render_zeroshot(item, scheme, config.prompt_version, vocabulary)
                 for sample in range(samples):
                     calls.append(PlannedCall(
                         model=model_name, model_id=spec["model_id"], item_id=item_id,
@@ -508,7 +537,7 @@ def build_manifest(
     models: Mapping[str, Any],
 ) -> dict[str, Any]:
     used = {c.model for c in calls} or set(config.models)
-    return {
+    manifest = {
         "run_id": run_id,
         "config": config.raw or {
             "name": config.name, "models": config.models, "stages": config.stages,
@@ -554,6 +583,13 @@ def build_manifest(
             for name in config.models
         },
     }
+    if DQ in config.stages:
+        source = dq_definitions_path(config)
+        manifest["answer_definitions"] = {
+            "file": source.relative_to(REPO_ROOT).as_posix(),
+            "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        }
+    return manifest
 
 
 # -------------------------------------------------------------------- execute
@@ -733,7 +769,11 @@ def execute(
                 # map keeps plan order even though the calls overlap in flight
                 with ThreadPoolExecutor(max_workers=limit) as pool:
                     for call, response, hit in pool.map(one, todo):
-                        sink.write(dumps(_raw_line(run_id, config, call, response, hit)) + "\n")
+                        record = _raw_line(run_id, config, call, response, hit)
+                        # D+Q checks the schema's property order after parsing raw.jsonl.
+                        encoded = (json.dumps(record, ensure_ascii=False, separators=(",", ":"))
+                                   if call.stage == DQ else dumps(record))
+                        sink.write(encoded + "\n")
                         written.add(call.key())
                         sink.flush()
     finally:

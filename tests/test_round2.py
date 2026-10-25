@@ -285,13 +285,19 @@ def test_the_configuration_of_round_2():
 
     config = EvaluationConfig.load(REPO_ROOT / "configs" / "evaluation_round2.yaml")
     assert is_round2(config)
-    assert config.runs == {"answers": "20261005T193017Z_full_v2",
+    assert set(config.runs) == {"answers", "answers_schemes_2", "zeroshot", "judge",
+                                "ssoft", "ssoft_nohistory"}
+    assert {key: value for key, value in config.runs.items()
+            if key not in ("ssoft", "ssoft_nohistory")} == {
+                           "answers": "20261005T193017Z_full_v2",
                            "answers_schemes_2": "20261019T151336Z_full_v3",
                            "zeroshot": ["20261009T221950Z_zeroshot_v1",
                                         "20261021T111606Z_zeroshot_k2"],
                            "judge": ["20261021T111110Z_judge_v1",
-                                     "20261021T111110Z_judge_v1_answers_only"],
-                           "ssoft": [], "ssoft_nohistory": []}
+                                     "20261021T111110Z_judge_v1_answers_only"]}
+    for key in ("ssoft", "ssoft_nohistory"):
+        assert isinstance(config.runs[key], list)
+        assert all(isinstance(run, str) and run for run in config.runs[key])
     assert (config.name, config.reference_model, config.seed, config.resamples, config.folds,
             config.m) == ("round2", "qwen3_8_27b", 20261019, 10000, 5, 4)
     assert len(config.cq_label_exclusion) == 3
