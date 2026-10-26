@@ -17,10 +17,10 @@ runs:
     - 20261021T111110Z_judge_v1_answers_only
   ssoft: [20261025T133031Z_ssoft_full_v3]          # the run of configs/ssoft_full_v3.yaml
   ssoft_nohistory: [20261025T133031Z_ssoft_nohistory_full_v3]  # the run of configs/ssoft_nohistory_full_v3.yaml
-  zeroshot_schemes_2: []  # zero-shot with the 2.0 menus
-  zeroshot_rerun: []     # zero-shot 1.1 repeated on the D+Q server
-  dq: []                # D+Q on schemes 1.1
-  dq_schemes_2: []       # D+Q on schemes 2.0
+  zeroshot_schemes_2: [20261026T101601Z_zeroshot_schemes_v2]  # zero-shot with the 2.0 menus
+  zeroshot_rerun: [20261026T101601Z_zeroshot_rerun]  # zero-shot 1.1 repeated on the D+Q server
+  dq: [20261026T101601Z_dq_full_v2]  # D+Q on schemes 1.1
+  dq_schemes_2: [20261026T101601Z_dq_full_v3]  # D+Q on schemes 2.0
 # a guard: the command computes the reference model and stops if it is another
 reference_model: qwen3_8_27b
 # one seed for the folds and the resamples, the same as round 1
