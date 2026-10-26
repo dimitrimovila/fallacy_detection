@@ -503,6 +503,16 @@ curve: a `summary.csv` without it is refused, so parse that run again where its
 `raw.jsonl` is. `cq_label_exclusion` names the schemes whose CQ labels the exploratory
 `C1.annotation_exclusion` leaves out; it is scored on the other schemes.
 
+Added after the results, all exploratory and marked "(added after the results)" in their
+description: `C1.stacking.gold_balanced.soft` and `.hard` and `C3.pooled.balanced`, the
+models fitted on the gold verdicts with balanced class weights; `A2.prior` and `C1.prior`,
+each terminal mass divided by the frequency of its class in the other folds; and
+`A3.combined`, A3 of round 1 on the combined answers of the majority of the five entries,
+beside `A3` itself. The command also scores every system and comparison on the macro F1
+over the frequent classes (at least 10 gold verdicts in the test set), and puts the binary
+human CQ answers in place of the reference model's, CQ by CQ and at random shares of the
+disagreements, through the diagram 1.1.
+
 The four deciding comparisons (C1, C2, C3 and C4 against their references, and the second
 comparison of C1 and C3 against the zero-shot) have their interval at level 1 - 0.05/m with
 m = 4. A second comparison is marked as not read when the first does not pass, and a
@@ -518,7 +528,9 @@ not computed and why), `verdicts.csv`, `main_table.csv`, `deciding.csv`,
 `deciding_breakdowns.csv`, `exploratory.csv`, `cq_combined.csv`, `round2_choices.csv`,
 `cq_level.csv`, `cq_level_differences.csv`, `human_path.csv`, `routing_curve.csv`,
 `ssoft_changes.csv`, `abstention.csv`, `abstention_curves.csv`,
-`abstention_composition.csv`, `conformal.csv` and `summary.html`, which
+`abstention_composition.csv`, `conformal.csv`, `frequent_classes.csv`,
+`frequent_classes_differences.csv`, `substitution.csv`, `substitution_curve.csv` and
+`summary.html`, which
 `argfallacy report summary evaluations/round2` redraws from those tables. The nested
 cross-fitting of C2 and C3 refits C1 several hundred times: on runs of the size of the
 test set the command takes about ten minutes on a laptop, most of it in C3.

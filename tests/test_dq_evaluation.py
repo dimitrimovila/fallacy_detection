@@ -35,6 +35,10 @@ LEGACY_FILES = (
     "abstention_composition.csv",
     "conformal.csv",
     "round2_choices.csv",
+    "frequent_classes.csv",
+    "frequent_classes_differences.csv",
+    "substitution.csv",
+    "substitution_curve.csv",
 )
 DQ_FILES = (
     "dq_verdicts.csv",

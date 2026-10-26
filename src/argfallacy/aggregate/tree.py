@@ -14,6 +14,7 @@ from sklearn.tree import DecisionTreeClassifier
 from ..eval.folds import assign_folds
 from ..schemes import SchemeError
 from .c1 import C_GRID
+from .combiners import balanced_weights
 from .crossfit import CQInputs, inner_partitions
 from .interface import TIE, Aggregation, decide, macro_f1
 
@@ -95,6 +96,8 @@ class CalibrationLoss:
     logs: np.ndarray
     allowed: np.ndarray
     gold: np.ndarray
+    weights: np.ndarray | None = None
+    """Balanced class weights of the items, or None for the plain log loss."""
 
     def __call__(self, coef):
         if not self.ids:
@@ -103,10 +106,17 @@ class CalibrationLoss:
         normal = logsumexp(logits, axis=1)
         probability = np.exp(logits - normal[:, None])
         row = np.arange(len(self.ids))
-        value = np.mean(normal - logits[row, self.gold])
         probability[row, self.gold] -= 1
+        if self.weights is None:
+            value = np.mean(normal - logits[row, self.gold])
+            return value, np.r_[
+                np.mean((probability * self.logs).sum(axis=1)), probability.mean(axis=0)
+            ]
+        w = self.weights
+        value = np.mean(w * (normal - logits[row, self.gold]))
         return value, np.r_[
-            np.mean((probability * self.logs).sum(axis=1)), probability.mean(axis=0)
+            np.mean(w * (probability * self.logs).sum(axis=1)),
+            (w[:, None] * probability).mean(axis=0),
         ]
 
 
@@ -118,7 +128,9 @@ class PooledCalibration:
     objective_value: float
 
     @staticmethod
-    def loss(inputs: CQInputs, ids) -> CalibrationLoss:
+    def loss(inputs: CQInputs, ids, balanced: bool = False) -> CalibrationLoss:
+        """The log loss of the gold verdicts of ``ids``; with ``balanced`` each item weighs
+        n / (K n_label), computed on the gold verdicts of those same items."""
         data = inputs.data
         labels = tuple(sorted(set().union(*(s.terminals for s in data.schemes.values()))))
         ids = tuple(_eligible(data, ids))
@@ -134,11 +146,12 @@ class PooledCalibration:
                     inputs.aggregations[item].distribution.get(terminal, 0.0) + 1e-6
                 )
             gold.append(labels.index(items.loc[item, "gold_fallacy"]))
-        return CalibrationLoss(labels, ids, logs, allowed, np.asarray(gold, dtype=int))
+        weights = (balanced_weights([labels[g] for g in gold]) if balanced else None)
+        return CalibrationLoss(labels, ids, logs, allowed, np.asarray(gold, dtype=int), weights)
 
     @classmethod
-    def fit(cls, inputs: CQInputs, ids, c):
-        loss = cls.loss(inputs, ids)
+    def fit(cls, inputs: CQInputs, ids, c, balanced: bool = False):
+        loss = cls.loss(inputs, ids, balanced)
         centre = np.r_[1.0, np.zeros(len(loss.labels))]
         if not loss.ids:
             return cls(centre, loss.labels, c, 0.0)
@@ -216,7 +229,7 @@ def _tree_choice(source, outer_train, eligible, scheme):
     return chosen
 
 
-def _calibration_choice(source, train):
+def _calibration_choice(source, train, balanced=False):
     eligible = _eligible(source.data, train)
     if len(eligible) < 4:
         return C_GRID[0]
@@ -229,8 +242,8 @@ def _calibration_choice(source, train):
     for c in C_GRID:
         loss_sum, n = 0.0, 0
         for a, fitting, b, validation in splits:
-            model = PooledCalibration.fit(a, fitting, c)
-            value, _ = PooledCalibration.loss(b, validation)(model.coef)
+            model = PooledCalibration.fit(a, fitting, c, balanced)
+            value, _ = PooledCalibration.loss(b, validation, balanced)(model.coef)
             loss_sum, n = loss_sum + value * len(validation), n + len(validation)
         if n and loss_sum / n < best - TIE:
             chosen, best = c, loss_sum / n
@@ -248,7 +261,9 @@ class C3Result:
     name: str
 
 
-def c3_out_of_fold(source, folds=None, *, kind="tree", name=None) -> C3Result:
+def c3_out_of_fold(source, folds=None, *, kind="tree", name=None,
+                   balanced=False) -> C3Result:
+    """C3 on every item; ``balanced`` weighs the classes of the pooled recalibration."""
     if kind not in {"tree", "pooled"}:
         raise ValueError(f"unknown C3 model family {kind!r}")
     data, seed = source.data, source.seed
@@ -263,8 +278,8 @@ def c3_out_of_fold(source, folds=None, *, kind="tree", name=None) -> C3Result:
         training, testing = source.partition(train, test)
         upstream.update({i: testing.aggregations[i] for i in test})
         if kind == "pooled":
-            c = _calibration_choice(source, train)
-            model = PooledCalibration.fit(training, train, c)
+            c = _calibration_choice(source, train, balanced)
+            model = PooledCalibration.fit(training, train, c, balanced)
             models[fold] = model
             predictions.update(model.predict(testing, test))
             choices.append({"fold": fold, "component": name, "C": c})

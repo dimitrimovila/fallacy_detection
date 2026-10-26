@@ -37,17 +37,22 @@ from ..aggregate import (
     ssoft,
 )
 from ..aggregate.c1 import (
+    BALANCED_CONFIGS,
     C_GRID,
     LAMBDA_GRID,
     PRIMARY_CONFIG,
     C1Result,
     c1_out_of_fold,
+    combined_rows,
     configurations,
     retraverse,
     transfer_c1,
 )
 from ..aggregate.c1_inputs import build_dataset
+from ..aggregate.checklist import C_GRID as A3_GRID
+from ..aggregate.checklist import a3_out_of_fold
 from ..aggregate.crossfit import C1CrossFitter, ReferenceInputs
+from ..aggregate.decision import prior_corrected
 from ..aggregate.interface import decide
 from ..aggregate.routing import Side, c2_out_of_fold
 from ..aggregate.tree import TREE_GRID, c3_out_of_fold
@@ -81,6 +86,7 @@ from .evaluate import (
 from .folds import assign_folds
 from .prior import load_test_set
 from .routing import routing_curve
+from .substitution import DRAWS, FRACTIONS, substitution
 from .uncertainty import (
     ALPHA,
     LEVELS,
@@ -96,6 +102,11 @@ PRUNING = 0.02
 """The pruning threshold of S-soft and of A2.pruned."""
 SMALL_SCHEME = 30
 """A scheme with fewer test items is flagged in the breakdowns."""
+FREQUENT = 10
+"""A class with at least this many gold verdicts in the test set enters the macro F1 over
+the frequent classes."""
+POST_HOC = "added after the results"
+"""Marks, in the description, the systems named after the results of round 2."""
 FALLACY_CORPORA, SCHEME_CORPORA = "fallacy corpora", "scheme corpora"
 ORIGINS = {"logic": FALLACY_CORPORA, "reddit": FALLACY_CORPORA,
            "elecdebate": FALLACY_CORPORA, "nlas": SCHEME_CORPORA, "ethix": SCHEME_CORPORA}
@@ -338,7 +349,8 @@ def _c1_family(data, labels, folds, seed, configs) -> dict[str, C1Result]:
     """Each combination fitted once; its other traversal reuses the fit."""
     results, fitted = {}, {}
     for config in configs:
-        key = (config.combiner, config.supervision, config.exclude_schemes, config.unstable)
+        key = (config.combiner, config.supervision, config.exclude_schemes, config.unstable,
+               config.balanced)
         if key in fitted:
             results[config.name] = retraverse(data, fitted[key], config)
         else:
@@ -396,6 +408,20 @@ def _pairs(reference: str, systems: Mapping[str, System]) -> list[tuple[str, str
         ("C4.nohistory", "A2.pruned", "the list of the CQs alone"),
         ("C4.path", revised, "the single path of S-soft against the diagram 2.0"),
         ("C4", revised, "S-soft against the diagram 2.0 on full run v3"),
+        # added after the results of round 2
+        ("A3.combined", "C1.majority.none.hard",
+         "a weighting learned from the gold against the diagram, on the same combined answers"),
+        ("A3.combined", "A3", "the combined answers against those of the reference model, "
+                              "with the weighting of A3"),
+        ("A3.combined", diagram, "a weighting learned from the gold against the diagram"),
+        ("A3.combined", zero, "a weighting learned from the gold against the zero-shot"),
+        ("C1.stacking.gold_balanced.soft", "C1.stacking.gold.soft",
+         "balanced class weights in supervision (c), soft traversal"),
+        ("C1.stacking.gold_balanced.hard", "C1.stacking.gold.hard",
+         "balanced class weights in supervision (c), hard traversal"),
+        ("C3.pooled.balanced", "C3.pooled", "balanced class weights in the pooled recalibration"),
+        ("A2.prior", "A2", "the mass divided by the class frequency, against the highest mass"),
+        ("C1.prior", "C1", "the mass divided by the class frequency, against the highest mass"),
     ]
     pairs = [p for p in named if p[0] in systems and p[1] in systems]
     paired = {p[0] for p in named}
@@ -452,6 +478,7 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
     answers_run = config.runs["answers"]
     manifest, summary = _read_run(runs_dir, answers_run)
     rows, entries = _answer_rows(summary, manifest, answers_run, ids)
+    reference_rows = rows.get(reference, {})
     folder = schemes_dir_of(manifest)
     schemes = load_all(folder)
     burden = load_burden(folder.name, schemes)
@@ -627,6 +654,43 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
                              else f"no S-soft run (runs.{key} is empty)")
     if "C4" not in systems:
         missing["the answers that change on the path of C4"] = missing["C4"]
+
+    # Added after the results of round 2, all exploratory: class-balanced losses for the
+    # two models fitted on the gold verdicts without them, the mass divided by the class
+    # frequency, and the logistic regression of A3 on the combined answers of the majority.
+    say("additions")
+    post_hoc: list[str] = []
+
+    def add_post_hoc(name, aggregations, description):
+        add(name, aggregations, "exploratory", "1.1", f"{description} ({POST_HOC})")
+        post_hoc.append(name)
+
+    balanced = _c1_family(data, None, folds, config.seed, BALANCED_CONFIGS)
+    for name, result in balanced.items():
+        add_post_hoc(name, result.aggregations,
+                     f"stacking, supervision gold with balanced class weights, "
+                     f"{result.config.traversal} traversal, full run v2")
+    pooled_balanced = c3_out_of_fold(source, folds, kind="pooled", name="C3.pooled.balanced",
+                                     balanced=True)
+    add_post_hoc("C3.pooled.balanced", pooled_balanced.aggregations,
+                 "the pooled recalibration of the terminal masses of C1, balanced class weights")
+    for name in ("A2", "C1"):
+        add_post_hoc(f"{name}.prior", prior_corrected(systems[name].aggregations, schemes,
+                                                      scheme_of, gold_of, folds),
+                     f"{name} with each terminal mass divided by the frequency of its class "
+                     f"in the other folds")
+    a3, a3_choices = a3_out_of_fold(schemes, frame, reference_rows, folds, config.seed, LOGPROB)
+    add("A3", a3, "reference", "1.1",
+        f"A3 of round 1: logistic regression per scheme on the p_logprob of {reference}")
+    majority_p = v2["C1.majority.none.soft"].combined.p_first.to_numpy(dtype=float)
+    a3_combined, a3_combined_choices = a3_out_of_fold(
+        schemes, frame, combined_rows(data, majority_p), folds, config.seed, LOGPROB)
+    add_post_hoc("A3.combined", a3_combined,
+                 "A3 on the combined answers of the majority of the five entries")
+    choices += (_choices("C1.stacking.gold_balanced.soft",
+                         balanced["C1.stacking.gold_balanced.soft"].choices)
+                + _choices(pooled_balanced.name, pooled_balanced.choices)
+                + _choices("A3", a3_choices) + _choices("A3.combined", a3_combined_choices))
     missing.update({
         "C2 with S-soft as another side": "the diagram 2.0 of example has a terminal that the "
                                           "diagram 1.1 of C1 does not have",
@@ -730,6 +794,54 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
         "system", "reference", "question", "n_items", "macro_f1_difference", "macro_f1_low",
         "macro_f1_high"])
 
+    # added after the results: the macro F1 over the frequent classes, beside every system
+    # and comparison, and the human CQ answers put in place of those of the reference model
+    say("frequent classes and substitution")
+    counts = np.bincount(bench.observed.gold, minlength=len(bench.observed.classes))
+    frequent = np.flatnonzero(counts >= FREQUENT)
+
+    def over_frequent(scorer, predicted) -> np.ndarray:
+        f1, supported = scorer.class_f1(predicted)
+        n = supported[:, frequent].sum(axis=1)
+        return np.divide(f1[:, frequent].sum(axis=1), n, out=np.full(len(f1), np.nan),
+                         where=n > 0)
+
+    def frequent_scores(name: str, positions: tuple[int, ...]):
+        if len(positions) == len(ids):
+            observed_scorer, resampled_scorer, chosen = (bench.observed, bench.resampled,
+                                                         verdicts[name])
+        else:
+            part = subset(positions)
+            observed_scorer, resampled_scorer = part.observed, part.resampled
+            chosen = [verdicts[name][p] for p in part.positions]
+        supported = observed_scorer.class_f1(chosen)[1][0, frequent].sum()
+        return (float(over_frequent(observed_scorer, chosen)[0]),
+                over_frequent(resampled_scorer, chosen), int(supported))
+
+    frequent_rows = []
+    for row in main.itertuples(index=False):
+        value, spread, n_classes = frequent_scores(row.system, items_of(row.system))
+        low, high = _finite_interval(spread)
+        frequent_rows.append({"system": row.system, "role": row.role, "schemes": row.schemes,
+                              "n_items": row.n_items, "n_classes": n_classes,
+                              "macro_f1_frequent": value, "macro_f1_frequent_low": low,
+                              "macro_f1_frequent_high": high})
+    frequent_differences = []
+    compared_pairs = [("deciding", h.name, h.system, h.reference) for h in family
+                      if h.system in systems and h.reference in systems]
+    compared_pairs += [("exploratory", question, a, b) for a, b, question in named_pairs]
+    for kind, question, a, b in compared_pairs:
+        common = tuple(sorted(set(items_of(a)) & set(items_of(b))))
+        left, left_spread, _ = frequent_scores(a, common)
+        right, right_spread, _ = frequent_scores(b, common)
+        low, high = _finite_interval(left_spread - right_spread)
+        frequent_differences.append({
+            "kind": kind, "question": question, "system": a, "reference": b,
+            "n_items": len(common), "macro_f1_frequent_difference": left - right,
+            "macro_f1_frequent_low": low, "macro_f1_frequent_high": high})
+    substituted, substitution_curve = substitution(
+        schemes, scheme_of, ids, reference_rows, labels, bench, frequent, config.seed)
+
     # the level of each CQ, and the path of the human answers as a reference line
     say("CQ level")
     predictions = [entry_answers(data)]
@@ -744,8 +856,9 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
                   "macro_f1": score.macro_f1 if score else np.nan,
                   "balanced_accuracy": score.macro_recall if score else np.nan})
     combined = pd.concat([
-        r.combined.assign(system=name, schemes="1.1" if name in v2 else "2.0")
-        for name, r in [*v2.items(), *v3.items()] if r.config.traversal == "soft"],
+        r.combined.assign(system=name, schemes="2.0" if name in v3 else "1.1")
+        for name, r in [*v2.items(), *v3.items(), *balanced.items()]
+        if r.config.traversal == "soft"],
         ignore_index=True)[["system", "schemes", "combiner", "supervision", "item_id", "scheme",
                             "cq_id", "fold", "p_first", "outside"]]
 
@@ -797,6 +910,9 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
         else pd.DataFrame(),
         "abstention_composition.csv": pd.DataFrame(kinds),
         "ssoft_changes.csv": changes,
+        "frequent_classes.csv": pd.DataFrame(frequent_rows),
+        "frequent_classes_differences.csv": pd.DataFrame(frequent_differences),
+        "substitution.csv": substituted, "substitution_curve.csv": substitution_curve,
     }
     for file_name, table in tables.items():
         table.to_csv(out / file_name, index=False, float_format="%.4f", lineterminator="\n")
@@ -827,7 +943,11 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
                         "after": h.after} for h in family],
         "grids": {"C1 stacking C": list(C_GRID), "C1 weighted lambda": list(LAMBDA_GRID),
                   "C2 C": list(C_GRID), "C3 max_depth, min_samples_leaf": list(TREE_GRID),
-                  "C3.pooled C": list(C_GRID)},
+                  "C3.pooled C": list(C_GRID), "A3 C": list(A3_GRID)},
+        "added_after_the_results": post_hoc,
+        "frequent_classes": {"minimum_gold_items": FREQUENT,
+                             "classes": [bench.observed.classes[k] for k in frequent]},
+        "substitution": {"entry": reference, "shares": list(FRACTIONS), "draws": DRAWS},
         "cq_label_exclusion": list(config.cq_label_exclusion),
         "cq_labels": len(labels),
         "pruning": PRUNING, "conformal_alpha": ALPHA, "coverage_levels": list(LEVELS),

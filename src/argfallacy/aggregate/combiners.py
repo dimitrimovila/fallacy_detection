@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
@@ -160,10 +161,24 @@ class DawidSkene:
         return model
 
 
-class DiagramLoss:
-    """Vectorised gold-terminal path probabilities and their exact derivatives."""
+def balanced_weights(labels: Sequence[str]) -> np.ndarray:
+    """The weight of each item, n / (K n_label) as in ``class_weight="balanced"``: every
+    label weighs the same in total, and the weights have mean 1."""
+    labels = list(labels)
+    if not labels:
+        return np.zeros(0)
+    counts = Counter(labels)
+    return np.array([len(labels) / (len(counts) * counts[label]) for label in labels])
 
-    def __init__(self, data: C1Dataset, ids: Sequence[str]):
+
+class DiagramLoss:
+    """Vectorised gold-terminal path probabilities and their exact derivatives.
+
+    With ``balanced`` every item weighs n / (K n_label), computed on the gold verdicts of
+    the items of the loss, so that each verdict weighs the same in total.
+    """
+
+    def __init__(self, data: C1Dataset, ids: Sequence[str], balanced: bool = False):
         self.data = data
         lookup = {
             (row.item_id, row.cq_id): i for i, row in enumerate(data.pairs.itertuples(index=False))
@@ -193,6 +208,9 @@ class DiagramLoss:
             for j, (index, arc) in enumerate(path):
                 self.indices[i, j], self.arcs[i, j], self.mask[i, j] = index, arc, True
         self.path_items = np.array(path_items, dtype=int)
+        gold = data.items.set_index("item_id").gold_fallacy
+        self.item_weights = (balanced_weights([gold[i] for i in self.ids]) if balanced
+                             else None)
         self.added = np.zeros((len(data.pairs), 2))
         for i, pair in enumerate(data.pairs.itertuples(index=False)):
             route = data.routing[pair.scheme][pair.cq_id]
@@ -222,10 +240,15 @@ class DiagramLoss:
         )[:, 1:]
         derivative = prefix * suffix * (1 - 2 * self.arcs) * (1 - self.data.outside[self.indices])
         derivative *= (-1 / (probability[self.path_items] + GOLD_EPS))[:, None] / len(self.ids)
+        if self.item_weights is not None:
+            derivative *= self.item_weights[self.path_items][:, None]
         gradient_p = np.bincount(
             self.indices[self.mask], weights=derivative[self.mask], minlength=len(p)
         )
-        return -np.log(probability + GOLD_EPS).mean(), x.T @ (gradient_p * p * (1 - p))
+        losses = -np.log(probability + GOLD_EPS)
+        value = losses.mean() if self.item_weights is None else (
+            self.item_weights * losses).mean()
+        return value, x.T @ (gradient_p * p * (1 - p))
 
 
 @dataclass(frozen=True)
@@ -282,6 +305,6 @@ class Stacking:
         return cls._optimise(data, loss, len(y), c)
 
     @classmethod
-    def fit_gold(cls, data, ids, c):
-        loss = DiagramLoss(data, ids)
+    def fit_gold(cls, data, ids, c, balanced=False):
+        loss = DiagramLoss(data, ids, balanced)
         return cls._optimise(data, lambda coef: loss.objective(coef, data.x), len(loss.ids), c)

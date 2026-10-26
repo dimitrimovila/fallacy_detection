@@ -11,7 +11,7 @@ import pandas as pd
 from sklearn.model_selection import KFold
 
 from ..eval.folds import assign_folds
-from ..prompts import CANNOT_BE_DETERMINED
+from ..prompts import CANNOT_BE_DETERMINED, NOT_APPLICABLE
 from ..schemes import SchemeError
 from .c1_inputs import C1Dataset
 from .combiners import DawidSkene, Stacking, WeightedPool, combined_codes, majority
@@ -31,6 +31,8 @@ class C1Config:
     traversal: str = "soft"
     exclude_schemes: tuple[str, ...] = ()
     unstable: bool = False
+    balanced: bool = False
+    """Gold supervision only: balanced class weights in the loss of the gold verdicts."""
 
     def __post_init__(self):
         valid = {
@@ -44,6 +46,8 @@ class C1Config:
             raise SchemeError("unsupported C1 combiner, supervision or traversal")
         if (self.exclude_schemes or self.unstable) and self.supervision != "cq":
             raise SchemeError("CQ annotation exclusions require CQ supervision")
+        if self.balanced and self.supervision != "gold":
+            raise SchemeError("balanced class weights require gold supervision")
 
 
 PRIMARY_CONFIG = C1Config()
@@ -85,6 +89,13 @@ def configurations(
     return tuple(out)
 
 
+BALANCED_CONFIGS = tuple(
+    C1Config(f"C1.stacking.gold_balanced.{traversal}", "stacking", "gold", traversal,
+             balanced=True) for traversal in ("soft", "hard"))
+"""Stacking supervised by the gold verdicts with balanced class weights, on schemes 1.1;
+named after the results of round 2, so kept apart from the configurations above."""
+
+
 @dataclass(frozen=True)
 class Majority:
     def predict(self, data):
@@ -122,7 +133,7 @@ def _fit(data, labels, ids, config, parameter, selections=None, repeats=None):
         if config.combiner == "weighted":
             return WeightedPool.fit(data, labels, ids, parameter, selections)
         return Stacking.fit_cq(data, labels, ids, parameter)
-    return Stacking.fit_gold(data, ids, parameter)
+    return Stacking.fit_gold(data, ids, parameter, config.balanced)
 
 
 def fit_c1(data, labels, ids, seed, config=PRIMARY_CONFIG, repeats=None):
@@ -322,7 +333,7 @@ def c1_out_of_fold(
 def retraverse(data: C1Dataset, source: C1Result, config: C1Config) -> C1Result:
     """The combined answers of ``source`` through the traversal of ``config``, with no new
     fit: a traversal changes no combined answer."""
-    same = ("combiner", "supervision", "exclude_schemes", "unstable")
+    same = ("combiner", "supervision", "exclude_schemes", "unstable", "balanced")
     if any(getattr(source.config, f) != getattr(config, f) for f in same) or (
         len(source.combined) != len(data.pairs)
     ):
@@ -345,6 +356,28 @@ def transfer_c1(source: C1Result, target: C1Dataset, name=None) -> C1Result:
     return _result(
         target, p, replace(source.config, name=name), source.choices, source.models, source.folds
     )
+
+
+def combined_rows(data: C1Dataset, p: Sequence[float]) -> dict[str, dict[str, dict]]:
+    """item -> CQ -> a row of ``summary.csv`` that carries the combined answer: the hard
+    combined answer and, as ``p_logprob_<answer>``, the masses of the two arcs and the mass
+    outside them, so that an aggregator of round 1 reads it with the source ``logprob``."""
+    p, codes = np.asarray(p, dtype=float), hard_codes(data, p)
+    out: dict[str, dict[str, dict]] = {}
+    for item, scheme_id, rows in data.groups:
+        scheme = data.schemes[scheme_id]
+        own = out[item] = {}
+        for i, cq in rows:
+            a, b = scheme.answer_space(cq)
+            inside = 1 - data.outside[i]
+            own[cq] = {
+                "answer": (a, b, CANNOT_BE_DETERMINED)[codes[i]],
+                f"p_logprob_{a}": inside * p[i],
+                f"p_logprob_{b}": inside * (1 - p[i]),
+                f"p_logprob_{CANNOT_BE_DETERMINED}": data.outside[i],
+                f"p_logprob_{NOT_APPLICABLE}": 0.0,
+            }
+    return out
 
 
 def baseline_aggregations(data: C1Dataset) -> dict[str, dict[str, Aggregation]]:

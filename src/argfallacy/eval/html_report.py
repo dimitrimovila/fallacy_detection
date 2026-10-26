@@ -758,6 +758,13 @@ ROUND2_METHODS = {
     "C3.pooled": "C3.pooled · recalibrated terminal masses",
     "A3.tree": "A3.tree · trees on the reference answers",
     "majority": "Majority per scheme (oracle)",
+    "A3": "A3 · logistic regression per scheme (round 1)",
+    "A3.combined": "A3.combined · A3 on the combined answers of the majority",
+    "A2.prior": "A2.prior · A2, mass divided by the class frequency",
+    "C1.prior": "C1.prior · C1, mass divided by the class frequency",
+    "C3.pooled.balanced": "C3.pooled.balanced · recalibration with balanced classes",
+    "C1.stacking.gold_balanced.soft": "(c) with balanced classes · soft diagram",
+    "C1.stacking.gold_balanced.hard": "(c) with balanced classes · hard diagram",
 }
 OUTCOMES = {"improvement": "pill", "no measurable difference": "pill neutral"}
 PALETTE = ("#176aa2", "#c4622d", "#24938b", "#8a4fb5", "#b8912f", "#b15b76", "#4d6b85",
@@ -825,6 +832,11 @@ def write_round2_summary(folder):
         "main_table", "deciding", "deciding_breakdowns", "exploratory", "cq_level",
         "cq_level_differences", "human_path", "routing_curve", "abstention",
         "abstention_curves", "abstention_composition", "conformal", "ssoft_changes")}
+    # written only by evaluations made after the additions to round 2
+    tables.update({name: _read_optional(folder / f"{name}.csv", read)
+                   if (folder / f"{name}.csv").is_file() else pd.DataFrame()
+                   for name in ("frequent_classes", "frequent_classes_differences",
+                                "substitution", "substitution_curve")})
     names = {k: v.get("display_name", k) for k, v in load_models().items()}
     level = f"{100 * manifest['deciding_level']:g}%"
 
@@ -1131,6 +1143,60 @@ def write_round2_summary(folder):
         "Named in spec 09 or each exploratory system against the diagram on its own run. "
         "95% intervals; they support no claim.",
         table(["Comparison", "Items", "Δ macro F1 · 95%"], rows)))
+    # additions after the results
+    content = ""
+    frequent = tables["frequent_classes"]
+    if len(frequent):
+        classes = manifest.get("frequent_classes", {})
+        content += (f'<h3>Macro F1 over the frequent classes</h3><p class="note">The '
+                    f"{len(classes.get('classes', []))} classes with at least "
+                    f"{classes.get('minimum_gold_items', '')} gold verdicts in the test set; "
+                    "the macro F1 over all classes moves with a single item of a class with "
+                    "one or two.</p>")
+        content += table(["System", "Items", "Classes", "Macro F1, frequent classes · 95%"], [
+            f"<tr><th>{E(label(r['system']))}<br><small><code>{E(r['system'])}</code> · "
+            f"{E(r['role'])}</small></th><td>{r['n_items']}</td><td>{r['n_classes']}</td>"
+            + triple(r, "macro_f1_frequent", False) + "</tr>"
+            for r in frequent.to_dict("records")])
+        differences = tables["frequent_classes_differences"]
+        content += ("<details><summary>Every comparison on the frequent classes (95%)"
+                    "</summary>" + table(["Comparison", "Items", "Δ macro F1, frequent"], [
+                        f"<tr><th>{E(label(r['system']))} vs {E(label(r['reference']))}"
+                        f"<br><small>{E(r['kind'])}: {E(r['question'])}</small></th>"
+                        f"<td>{r['n_items']}</td>" + triple(r, "macro_f1_frequent") + "</tr>"
+                        for r in differences.to_dict("records")]) + "</details>")
+    substituted = tables["substitution"]
+    if len(substituted):
+        curve = tables["substitution_curve"]
+        content += ("<h3>Human CQ answers in place of the reference model's</h3>"
+                    '<p class="note">The diagram 1.1 traversed with the hard answers of the '
+                    "reference model, where the human binary answer replaces the model's: "
+                    "on every labelled pair of one CQ, on all of them, and, in the figure, "
+                    "on random shares of the disagreeing pairs (mean of "
+                    f"{manifest.get('substitution', {}).get('draws', '')} draws).</p>")
+        if len(curve):
+            content += _figure(
+                [(text, PALETTE[k], list(zip(curve.agreement, curve[metric], strict=True)))
+                 for k, (metric, text) in enumerate((("macro_f1", "Macro F1"),
+                                                     ("macro_f1_frequent",
+                                                      "Macro F1, frequent classes"),
+                                                     ("accuracy", "Accuracy")))],
+                "agreement of the answers with the human CQ labels", "score")
+        content += table(["Scheme · CQ", "Labelled", "Disagreeing", "Verdicts changed",
+                          "Wrong → right", "Right → wrong", "Δ macro F1 · 95%",
+                          "Δ macro F1, frequent · 95%", "Δ accuracy · 95%"], [
+            f"<tr><th>{E(r['scheme'])} · {E(r['cq_id'])}</th><td>{r['labelled']}</td>"
+            f"<td>{r['disagreeing']}</td><td>{r['verdicts_changed']}</td>"
+            f"<td>{r['wrong_to_right']}</td><td>{r['right_to_wrong']}</td>"
+            + triple(r, "macro_f1") + triple(r, "macro_f1_frequent") + triple(r, "accuracy")
+            + "</tr>" for r in substituted.to_dict("records")])
+    if content:
+        sections.append(section(
+            "additions", "Added after the results",
+            "Analyses and systems named after the results of round 2, all exploratory: the "
+            "macro F1 over the frequent classes, the human CQ answers in place of the "
+            "model's, and the systems marked as added after the results in their "
+            "description.", content))
     missing = "".join(f"<li><strong>{E(k)}</strong>: {E(v)}</li>"
                       for k, v in manifest.get("missing", {}).items())
     sections.append(section(
@@ -1150,6 +1216,8 @@ def write_round2_summary(folder):
            ("cq-level", "CQ level"), ("supervision", "Supervision"), ("routing", "Routing"),
            ("ssoft", "S-soft"), ("uncertainty", "Uncertainty"),
            ("exploratory", "Exploratory"), ("missing", "Missing"), ("sources", "Sources")]
+    if len(tables["frequent_classes"]) or len(tables["substitution"]):
+        nav.insert(nav.index(("missing", "Missing")), ("additions", "Additions"))
     if "dq" in manifest:
         nav.append(("dq", "D+Q"))
     document = (

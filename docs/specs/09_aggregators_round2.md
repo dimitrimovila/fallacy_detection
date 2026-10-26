@@ -1,6 +1,6 @@
 # Spec 09. Aggregators, round 2
 
-Version 1, 22 October 2026, written before any result of round 2. Components: the round 2 modules of `src/argfallacy/aggregate/`; the burden table `schemes/burden/v2.yaml`; the stage `ssoft` of the client, with `prompts/ssoft_v1.md`, `prompts/schemas/ssoft_v1.json`, `configs/ssoft_full_v3.yaml` and `configs/ssoft_nohistory_full_v3.yaml`; the evaluation configuration `configs/evaluation_round2.yaml`.
+Version 1, 22 October 2026, written before any result of round 2. Section 14 was added on 26 October 2026, after the results: its systems and analyses are exploratory and change nothing written before it. Components: the round 2 modules of `src/argfallacy/aggregate/`; the burden table `schemes/burden/v2.yaml`; the stage `ssoft` of the client, with `prompts/ssoft_v1.md`, `prompts/schemas/ssoft_v1.json`, `configs/ssoft_full_v3.yaml` and `configs/ssoft_nohistory_full_v3.yaml`; the evaluation configuration `configs/evaluation_round2.yaml`.
 Depends on: 01, 03, 04, 05, 06, 07, 08. Used by: 08.
 
 ## 0. Purpose, and what the primary configurations answer
@@ -219,8 +219,9 @@ Exploratory comparisons, named here: C4 against `C4.nohistory`, the effect of th
 * `verdicts.csv` (spec 07, section 9), with the systems `C1`, `C2`, `C3`, `C4`, `C1.hard`, `C4.path`, `C4.nohistory`, `A2.pruned`, and the exploratory systems named `C1.<combiner>.<supervision>.<traversal>`, with `@2.0` for those on schemes 2.0;
 * `cq_combined.csv`: one row per item, CQ, combiner and supervision, with the fold, `p_first` and the mass outside the arcs;
 * `round2_choices.csv`: the hyperparameters chosen in each fold, component and scheme;
+* `frequent_classes.csv`, `frequent_classes_differences.csv`, `substitution.csv` and `substitution_curve.csv` (section 14), and the systems of section 14 in `verdicts.csv`, `main_table.csv` and `exploratory.csv`, each with "(added after the results)" at the end of its description;
 * `cq_level.csv`, `cq_level_differences.csv` and `human_path.csv` (section 2.5), `routing_curve.csv` (section 3), `ssoft_changes.csv` (the answers that change, section 6.4), `abstention.csv`, `abstention_curves.csv`, `abstention_composition.csv` and `conformal.csv` (section 7), `main_table.csv` with every system, and one CSV per table of section 8: `deciding.csv`, `deciding_breakdowns.csv`, `exploratory.csv`;
-* the sections of round 2 in `summary.html`: deciding comparisons, the level of each CQ, the supervision factor, the routing curve as a figure, S-soft, abstention curves as a figure, conformal sets, and what was not computed.
+* the sections of round 2 in `summary.html`: deciding comparisons, the level of each CQ, the supervision factor, the routing curve as a figure, S-soft, abstention curves as a figure, conformal sets, the additions of section 14, and what was not computed.
 
 A configuration is read as one of round 2 when its `runs` name `answers_schemes_2`, `ssoft` or `ssoft_nohistory`. The schemes left out by the exploratory C1 of section 2.4 are written in the configuration, since no scheme name is written in the code.
 
@@ -264,6 +265,11 @@ On the diagrams of `schemes/v1/` and `schemes/v2/`, on answers written by hand a
 10. Conformal sets: on scores written by hand, the threshold is the order statistic of section 7.
 11. Deciding comparisons: the percentiles follow m; the second comparison of a component is marked as not read when the first does not pass.
 12. The same seed gives the same outputs.
+13. Balanced class weights (section 14.4): the weights of the items of a label sum to the same total for every label and have mean 1; the weighted loss of the gold verdicts and the weighted pooled recalibration have the exact gradient; without weights both equal the losses of sections 2.2 and 4.
+14. The mass divided by the class frequency (section 14.5): on items written by hand the frequencies come from the other folds, add one to every count and sum to 1; a terminal rarer in training wins against a slightly larger mass; the abstention and the sum of the terminal masses do not change; an item without terminal mass stays as it is.
+15. A3 on the combined answers (section 14.6): the rows given to A3 carry, for every item and CQ, the masses of the two arcs and the mass outside them of the combined answer, and its hard answer.
+16. Substitution (section 14.3): a CQ on which the human and the model agree changes no verdict; with every labelled pair replaced and a gold equal to the human path, no verdict goes from right to wrong; at share 0 the curve gives the metrics of the diagram on the answers of the model, at share 1 the agreement is 1; the same seed draws the same subsets.
+17. The macro F1 over the frequent classes (section 14.2): with every class counted as frequent it equals the macro F1 of every system and of every exploratory comparison.
 
 ## 11. What not to do
 
@@ -287,6 +293,49 @@ On the diagrams of `schemes/v1/` and `schemes/v2/`, on answers written by hand a
 
 Lint and tests green, with the commands of the README. `schemes/burden/v2.yaml` in place. C1, C2, C3 and C5 computed on full run v2 by `argfallacy evaluate configs/evaluation_round2.yaml`, with the exploratory configurations on full run v3. S-soft ready: `argfallacy run plan configs/ssoft_full_v3.yaml` counts 601 first calls, and `argfallacy run plan configs/ssoft_nohistory_full_v3.yaml` counts 3,162 calls; C4 and its control are computed once their runs exist. Summary in Italian.
 
+## 14. Additions after the results
+
+Written on 26 October 2026, after the results of sections 2 to 7 were read. Everything here is exploratory and supports no claim: no primary configuration, deciding comparison or value of m changes, and no system named before this section changes its verdicts. Each system of this section ends its description with "(added after the results)", and `manifest.json` lists them under `added_after_the_results`.
+
+### 14.1 Why
+
+Three readings of the results motivate it. The macro F1 over the 23 classes with support moves with single items: of the difference between C1 and A0 of `qwen3_8_27b`, almost all comes from the 11 classes with fewer than 10 gold verdicts. The models fitted on the gold verdicts without class weights (stacking (c) and the pooled recalibration of C3) give up the rare classes, while the deciding metric weighs every class the same; the terminal with the highest mass maximises the expected accuracy, not the F1 (Lipton, Elkan and Narayanaswamy 2014). The literature on the strength of arguments from schemes weighs the answers to all the critical questions together, rather than letting the first failed question decide (Hahn and Hornikx 2016); in rounds 1 and 2 that weighing (A3) was fitted only on the answers of one entry, and the combined answers went only to trees.
+
+### 14.2 Macro F1 over the frequent classes
+
+* The frequent classes are those with at least 10 gold verdicts among the 601 items of the test set; on the frozen data there are 12. They are fixed on the whole test set and written in `manifest.json`.
+* The macro F1 over the frequent classes is the mean F1 of the frequent classes with support, on the observed items and on each resample of spec 08, P12, scored as the canonical scorer scores them.
+* `frequent_classes.csv`: every system of `main_table.csv` on its own items, with its 95 per cent interval and the number of frequent classes with support. `frequent_classes_differences.csv`: every comparison of section 8 and every exploratory comparison, on the items of both systems, with its 95 per cent interval. Descriptive: the deciding metric stays the macro F1 over every class with support.
+
+### 14.3 Human CQ answers in place of the model's
+
+* The diagram 1.1 traversed with the hard answers of `qwen3_8_27b` in full run v2, by the rule of A0, where the CQ labels of section 1 (Dumitru's binary answers) replace the answers of the model. The other answers of each item stay those of the model.
+* By CQ: every labelled pair of one CQ takes the human answer, and a last row does it for every labelled pair at once. Reported: the labelled pairs, those where the model disagrees (an answer outside the arcs disagrees), the verdicts that change, those that go from wrong to right and from right to wrong, and the paired differences from A0 in macro F1, in macro F1 over the frequent classes and in accuracy, at 95 per cent on the resamples of the evaluation. `substitution.csv`.
+* Curve: at each share 0, 0.1, ..., 1 of the disagreeing pairs, 50 random subsets of that share take the human answer; reported the agreement reached and, for each metric, the mean over the 50 draws with their 2.5 and 97.5 percentiles. The draws come from the fourth generator of the seed of the evaluation (`SeedSequence(seed).spawn(4)[3]`), so the folds and the resamples do not change. `substitution_curve.csv`. It reads how much a point of agreement with the CQ labels is worth in verdicts through the diagram.
+
+### 14.4 Balanced class weights
+
+* `C1.stacking.gold_balanced.soft` and `C1.stacking.gold_balanced.hard`: stacking with supervision (c) (section 2.2), full run v2, where the log mass of the gold verdict of each training item weighs n / (K n_ℓ): n items, K gold verdicts among them, n_ℓ items with the gold verdict ℓ of the item, computed on the items of each fit. The weights have mean 1, so the penalty keeps its scale. Grid, centre, folds and inner criterion (the macro F1 of the pooled inner verdicts) as in section 2.2; the hard form traverses the same fit.
+* `C3.pooled.balanced`: the pooled recalibration of section 4 with the same weights in its log loss, computed on the gold verdicts of the items of each loss (the fitted items, and the inner validation items for the inner criterion). Grid and inputs as `C3.pooled`.
+
+### 14.5 The mass divided by the class frequency
+
+`A2.prior` and `C1.prior`: the distributions of A2 and C1, each terminal mass divided by π_t = (c_t + 1) / (n + K), where c_t counts the gold verdicts t among the items of the same gold scheme in the other four folds, n is their sum and K the number of terminals of the scheme; a gold verdict that is not a terminal of its scheme is not counted. The divided masses are rescaled to their former sum, so the abstention does not change; the verdict is the terminal with the highest divided mass, ties as in spec 07, section 1. With calibrated posteriors this rule maximises the expected balanced accuracy, which weighs the classes as macro F1 does; the masses of the diagram are not posteriors, so here it measures how much of the loss on the rare classes comes from the choice of the verdict rather than from the masses.
+
+### 14.6 A3 on the combined answers
+
+* `A3.combined`: A3 of spec 07, section 5, unchanged (features, multinomial logistic regression with balanced classes, grid of C 0.01, 0.1, 1 and 10, inner criterion, folds, the items whose gold is not a terminal left out of training), on the combined answers of the majority (section 2.1, supervision (a)) in place of the answers of one entry. Each CQ gives the masses of its two arcs, (1 − o) · `p_first` and (1 − o) · (1 − `p_first`), with o the mass outside the arcs. The majority uses no label, so the inputs need no cross-fitting.
+* `A3`: A3 of round 1 on the answers of `qwen3_8_27b`, computed again with the same folds and seed, as the reference of the inputs.
+
+### 14.7 Comparisons
+
+Exploratory, macro F1, 95 per cent, in `exploratory.csv`, and on the frequent classes in `frequent_classes_differences.csv`:
+* `A3.combined` against `C1.majority.none.hard`: a weighting learned from the gold against the diagram, on the same combined answers;
+* `A3.combined` against `A3`: the combined answers against those of the reference model, with the same weighting;
+* `A3.combined` against A0 of `qwen3_8_27b` and against `zeroshot:qwen3_8_27b`;
+* `C1.stacking.gold_balanced.soft` and `.hard` against `C1.stacking.gold.soft` and `.hard`; `C3.pooled.balanced` against `C3.pooled`;
+* `A2.prior` against `A2`, and `C1.prior` against `C1`.
+
 ## References
 
 * Angelopoulos, A. N. and Bates, S. (2023). Conformal prediction: a gentle introduction. *Foundations and Trends in Machine Learning*, 16(4), 494–591.
@@ -295,7 +344,9 @@ Lint and tests green, with the commands of the README. `schemes/burden/v2.yaml` 
 * Genest, C., Weerahandi, S. and Zidek, J. V. (1984). Aggregating opinions through logarithmic pooling. *Theory and Decision*, 17(1), 61–70.
 * Gordon, T. F., Prakken, H. and Walton, D. (2007). The Carneades model of argument and burden of proof. *Artificial Intelligence*, 171(10–15), 875–896.
 * Guo, C., Pleiss, G., Sun, Y. and Weinberger, K. Q. (2017). On calibration of modern neural networks. *ICML*, PMLR 70, 1321–1330.
+* Hahn, U. and Hornikx, J. (2016). A normative framework for argument quality: argumentation schemes with a Bayesian foundation. *Synthese*, 193, 1833–1873.
 * Koh, P. W., Nguyen, T., Tang, Y. S., Mussmann, S., Pierson, E., Kim, B. and Liang, P. (2020). Concept bottleneck models. *ICML*, PMLR 119, 5338–5348.
+* Lipton, Z. C., Elkan, C. and Narayanaswamy, B. (2014). Optimal thresholding of classifiers to maximize F1 measure. *ECML PKDD*, 225–239. doi:10.1007/978-3-662-44851-9_15.
 * Margeloiu, A., Ashman, M., Bhatt, U., Chen, Y., Jamnik, M. and Weller, A. (2021). Do concept bottleneck models learn as intended? arXiv:2105.04289.
 * Singh, C., Morris, J., Rush, A., Gao, J. and Deng, Y. (2023). Tree prompting: efficient task adaptation without fine-tuning. *EMNLP*, 6253–6267.
 * Smith, J. and Wallis, K. F. (2009). A simple explanation of the forecast combination puzzle. *Oxford Bulletin of Economics and Statistics*, 71(3), 331–355.

@@ -144,7 +144,7 @@ class Scorer:
         """Whether each prediction is its gold class; no verdict is wrong."""
         return np.array([self._class(raw) for raw in predicted]) == self.gold
 
-    def metrics(self, predicted: Sequence[str | None]) -> dict[str, np.ndarray]:
+    def _counts(self, predicted: Sequence[str | None]):
         p = np.array([self._class(raw) for raw in predicted])
         if len(p) != len(self.gold):
             raise ValueError(f"{len(self.gold)} gold labels but {len(p)} predictions")
@@ -155,6 +155,15 @@ class Scorer:
         tp = self.weights @ (self.gold_onehot * correct[:, None])
         supported = self.support > 0
         f1 = np.divide(2 * tp, self.support + emitted, out=np.zeros_like(tp), where=supported)
+        return p, correct, emitted, tp, supported, f1
+
+    def class_f1(self, predicted: Sequence[str | None]) -> tuple[np.ndarray, np.ndarray]:
+        """The F1 of every class on every resample, and whether the class has support there."""
+        *_, supported, f1 = self._counts(predicted)
+        return f1, supported
+
+    def metrics(self, predicted: Sequence[str | None]) -> dict[str, np.ndarray]:
+        p, correct, emitted, tp, supported, f1 = self._counts(predicted)
         recall = np.divide(tp, self.support, out=np.zeros_like(tp), where=supported)
         n_supported = supported.sum(axis=1)
         g = self.good
