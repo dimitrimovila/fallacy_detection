@@ -1,0 +1,31 @@
+# Paths are relative to this configuration's directory, including optional inputs.
+# Keep external human paths in an ignored local configuration. These reserved
+# fields are not opened by the provenance and verdict-breakdown component.
+version: 1
+items: ../data/items.csv
+output: ../evaluations/analyses_v1
+seed: 20261019
+resamples: 10000
+bootstrap_batch_size: 128
+evaluations:
+  decision_v2:
+    path: ../evaluations/decision_v2
+    round: 1
+  round2:
+    path: ../evaluations/round2
+    round: 2
+    # Optional exact side-record export, from a separate profiled calculation.
+    routing_records: null
+parsed_runs:
+  20261005T193017Z_full_v2: ../runs/20261005T193017Z_full_v2
+  20261019T151336Z_full_v3: ../runs/20261019T151336Z_full_v3
+  20261009T221950Z_zeroshot_v1: ../runs/20261009T221950Z_zeroshot_v1
+  20261021T111606Z_zeroshot_k2: ../runs/20261021T111606Z_zeroshot_k2
+  20261021T111110Z_judge_v1: ../runs/20261021T111110Z_judge_v1
+  20261021T111110Z_judge_v1_answers_only: ../runs/20261021T111110Z_judge_v1_answers_only
+  20261025T133031Z_ssoft_full_v3: ../runs/20261025T133031Z_ssoft_full_v3
+  20261025T133031Z_ssoft_nohistory_full_v3: ../runs/20261025T133031Z_ssoft_nohistory_full_v3
+direct_verdict:
+  answers: null
+  samples: null
+dq: null

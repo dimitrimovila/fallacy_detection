@@ -535,6 +535,60 @@ not computed and why), `verdicts.csv`, `main_table.csv`, `deciding.csv`,
 cross-fitting of C2 and C3 refits C1 several hundred times: on runs of the size of the
 test set the command takes about ten minutes on a laptop, most of it in C3.
 
+## Analyses of saved evaluations
+
+```bash
+argfallacy analyze configs/analyses_v1.yaml  # evaluations/analyses_v1/
+```
+
+This independent, version-1 configuration reads saved out-of-fold predictions
+from both rounds. All paths, including the output and optional inputs, resolve
+relative to the configuration file's directory. `--out DIR` explicitly overrides
+the output root (relative to the current directory). Output overlapping an input
+or source evaluation is rejected. Seed, resamples, frozen population and folds
+must agree with the source manifests. The command performs no fitting or inference.
+
+The current component writes `main_table.csv`, `comparisons.csv`, `per_class.csv`,
+`rare_classes.csv`, `integrity.csv`, `stage1.csv`, `routing_curve.csv`,
+`confidence.csv` and `manifest.json`. Main metrics include percentile intervals,
+item and supported-class denominators, absent classes and undefined flags.
+Scheme and corpus breakdowns retain the small-group rules. Comparisons use the
+common declared eligible items; intentionally restricted systems keep their own
+populations. Additional restrictions can be declared per source with
+`populations: {SYSTEM: {exclude_schemes: [...]}}` or `{item_ids: [...]}`.
+The recorded `C1.annotation_exclusion` rule is read from its source manifest.
+Original full-population deciding levels and reading gates are retained; new
+views and diagnostic comparisons are exploratory at 95%.
+
+`bootstrap_batch_size` defaults to 128 (valid range 1 to 4096). Systems are
+processed sequentially. The same random streams are restarted in deterministic
+batches, retaining scalar replicate statistics only. Subgroups filter whole-test
+draws; without NLAS uses the existing generator 2. The manifest records input
+hashes, source manifests and commits, analysis code identity, item order, folds,
+versions, denominators, elapsed time and peak process memory. Tables count omitted
+empty replicates per metric. The rare-class list uses gold support below 20 on the full frozen test
+set, before any subset is selected.
+
+The saved C2 curve has rounded thresholds and cannot reconstruct origin views.
+Without exact side records, the new routing table has headers and a pending
+manifest status. `argfallacy.eval.routing.routing_curve` accepts opt-in
+`export_dir` and `source_evaluation` arguments; alternatively call
+`argfallacy.eval.analysis_routing.export_routing_records` on an already computed
+primary `C2Result`. This verifies saved verdicts and exports full-precision
+side probabilities, verdicts and folds into a separate analysis/replay directory.
+Configure its `routing_records.csv` under the source's `routing_records` key,
+using a different final output root. Every origin then uses the pooled threshold
+grid and the same thresholds selected for requested explained shares. Any fitted
+replay must be separately profiled with unchanged settings; `analyze` never
+starts it or reconstructs terminal distributions from chosen labels.
+
+`direct_verdict.answers`, `direct_verdict.samples` and `dq` default to null and
+are reserved: this component does not open them, even when configured. Keep
+external human paths in `configs/analyses_v1.local.yaml` (ignored), never in the
+published example. CQ/human, uncertainty and report extensions remain pending.
+Collapsed main tables and the predicted-scheme verdict condition are deferred
+to level 3; stage-one scheme recognition is reported separately.
+
 ## License
 
 The code is released under the MIT License (see `LICENSE`). The files in `data/`

@@ -296,6 +296,38 @@ never invented observations or zero-valued results; malformed supplied inputs fa
 Analysis code and synthetic acceptance tests are completed and committed before
 new human annotations are opened. New annotations enter no fitted primary system.
 
+The first implementation component uses an independent configuration contract
+(`version: 1`): `items`, `output`, `evaluations` (identity mapped to `path`,
+`round`, optional `populations` and `routing_records`), `parsed_runs` (run id
+mapped to directory), `seed`, `resamples`, `bootstrap_batch_size`, and the
+reserved optional inputs above. Every configured path resolves relative to the
+configuration file directory. `--out DIR` is an explicit alternate output root,
+resolved relative to the invoking directory. Local external paths stay in an
+ignored `configs/analyses*.local.yaml`. The processing batch defaults to 128,
+accepts integers from 1 to 4096, and does not change the draws. Source seed,
+resamples, frozen population and folds must match before scoring. A restricted
+population must be declared by item ids or excluded schemes; the existing
+`C1.annotation_exclusion` reads its recorded `cq_label_exclusion` declaration.
+Absent rows do not implicitly define eligibility.
+
+This component supplies the main and comparison breakdowns, per-class and rare-
+class diagnosis, parser integrity, stage-one recognition and their manifest.
+`rare_classes.csv` holds the fixed C1 diagnosis; `confidence.csv` preserves
+item-level confidence recovery and `p_label_lower_bound` provenance. Reserved
+human and D+Q fields are validated as configuration paths but never opened here.
+Later components supply the CQ/human, uncertainty and saved-table HTML outputs.
+Collapsed tables remain deferred at level 3: the existing canonical point scorer
+supports collapse, but the bootstrap scoring path is fine-only.
+
+Exact C2 routing input can be exported, opt in, from an already computed primary
+two-side `C2Result`, after verifying its verdicts against the source evaluation.
+The export contains full-precision held-out `p_d`, `p_z`, both side verdicts and
+folds, with source-manifest and record hashes. It goes to a separate analysis/
+replay directory, then enters `routing_records` for an analysis with a distinct
+output root. A rounded saved curve alone leaves `routing_curve.csv` with headers
+and a pending status describing the separate profiled replay requirements.
+No real replay or analysis is part of implementation validation.
+
 **Gold origin and breakdowns.** Add total, fallacy-corpus (LOGIC, Reddit,
 ElecDebate) and scheme-corpus (NLAS, EthiX) results to the thesis tables only:
 main tables of both rounds; deciding and exploratory comparisons; CQ-level scores;

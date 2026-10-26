@@ -11,7 +11,8 @@ from .evaluate import Bench, Scorer, interval, resample_indices
 
 
 def routing_curve(
-    result: C2Result, items: pd.DataFrame, indices=None, *, seed=20261019, resamples=10000
+    result: C2Result, items: pd.DataFrame, indices=None, *, seed=20261019, resamples=10000,
+    export_dir=None, source_evaluation=None,
 ) -> pd.DataFrame:
     """Use the smallest pooled threshold attaining at least each requested share.
 
@@ -78,4 +79,10 @@ def routing_curve(
         share = (bench.resampled.weights @ explained) / len(ids)
         row["explained_low"], row["explained_high"] = interval(share)
         rows.append(row)
+    if export_dir is not None:
+        if source_evaluation is None:
+            raise ValueError("routing export needs the source evaluation for verdict verification")
+        from .analysis_routing import export_routing_records
+
+        export_routing_records(result, items, export_dir, source_evaluation)
     return pd.DataFrame(rows)

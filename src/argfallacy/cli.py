@@ -155,6 +155,19 @@ def _cmd_evaluate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_analyze(args: argparse.Namespace) -> int:
+    from .eval.analysis import AnalysisConfig, analyze
+    from .schemes import SchemeError
+
+    try:
+        out = analyze(AnalysisConfig.load(args.config), out_root=args.out,
+                      progress=lambda step: print(f"  {step}", flush=True))
+    except (SchemeError, FileNotFoundError) as error:
+        raise SystemExit(str(error)) from None
+    print(f"  {out / 'manifest.json'}")
+    return 0
+
+
 def _cmd_report_cqs(args: argparse.Namespace) -> int:
     from .client.run import default_runs_dir
     from .eval.cq import write_cq_report
@@ -301,6 +314,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     evaluate_cmd.add_argument("config", help="a YAML evaluation configuration")
     evaluate_cmd.set_defaults(func=_cmd_evaluate)
+    analyze_cmd = sub.add_parser(
+        "analyze", help="thesis breakdowns of saved out-of-fold predictions")
+    analyze_cmd.add_argument("config", help="a versioned analysis configuration")
+    analyze_cmd.add_argument("--out", help="explicit alternate output root")
+    analyze_cmd.set_defaults(func=_cmd_analyze)
     return parser
 
 
