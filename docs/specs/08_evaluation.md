@@ -300,8 +300,10 @@ The first implementation component uses an independent configuration contract
 (`version: 1`): `items`, `output`, `evaluations` (identity mapped to `path`,
 `round`, optional `populations` and `routing_records`), `parsed_runs` (run id
 mapped to directory), `seed`, `resamples`, `bootstrap_batch_size`, and the
-reserved optional inputs above. Every configured path resolves relative to the
-configuration file directory. `--out DIR` is an explicit alternate output root,
+reserved optional inputs above. The optional `annotations` path (null by default)
+names the existing frozen 1.1 CQ/verdict/difficulty table; it does not open new
+direct-verdict answers, final exports or sample files. Every configured path
+resolves relative to the configuration file directory. `--out DIR` is an explicit alternate output root,
 resolved relative to the invoking directory. Local external paths stay in an
 ignored `configs/analyses*.local.yaml`. The processing batch defaults to 128,
 accepts integers from 1 to 4096, and does not change the draws. Source seed,
@@ -315,7 +317,12 @@ class diagnosis, parser integrity, stage-one recognition and their manifest.
 `rare_classes.csv` holds the fixed C1 diagnosis; `confidence.csv` preserves
 item-level confidence recovery and `p_label_lower_bound` provenance. Reserved
 human and D+Q fields are validated as configuration paths but never opened here.
-Later components supply the CQ/human, uncertainty and saved-table HTML outputs.
+The next component supplies CQ/human and selective-prediction outputs from frozen
+inputs. Later components supply new-human/disagreement, per-item conformal and
+saved-table HTML outputs. An optional saved `verdicts.csv` `distribution` column
+contains a JSON terminal-to-mass mapping; only genuine distributions validated
+against the saved verdict and confidence support the margin check. Without it,
+that check remains pending and no distribution is reconstructed from a label.
 Collapsed tables remain deferred at level 3: the existing canonical point scorer
 supports collapse, but the bootstrap scoring path is fine-only.
 

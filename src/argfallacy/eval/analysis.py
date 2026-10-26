@@ -19,6 +19,7 @@ import yaml
 from ..paths import REPO_ROOT
 from .analysis_bootstrap import Bootstrap
 from .analysis_diagnostics import integrity, stage_one
+from .analysis_human import human_tables, read_frozen_annotations
 from .analysis_inputs import (
     AnalysisConfig,
     Inputs,
@@ -30,6 +31,7 @@ from .analysis_inputs import (
     require,
     scheme_registry,
 )
+from .analysis_selective import AUGRC_PAIRS, difficulty_ratings, selective_tables
 from .analysis_tables import comparisons, main_tables, rare_diagnosis
 from .round2 import ORIGINS
 
@@ -110,8 +112,19 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
     # Record the implementation alongside its Git identity, including uncommitted changes.
     for file in sorted(Path(__file__).parent.glob("analysis*.py")):
         inputs.add(file)
-    for name in ("canonical.py", "evaluate.py", "folds.py", "metrics.py", "routing.py"):
+    for name in (
+        "canonical.py",
+        "evaluate.py",
+        "folds.py",
+        "metrics.py",
+        "routing.py",
+        "uncertainty.py",
+        "c1.py",
+        "cq.py",
+    ):
         inputs.add(Path(__file__).with_name(name))
+    for name in ("annotations.py", "aggregate/soft.py", "aggregate/combiners.py"):
+        inputs.add(Path(__file__).parent.parent / name)
     evaluations = [
         read_evaluation(name, source, config, items, registry, inputs)
         for name, source in config.evaluations.items()
@@ -224,6 +237,19 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
     from .analysis_routing import routing_tables
 
     routing, routing_status = routing_tables(config, evaluations, items, bootstrap, inputs)
+    say("frozen CQ and historical human tables")
+    annotations = read_frozen_annotations(config, inputs)
+    from ..schemes import load_all
+    from .analysis_cq import cq_tables
+
+    cq, cq_status = cq_tables(config, evaluations, items, registry, annotations, bootstrap, inputs)
+    human, human_status = human_tables(
+        annotations, evaluations, items, load_all(registry["1.1"]), bootstrap
+    )
+    say("selective prediction on saved confidence; sequential systems")
+    selective = selective_tables(
+        evaluations, items, bootstrap, difficulty_ratings(annotations, items), registry
+    )
     tables = {
         "main_table.csv": main,
         "comparisons.csv": pairs,
@@ -252,12 +278,34 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
         ),
         "routing_curve.csv": routing,
         "confidence.csv": pd.DataFrame(confidence),
+        **cq,
+        **human,
+        **selective,
     }
     parts = {
         name.removesuffix(".csv"): {"status": "computed", "rows": len(table)}
         for name, table in tables.items()
     }
     parts["routing_curve"] = routing_status
+    parts["cq_populations"] = cq_status
+    parts["historical_human"] = human_status
+    for name in (*cq, *human, *selective):
+        frame = tables[name]
+        part = parts[name.removesuffix(".csv")]
+        if frame.empty:
+            part.update(status="pending", reason="no compatible source observations")
+        elif "status" in frame:
+            part["row_statuses"] = frame.status.value_counts().to_dict()
+            pending = frame.status.fillna("").str.startswith("pending")
+            if pending.all():
+                part.update(
+                    status="pending", reason="source observations or references unavailable"
+                )
+            elif pending.any():
+                part["status"] = "partial"
+    if annotations is None:
+        for name in ("human_agreement", "human_path", "difficulty"):
+            parts[name].update(status="pending", reason="frozen annotations not configured")
     if not stage_rows:
         parts["stage1"] = {"status": "pending", "reason": "no parsed stage-one rows"}
     if rare.empty:
@@ -286,7 +334,10 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
             },
             "remaining_stage_two": {
                 "status": "pending",
-                "reason": "CQ/human, uncertainty and report components are separate",
+                "reason": (
+                    "new human direct verdict, disagreement, conformal item export "
+                    "and saved-table report"
+                ),
             },
         }
     )
@@ -340,6 +391,14 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
             "rare_class_full_test_gold_support_below": 20,
             "main_level": 0.95,
             "new_comparison_level": 0.95,
+            "hard_cq_agreement_minimum_annotated_items": 20,
+            "abstention_fixed_coverages": [1.0, 0.95, 0.9, 0.8, 0.7],
+            "exploratory_augrc_pairs": AUGRC_PAIRS,
+            "abstention_order": (
+                "finite confidence descending; verdict without confidence; no verdict; item_id ties"
+            ),
+            "abstention_integral": "discrete mean over ordered k=1..N; threshold curve separate",
+            "difficulty_levels": [1, 2, 3, 4, 5],
         },
         "software_versions": {
             p: version(p) for p in ("argfallacy", "numpy", "pandas", "scikit-learn", "scipy")
@@ -363,16 +422,18 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
             )
     out.mkdir(parents=True, exist_ok=True)
     for filename, frame in tables.items():
-        if filename == "routing_curve.csv":
+        if filename in ("routing_curve.csv", "abstention_thresholds.csv"):
             frame = frame.copy()
             for column in frame.select_dtypes(include="floating"):
-                if column != "tau":
+                if column not in ("tau", "threshold"):
                     frame[column] = frame[column].map(lambda v: f"{v:.4f}" if pd.notna(v) else "")
         frame.to_csv(
             out / filename,
             index=False,
             lineterminator="\n",
-            float_format=None if filename in ("confidence.csv", "routing_curve.csv") else "%.4f",
+            float_format=None
+            if filename in ("confidence.csv", "routing_curve.csv", "abstention_thresholds.csv")
+            else "%.4f",
         )
     record["elapsed_seconds"] = time.perf_counter() - started
     record["peak_process_memory_bytes"] = peak_memory_bytes()

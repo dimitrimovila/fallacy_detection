@@ -70,3 +70,27 @@ def percentile(values, level=0.95):
     alpha = 1 - level
     low, high = np.percentile(finite, [100 * alpha / 2, 100 * (1 - alpha / 2)])
     return float(low), float(high), len(finite)
+
+
+def contribution_ratios(item_positions, numerators, denominators, n_items, bootstrap):
+    """Sum contributions within items before applying the shared item draws.
+
+    Inputs can contain many CQs or path occurrences per item. The only matrix
+    involving replicates is the current batch by the complete item population.
+    """
+    positions = np.asarray(item_positions, dtype=int)
+    top = np.bincount(positions, weights=numerators, minlength=n_items)
+    bottom = np.bincount(positions, weights=denominators, minlength=n_items)
+    observed = top.sum() / bottom.sum() if bottom.sum() else np.nan
+    spread = np.full(bootstrap.resamples, np.nan)
+    if not bottom.any():
+        return float(observed), spread
+    start = 0
+    for indices in bootstrap.indices(n_items):
+        counts = weights(indices, n_items)
+        # Fixed row-wise summation also fixes floating-point order across batch sizes.
+        a, b = (counts * top).sum(axis=1), (counts * bottom).sum(axis=1)
+        stop = start + len(indices)
+        spread[start:stop] = np.divide(a, b, out=np.full(len(a), np.nan), where=b > 0)
+        start = stop
+    return float(observed), spread

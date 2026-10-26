@@ -3,6 +3,8 @@
 # fields are not opened by the provenance and verdict-breakdown component.
 version: 1
 items: ../data/items.csv
+# Existing frozen 1.1 CQ/verdict ratings and Enrico's five-level difficulty.
+annotations: ../data/annotations.csv
 output: ../evaluations/analyses_v1
 seed: 20261019
 resamples: 10000

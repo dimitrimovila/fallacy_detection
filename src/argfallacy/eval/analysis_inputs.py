@@ -60,6 +60,7 @@ class AnalysisConfig:
     bootstrap_batch_size: int
     direct_verdict: dict
     dq: Path | None
+    annotations: Path | None = None
 
     @classmethod
     def load(cls, path):
@@ -79,6 +80,7 @@ class AnalysisConfig:
                 "bootstrap_batch_size",
                 "direct_verdict",
                 "dq",
+                "annotations",
             },
         )
         require(
@@ -133,6 +135,7 @@ class AnalysisConfig:
             integer(raw.get("bootstrap_batch_size", 128), "bootstrap batch size", maximum=4096),
             direct,
             resolve_path(base, dq) if dq is not None else None,
+            resolve_path(base, raw["annotations"]) if raw.get("annotations") is not None else None,
         )
 
     def guard_output(self, out):
@@ -145,6 +148,8 @@ class AnalysisConfig:
         ]
         if self.dq is not None:
             inputs.append(self.dq)
+        if self.annotations is not None:
+            inputs.append(self.annotations)
         inputs.extend(
             s["routing_records"]
             for s in self.evaluations.values()

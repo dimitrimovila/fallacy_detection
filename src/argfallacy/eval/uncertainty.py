@@ -123,6 +123,104 @@ def composition(name: str, ids: Sequence[str], order: np.ndarray,
     return rows
 
 
+def _has_verdict(verdicts):
+    values = np.asarray(verdicts, dtype=object)
+    present = pd.notna(values)
+    present[present] &= values[present] != ""
+    return present
+
+
+def saved_ranking(ids, verdicts, confidence):
+    """P11 order for saved rows, preserving missing confidence as missing."""
+    confidence = np.asarray(confidence, dtype=float)
+    has_verdict = _has_verdict(verdicts)
+    key = np.where(has_verdict, np.where(np.isfinite(confidence), confidence, -1), -2)
+    return np.lexsort((np.asarray(ids, dtype=str), -key))
+
+
+def ordered_statistics(wrong, levels=LEVELS):
+    """Discrete means on an already ranked sample, including repeated items."""
+    wrong = np.asarray(wrong, dtype=float)
+    n = len(wrong)
+    names = ["augrc", "aurc", *(f"selective_accuracy_{round(100 * c)}" for c in levels)]
+    if not n:
+        return dict.fromkeys(names, np.nan)
+    errors = np.cumsum(wrong)
+    result = {
+        "augrc": float(errors.mean() / n),
+        "aurc": float((errors / np.arange(1, n + 1)).mean()),
+    }
+    result.update(
+        {
+            f"selective_accuracy_{round(100 * c)}": 1 - errors[_cut(c, n) - 1] / _cut(c, n)
+            for c in levels
+        }
+    )
+    return result
+
+
+def selective_bootstrap(ids, wrong, verdicts, confidence, eligible, bootstrap):
+    """Bounded-memory P11 summaries; filter and rerank each whole-test draw.
+
+    ``bootstrap`` supplies deterministic batches of whole-population indices.
+    Only scalar replicate summaries survive a batch. Partial systems and origins
+    filter those draws, so their replicate denominators can vary or be empty.
+    """
+    order = saved_ranking(ids, verdicts, confidence)
+    rank = np.empty(len(order), dtype=int)
+    rank[order] = np.arange(len(order))
+    mask = np.asarray(eligible, dtype=bool)
+    wrong = np.asarray(wrong, dtype=bool)
+    chosen = order[mask[order]]
+    observed = ordered_statistics(wrong[chosen])
+    spread = {key: np.full(bootstrap.resamples, np.nan) for key in observed}
+    if not mask.any():
+        return observed, spread, chosen
+    start = 0
+    for batch in bootstrap.indices(len(ids)):
+        for offset, draw in enumerate(batch):
+            draw = draw[mask[draw]]
+            draw = draw[np.argsort(rank[draw], kind="stable")]
+            for metric, value in ordered_statistics(wrong[draw]).items():
+                spread[metric][start + offset] = value
+        start += len(batch)
+    return observed, spread, chosen
+
+
+def effective_thresholds(ids, wrong, verdicts, confidence, eligible):
+    """Attainable confidence thresholds, keeping ties and the empty selection.
+
+    The threshold of the explicit empty selection is +infinity. Missing verdicts
+    and confidences never enter an operational selection, including threshold 0.
+    """
+    confidence = np.asarray(confidence, dtype=float)
+    mask = np.asarray(eligible, dtype=bool)
+    valid = mask & _has_verdict(verdicts)
+    valid &= np.isfinite(confidence)
+    n = int(mask.sum())
+    rows = []
+    for threshold in [
+        np.inf,
+        *sorted(set(confidence[mask & np.isfinite(confidence)]), reverse=True),
+    ]:
+        kept = valid & (confidence >= threshold)
+        count, errors = int(kept.sum()), int(np.asarray(wrong)[kept].sum())
+        rows.append(
+            {
+                "threshold": threshold,
+                "empty_selection": not np.isfinite(threshold),
+                "n_items": n,
+                "kept": count,
+                "errors": errors,
+                "coverage": count / n if n else np.nan,
+                "selective_risk": errors / count if count else np.nan,
+                "selective_risk_undefined": count == 0,
+                "generalized_risk": errors / n if n else 0.0,
+            }
+        )
+    return rows
+
+
 # --------------------------------------------------------------- conformal
 
 

@@ -17,6 +17,12 @@ from .round2 import FALLACY_CORPORA, ORIGINS, SCHEME_CORPORA
 from .run_report import good_terminal
 
 
+def table_frame(rows, columns):
+    """Keep promised CSV headers when observations or estimates are pending."""
+    result = pd.DataFrame(rows)
+    return result.reindex(columns=[*columns, *(c for c in result if c not in columns)])
+
+
 @dataclass(frozen=True)
 class View:
     kind: str

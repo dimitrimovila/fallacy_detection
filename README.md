@@ -550,7 +550,11 @@ must agree with the source manifests. The command performs no fitting or inferen
 
 The current component writes `main_table.csv`, `comparisons.csv`, `per_class.csv`,
 `rare_classes.csv`, `integrity.csv`, `stage1.csv`, `routing_curve.csv`,
-`confidence.csv` and `manifest.json`. Main metrics include percentile intervals,
+`confidence.csv` and `manifest.json`. It also writes `cq_level.csv`,
+`cq_level_differences.csv`, `human_agreement.csv`, `human_path.csv`,
+`abstention.csv`, `abstention_curves.csv`, `abstention_thresholds.csv`,
+`abstention_differences.csv`, `abstention_composition.csv` and `difficulty.csv`.
+Main metrics include percentile intervals,
 item and supported-class denominators, absent classes and undefined flags.
 Scheme and corpus breakdowns retain the small-group rules. Comparisons use the
 common declared eligible items; intentionally restricted systems keep their own
@@ -582,10 +586,42 @@ grid and the same thresholds selected for requested explained shares. Any fitted
 replay must be separately profiled with unchanged settings; `analyze` never
 starts it or reconstructs terminal distributions from chosen labels.
 
+`annotations` optionally names the existing frozen annotations table (null by
+default); the published configuration uses `data/annotations.csv`. It supplies
+the historical 1.1 CQ/verdict ratings and Enrico's unchanged difficulty levels
+1 to 5. C1's binary labels retain the positive scheme-judgement selection of
+`annotations.gold_scheme_rows`; P7 also includes the gold-scheme sheet's negative
+scheme judgements and nonbinary answers. CQ tables identify these populations,
+item counts and pair counts separately, with pooled, scheme and individual-CQ
+views in total and within each origin. Displayed hard human agreement requires
+20 annotated items. Rewritten 2.0 CQs have no 1.1 human targets; S-soft rows count
+observed path occurrences and distinct item/CQ pairs separately, excluding
+unvisited nodes. Historical cross-sheet verdicts are separate from human paths
+under the gold scheme. Missing second-rater CQ ratings and blind repeats stay pending.
+
+Ordered abstention indices use P11's discrete means, item-id ties and missing-
+verdict errors. Fixed cuts use half-up rounding. Each bootstrap draw is filtered
+to the declared population and reranked, with all of an item's CQs moving together.
+Threshold rows keep ties together, require a verdict and finite confidence, and
+include an explicit empty selection at `+inf`. Thresholds retain full precision;
+missing confidence stays missing. Coverage denominators, missingness and maximum
+operational coverage are explicit. Systems without confidence are reference
+points. The margin check is pending unless genuine terminal distributions exist
+in a source's `verdicts.csv` `distribution` column (JSON terminal-to-mass mapping,
+validated against saved confidence and verdict); distributions are never invented.
+Only the four exploratory AUGRC pairs specified in spec 08 are exported.
+Composition reports group rejection rates and availability among all, kept and
+rejected items. Its Python adapter accepts optional aligned attributes, with null
+values unobserved. Difficulty uses rated, operationally eligible items for
+Spearman correlation with `1-confidence`; constant or insufficient samples and
+unusable bootstrap replicates remain explicit.
+
 `direct_verdict.answers`, `direct_verdict.samples` and `dq` default to null and
 are reserved: this component does not open them, even when configured. Keep
 external human paths in `configs/analyses_v1.local.yaml` (ignored), never in the
-published example. CQ/human, uncertainty and report extensions remain pending.
+published example. New human direct-verdict, disagreement, per-item conformal
+and saved-table report extensions remain pending. No real analysis has been run
+as part of these implementation components.
 Collapsed main tables and the predicted-scheme verdict condition are deferred
 to level 3; stage-one scheme recognition is reported separately.
 
