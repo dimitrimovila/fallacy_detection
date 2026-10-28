@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -15,6 +15,14 @@ class Bootstrap:
     seed: int
     resamples: int
     batch_size: int = 128
+    _scorers: dict = field(default_factory=dict, init=False, repr=False, compare=False)
+
+    def scorer(self, gold):
+        """Reuse vocabulary and label encodings, never per-system resample arrays."""
+        key = tuple(gold)
+        if key not in self._scorers:
+            self._scorers[key] = Scorer(gold, np.empty((0, len(gold))))
+        return self._scorers[key]
 
     def indices(self, n: int, generator: int = 1):
         """Restart the same stream for each system, without retaining B by N."""
@@ -45,7 +53,7 @@ def score_population(gold, predicted, eligible, bootstrap: Bootstrap, generator=
     A replicate with no eligible items has no metric and remains NaN.
     """
     mask = np.asarray(eligible, dtype=bool)
-    scorer = Scorer(gold, mask.astype(float)[None, :])
+    scorer = bootstrap.scorer(gold)
     observed = {
         k: float(v[0])
         for k, v in weighted_metrics(scorer, predicted, mask.astype(float)[None, :]).items()
@@ -60,6 +68,10 @@ def score_population(gold, predicted, eligible, bootstrap: Bootstrap, generator=
         for metric, value in values.items():
             spread[metric][start:stop] = value
         start = stop
+    # Retain structural encodings only. The next population owns the sole workspace.
+    scorer.weights = np.empty((0, len(gold)))
+    scorer.support = np.empty((0, len(scorer.classes)))
+    scorer.total = np.empty(0)
     return observed, spread
 
 

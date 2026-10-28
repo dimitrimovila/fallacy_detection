@@ -318,7 +318,14 @@ class diagnosis, parser integrity, stage-one recognition and their manifest.
 item-level confidence recovery and `p_label_lower_bound` provenance. CQ/historical
 human and selective-prediction outputs from frozen inputs are implemented.
 Explicit optional human inputs, saved spec-10 D+Q adapters and genuine conformal
-item interfaces are implemented; the saved-table HTML component remains pending.
+item interfaces and saved-table HTML are implemented.
+`argfallacy report summary DIR --format analysis` reads only DIR's manifest and CSVs, with explicit
+`report_format: thesis_analyses_v1`, full table schemas, row counts and hashes.
+Optional evaluation audit arguments remain evaluation-only. Missing optional
+tables require a pending reason; malformed computed tables fail. Report-only
+regeneration performs no source-data reads or statistical calculation.
+`source_conformal.csv` preserves selected saved C5 aggregates independently of
+pending exact item exports; it supplies no reconstructed sets or human-group estimates.
 An optional saved `verdicts.csv` `distribution` column
 contains a JSON terminal-to-mass mapping; only genuine distributions validated
 against the saved verdict and confidence support the margin check. Without it,

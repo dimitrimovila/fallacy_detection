@@ -179,8 +179,13 @@ def _cmd_report_cqs(args: argparse.Namespace) -> int:
 
 def _cmd_report_summary(args: argparse.Namespace) -> int:
     from .eval.html_report import write_summary
+    from .schemes import SchemeError
 
-    print(write_summary(args.evaluation, args.judge_audit, args.revised_cqs))
+    try:
+        print(write_summary(args.evaluation, args.judge_audit, args.revised_cqs,
+                            getattr(args, "format", "auto")))
+    except (SchemeError, FileNotFoundError) as error:
+        raise SystemExit(str(error)) from None
     return 0
 
 
@@ -298,6 +303,9 @@ def build_parser() -> argparse.ArgumentParser:
             summary_cmd.add_argument("evaluation", help="an evaluation output folder")
             summary_cmd.add_argument("--judge-audit", help="optional four-judge audit folder")
             summary_cmd.add_argument("--revised-cqs", help="optional revised-CQ diagnostics folder")
+            summary_cmd.add_argument("--format", choices=("auto", "analysis", "evaluation"),
+                                     default="auto",
+                                     help="saved table format (default: manifest dispatch)")
             summary_cmd.set_defaults(func=_cmd_report_summary)
 
     score = sub.add_parser("score", help="compute the metrics").add_subparsers(
@@ -323,8 +331,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    load_env()
     args = build_parser().parse_args(argv)
+    if args.func is not _cmd_report_summary:
+        load_env()
     return args.func(args)
 
 

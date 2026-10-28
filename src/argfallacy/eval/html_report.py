@@ -410,7 +410,7 @@ def cq_section(folder, suffix, version, label, read):
     return section(f"cqs-{suffix}", f"Critical questions · {version}", note, content)
 
 
-def write_summary(folder, judge_audit=None, revised_cqs=None):
+def write_summary(folder, judge_audit=None, revised_cqs=None, report_format="auto"):
     """Render existing CSV values verbatim in summary.html; fingerprint all table inputs."""
     folder = Path(folder)
     inputs = {}
@@ -424,6 +424,19 @@ def write_summary(folder, judge_audit=None, revised_cqs=None):
         return json.loads(path.read_text(encoding="utf-8"))
 
     manifest = metadata(folder / "manifest.json")
+    from .analysis_report import FORMAT, write_analysis_summary
+
+    is_analysis = manifest.get("report_format") == FORMAT
+    if report_format == "analysis" or (report_format == "auto" and is_analysis):
+        if judge_audit is not None or revised_cqs is not None:
+            from ..schemes import SchemeError
+
+            raise SchemeError("analysis reports do not accept optional evaluation audit folders")
+        return write_analysis_summary(folder)
+    if is_analysis or report_format not in ("auto", "evaluation"):
+        from ..schemes import SchemeError
+
+        raise SchemeError("report format does not match the saved manifest")
     if manifest.get("round") == 2:
         return write_round2_summary(folder)
     main = read(folder / "main_table.csv")

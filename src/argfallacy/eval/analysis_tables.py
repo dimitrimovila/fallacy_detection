@@ -72,7 +72,7 @@ def population(items, predictions, eligible, view):
     return items, predictions, mask, mask
 
 
-def identity(evaluation, system, view, items, mask):
+def identity(evaluation, system, view, items, mask, vocabulary=None):
     gold = items.loc[mask, "gold_fallacy"]
     supported = sorted(gold.unique())
     return {
@@ -81,7 +81,8 @@ def identity(evaluation, system, view, items, mask):
         "system": system.name,
         "scheme_version": system.version,
         "source_table": system.source_table,
-        "analysis_role": "new exploratory analysis" if system.source_table == "dq_verdicts.csv"
+        "analysis_role": "new exploratory analysis"
+        if system.source_table == "dq_verdicts.csv"
         else "saved-system breakdown",
         "condition": "gold",
         "space": "fine",
@@ -91,7 +92,9 @@ def identity(evaluation, system, view, items, mask):
         "n_items": int(mask.sum()),
         "n_classes": len(supported),
         "supported_classes": json.dumps(supported),
-        "excluded_classes": json.dumps(sorted(set(label_space("fine")) - set(supported))),
+        "excluded_classes": json.dumps(
+            sorted(set(label_space("fine", vocabulary)) - set(supported))
+        ),
         "small_scheme": view.kind == "scheme" and mask.sum() < 30,
         "status": "computed" if mask.any() else "undefined",
         "generator": view.generator,
@@ -114,12 +117,14 @@ def metrics_record(observed, spread, level=0.95):
     return row
 
 
-def class_rows(evaluation, system, view, items, predictions, mask):
+def class_rows(evaluation, system, view, items, predictions, mask, vocabulary=None):
     selected = items.loc[mask]
     score = score_fallacies(
-        pd.DataFrame({"item_id": selected.item_id, "predicted": predictions[mask]}), selected
+        pd.DataFrame({"item_id": selected.item_id, "predicted": predictions[mask]}),
+        selected,
+        vocabulary=vocabulary,
     )
-    metadata = identity(evaluation, system, view, items, mask)
+    metadata = identity(evaluation, system, view, items, mask, vocabulary)
     counts = pd.Series(predictions[mask], dtype=object).value_counts()
     rows = []
     for row in score.classes.to_dict("records"):
@@ -143,6 +148,7 @@ def class_rows(evaluation, system, view, items, predictions, mask):
 def main_tables(evaluations, items, bootstrap):
     rows, per_class = [], []
     all_views = views(items, corpus=True)
+    vocabulary = bootstrap.scorer(items.gold_fallacy.tolist()).vocab
     for evaluation in evaluations:
         for system in evaluation.systems.values():
             predictions = system.rows.verdict.to_numpy()
@@ -150,7 +156,7 @@ def main_tables(evaluations, items, bootstrap):
                 own, chosen, eligible, mask = population(items, predictions, system.eligible, view)
                 if view.kind == "corpus" and mask.sum() < 20:
                     continue
-                metadata = identity(evaluation, system, view, items, mask)
+                metadata = identity(evaluation, system, view, items, mask, vocabulary)
                 if system.main:
                     observed, spread = score_population(
                         own.gold_fallacy.tolist(), chosen, eligible, bootstrap, view.generator
@@ -172,12 +178,15 @@ def main_tables(evaluations, items, bootstrap):
                         }
                     )
                     del observed, spread
-                per_class.extend(class_rows(evaluation, system, view, items, predictions, mask))
+                per_class.extend(
+                    class_rows(evaluation, system, view, items, predictions, mask, vocabulary)
+                )
     return pd.DataFrame(rows), pd.DataFrame(per_class)
 
 
 def comparisons(evaluations, items, bootstrap):
     rows = []
+    vocabulary = bootstrap.scorer(items.gold_fallacy.tolist()).vocab
     for evaluation in evaluations:
         for pair in evaluation.pairs:
             left = evaluation.systems.get(pair["system"])
@@ -224,7 +233,7 @@ def comparisons(evaluations, items, bootstrap):
                 references = right.rows.verdict.to_numpy()
                 own, a, eligible, mask = population(items, predictions, common, view)
                 _, b, _, _ = population(items, references, common, view)
-                metadata = identity(evaluation, left, view, items, mask)
+                metadata = identity(evaluation, left, view, items, mask, vocabulary)
                 row.update(
                     {
                         key: metadata[key]
@@ -289,7 +298,8 @@ def comparisons(evaluations, items, bootstrap):
 
 def rare_diagnosis(evaluations, items, bootstrap):
     """Fix the <20 list on the full test set; compare C1's four common populations."""
-    classes = label_space("fine")
+    vocabulary = bootstrap.scorer(items.gold_fallacy.tolist()).vocab
+    classes = label_space("fine", vocabulary)
     support = items.gold_fallacy.value_counts()
     rare = [c for c in classes if support.get(c, 0) < 20]
     rows = []
@@ -309,11 +319,11 @@ def rare_diagnosis(evaluations, items, bootstrap):
             for view in views(items):
                 mask = common & view.mask
                 supported = [c for c in rare if ((items.gold_fallacy == c) & mask).any()]
-                per = class_rows(evaluation, system, view, items, predictions, mask)
+                per = class_rows(evaluation, system, view, items, predictions, mask, vocabulary)
                 recalls = [r["recall"] for r in per if r["class"] in supported]
                 rows.append(
                     {
-                        **identity(evaluation, system, view, items, mask),
+                        **identity(evaluation, system, view, items, mask, vocabulary),
                         "rare_definition": "gold support <20 on full frozen test",
                         "rare_classes": json.dumps(rare),
                         "supported_rare_classes": json.dumps(supported),

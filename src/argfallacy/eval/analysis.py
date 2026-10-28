@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ctypes
+import hashlib
 import json
 import os
 import subprocess
@@ -288,6 +289,72 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
         if config.direct_verdict["answers"] is not None
         else None,
     )
+    post_results = {}
+    post_status = {}
+    saved_conformal = []
+    conformal_columns = [
+        "system",
+        "kind",
+        "subset",
+        "n_items",
+        "coverage",
+        "mean_size",
+        "singleton_share",
+    ]
+    for evaluation in evaluations:
+        if evaluation.round != 2:
+            continue
+        source_conformal = evaluation.path / "conformal.csv"
+        if source_conformal.is_file():
+            frame = inputs.csv(source_conformal, conformal_columns, dtype=str)
+            for column in ("n_items", "coverage", "mean_size", "singleton_share"):
+                values = pd.to_numeric(frame.loc[frame[column].ne(""), column], errors="raise")
+                require(np.isfinite(values).all(), f"conformal.csv: invalid {column}")
+                require((values >= 0).all(), f"conformal.csv: negative {column}")
+                if column in ("coverage", "singleton_share"):
+                    require((values <= 1).all(), f"conformal.csv: invalid {column}")
+            frame["evaluation"] = evaluation.name
+            frame["scheme_version"] = [evaluation.systems[n].version for n in frame.system]
+            frame["source_table"] = "conformal.csv"
+            frame["source_sha256"] = inputs.files[source_conformal.resolve()]
+            frame["status"] = "saved aggregate only; exact item exports independent"
+            saved_conformal.append(frame)
+        for name, columns in {
+            "frequent_classes.csv": [
+                "system",
+                "schemes",
+                "n_items",
+                "n_classes",
+                "macro_f1_frequent",
+            ],
+            "frequent_classes_differences.csv": [
+                "system",
+                "reference",
+                "n_items",
+                "macro_f1_frequent_difference",
+            ],
+        }.items():
+            target_name = "post_results_" + name
+            source = evaluation.path / name
+            frame = (
+                inputs.csv(source, columns) if source.is_file() else pd.DataFrame(columns=columns)
+            )
+            frame["source_evaluation"] = evaluation.name
+            frame["source_table"] = name
+            frame["source_sha256"] = inputs.files.get(source.resolve(), "")
+            frame["analysis_role"] = "exploratory; added after the results; gold support >=10"
+            require(
+                target_name not in post_results,
+                "multiple post-results sources require distinct table identities",
+            )
+            post_results[target_name] = frame
+            post_status[target_name.removesuffix(".csv")] = {
+                "status": "computed" if len(frame) else "pending",
+                "rows": len(frame),
+                "reason": "selected saved post-results summary"
+                if len(frame)
+                else "selected source summary unavailable",
+            }
     tables = {
         "main_table.csv": main,
         "comparisons.csv": pairs,
@@ -322,6 +389,19 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
         **new_human,
         **conformal,
         **imported_dq,
+        **post_results,
+        "source_conformal.csv": pd.concat(saved_conformal, ignore_index=True)
+        if saved_conformal
+        else pd.DataFrame(
+            columns=[
+                *conformal_columns,
+                "evaluation",
+                "scheme_version",
+                "source_table",
+                "source_sha256",
+                "status",
+            ]
+        ),
     }
     parts = {
         name.removesuffix(".csv"): {"status": "computed", "rows": len(table)}
@@ -331,6 +411,9 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
     parts["cq_populations"] = cq_status
     parts["historical_human"] = human_status
     parts["conformal_sources"] = conformal_status
+    parts.update(post_status)
+    if tables["source_conformal.csv"].empty:
+        parts["source_conformal"].update(status="pending", reason="saved C5 aggregates unavailable")
     for name in (*cq, *human, *selective, *new_human, *conformal, *imported_dq):
         frame = tables[name]
         part = parts[name.removesuffix(".csv")]
@@ -375,7 +458,7 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
             "remaining_stage_two": {
                 "status": "pending",
                 "reason": (
-                    "saved-table report; exact conformal/routing sources "
+                    "exact conformal/routing sources and new human labels "
                     "remain optional pending inputs"
                 ),
             },
@@ -384,6 +467,7 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
     without = items.source.str.lower().ne("nlas").to_numpy()
     record = {
         "name": "analyses_v1",
+        "report_format": "thesis_analyses_v1",
         "configuration_version": 1,
         "configuration": yaml.safe_load(config.path.read_text(encoding="utf-8")),
         "output": str(out),
@@ -461,7 +545,9 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
                 f"output overlap through shared file: {target}",
             )
     out.mkdir(parents=True, exist_ok=True)
+    record["tables"] = {}
     for filename, frame in tables.items():
+        numeric_columns = frame.select_dtypes(include="number").columns.tolist()
         if filename in ("routing_curve.csv", "abstention_thresholds.csv"):
             frame = frame.copy()
             for column in frame.select_dtypes(include="floating"):
@@ -481,6 +567,12 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
             )
             else "%.4f",
         )
+        record["tables"][filename] = {
+            "columns": frame.columns.tolist(),
+            "numeric_columns": numeric_columns,
+            "rows": len(frame),
+            "sha256": hashlib.sha256((out / filename).read_bytes()).hexdigest(),
+        }
     record["elapsed_seconds"] = time.perf_counter() - started
     record["peak_process_memory_bytes"] = peak_memory_bytes()
     (out / "manifest.json").write_text(

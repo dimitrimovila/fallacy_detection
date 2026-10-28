@@ -1,0 +1,76 @@
+{
+  "kind": "synthetic full-pipeline resource measurement",
+  "command": "python serving/benchmark_analysis.py --workdir ../scratch/report-benchmark-complete128 --batch-size 128",
+  "workload": {
+    "items": 601,
+    "resamples": 10000,
+    "base_systems": [
+      21,
+      43
+    ],
+    "imported_dq_systems": 11,
+    "parsed_cq_rows": {
+      "full_v1": 18030,
+      "full_v2": 16155,
+      "invented_dq": 3606,
+      "invented_dq_schemes_2": 3231,
+      "invented_zeroshot_schemes_2": 0,
+      "invented_zeroshot_rerun": 0
+    },
+    "limitations": "No new human inputs, exact routing replay, genuine conformal exports, or S-soft path occurrences. Includes frozen synthetic human and difficulty ratings, five CQ entries, combined CQ vectors, all verdict system identities, four spec-10 runs and imported DQ tables. No fitting or model calls."
+  },
+  "batch_size": 128,
+  "setup_and_analysis_seconds": 7355.072820900001,
+  "report_seconds": 8.885672399999748,
+  "total_seconds": 7363.958493300001,
+  "peak_process_memory_bytes": 1048588288,
+  "peak_process_memory_mib": 1000.01171875,
+  "html_bytes": 105919803,
+  "statistical_tables": 39,
+  "timing_scope": "synthetic preparation, saved-result analysis and report; imports excluded",
+  "memory_scope": "peak process working set on Windows; process lifetime including imports",
+  "timing_context": "Parts of the run overlapped the full test suite and other validation processes; elapsed time is not an isolated timing.",
+  "additional_scope_limits": [
+    "Synthetic parsed entries use one sample each; multi-sample P7 workloads are not represented.",
+    "Imported DQ verdict/main/primary tables and parsed CQ grids are populated; other imported diagnostic tables are sparse synthetic inputs.",
+    "Conformal aggregate import is present; genuine item exports and fitted replay are excluded.",
+    "No real human answer logs, final exports or sample sheets were read."
+  ],
+  "analysis_source_snapshot": "Measured uncommitted implementation snapshot before the component commit; content hashes identify the code.",
+  "implementation_sha256": {
+    "src/argfallacy/aggregate/combiners.py": "90f7b87a7294e2b1319951914397b7e8e5a2bfccc4358271868038875a5ee59e",
+    "src/argfallacy/aggregate/soft.py": "22d12a46146c2723d05b1807bb0619a695978940f7842bcc4c372d2d843efb9b",
+    "src/argfallacy/annotations.py": "6a4f9946afaa2f8a8f0434dae9c0f0fab5efd354d5bf351aae2c257b4b560c2f",
+    "src/argfallacy/eval/analysis.py": "18748e6f08d9fe8f760ba82d7d39ffd1e9672796309c4007f2283b9a757ccaac",
+    "src/argfallacy/eval/analysis_bootstrap.py": "589f1c5380cb7444465f760e48433dacdb5d10b34e87ec97dd1b1d4ae19cb56c",
+    "src/argfallacy/eval/analysis_conformal.py": "14ab2b349bb3f7228270f08314ead104e35d4a03afe91f652cbd87dd39bb07b9",
+    "src/argfallacy/eval/analysis_cq.py": "e5422d0e111dd6f4b378be06e6ea4f777b9bfb5228026d9a0bad1b780fcace35",
+    "src/argfallacy/eval/analysis_diagnostics.py": "72e04ab9c03b731fb99340b7b0f223dc99c92dc3c17fa10fa76cae044881084a",
+    "src/argfallacy/eval/analysis_direct.py": "e75bb521257d6e5679ed35f887d2094333f5f6b1be915172c0750599e7e812d6",
+    "src/argfallacy/eval/analysis_dq.py": "27e284f04835ef82ea9eaf2e816413076097b30ff61f442dc201b1a476d75ba1",
+    "src/argfallacy/eval/analysis_human.py": "80207e63c72a33af3a9f467a3c28eb199d6935f0aab17fc41631aec57438c776",
+    "src/argfallacy/eval/analysis_inputs.py": "61aca1599c9c50fa842b31770dc8f8ebebc38e5f1d5a621b6e9aa06fbbf06442",
+    "src/argfallacy/eval/analysis_report.py": "8e3e41b6c392044c8b9744551d8eb6dad228a1560761009b6696ab339b4ca53c",
+    "src/argfallacy/eval/analysis_routing.py": "ec0c4d484af3eded4426d54cb4b7f1f1a72be29d5ca4a646a444f7e7434a6627",
+    "src/argfallacy/eval/analysis_selective.py": "91e3d17e7382e6c750dc762996d27d569395334044abc859a171499828a25fff",
+    "src/argfallacy/eval/analysis_tables.py": "36a1b71ac9f23b8edba6e2e1808b3337615a56719906f8aa75b2106d2ca28d4b",
+    "src/argfallacy/eval/c1.py": "32a69f9f8a0c978914923cdcfa9314e2eb733b767ae83d345609da74f5f9e906",
+    "src/argfallacy/eval/canonical.py": "d74945846c80b5b0eb3d42261fea37d84c08e345c102edfcde10782b25bef8b7",
+    "src/argfallacy/eval/cq.py": "1dc200532bfd7080768c73d677a600fbcdb41e81fb32a8c3a277eb36a0de8f83",
+    "src/argfallacy/eval/evaluate.py": "327c3e1b50d8c516fcf17acb1f0595e0ec212ce3ed22a55e4e85649f3bdf5ab2",
+    "src/argfallacy/eval/folds.py": "520767105cf08effc18829a67cf0664a8bdeeb008bbf622ea3d85937cbf42234",
+    "src/argfallacy/eval/metrics.py": "315f9b5a4603d8fe60e8bea2ff7b5674a01819409731623cad7bd9ce01476b1f",
+    "src/argfallacy/eval/routing.py": "583c4023480bb1d16403626a4cc25be24b1472e0a141852687dcd03cda19417c",
+    "src/argfallacy/eval/uncertainty.py": "4e73ab408ec9d202fc6a392106219b4fe51826ed157e35dcb903c2b08fa3653e"
+  },
+  "software_versions": {
+    "argfallacy": "0.1.0",
+    "numpy": "2.4.4",
+    "pandas": "3.0.2",
+    "scikit-learn": "1.9.0",
+    "scipy": "1.17.1"
+  },
+  "python_version": "3.13.12 (tags/v3.13.12:1cbe481, Feb  3 2026, 18:22:25) [MSC v.1944 64 bit (AMD64)]",
+  "batch_invariance": "End-to-end invented optional-input scenarios compare all CSV scalar values across batches; separate 601-item/10000-draw checks compare stream fingerprints and scalar intervals at batches 64 and 128.",
+  "default_batch_size_decision": "Keep 128; the measured full pipeline fits the 8 GB local target. This is not evidence that fitted replay fits locally."
+}

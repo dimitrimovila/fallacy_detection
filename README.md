@@ -539,6 +539,7 @@ test set the command takes about ten minutes on a laptop, most of it in C3.
 
 ```bash
 argfallacy analyze configs/analyses_v1.yaml  # evaluations/analyses_v1/
+argfallacy report summary evaluations/analyses_v1 --format analysis
 ```
 
 This independent, version-1 configuration reads saved out-of-fold predictions
@@ -666,6 +667,9 @@ the original round-two m=4 and round-one m=5 families. New AUGRC pairs are still
 restricted to the exact four above. Rounded D+Q routing curves/choices cannot
 supply exact per-item decisions; new replay-dependent results stay pending.
 
+`source_conformal.csv` preserves the existing saved C5 aggregate summaries,
+versions and source hashes even when exact per-item inputs are unavailable. It
+does not reconstruct sets or add human-disagreement estimates.
 `conformal_items.csv` contains genuine C5 sets, folds, terminal ids, sizes, gold
 inclusion and full-precision calibration thresholds. Only systems selected by
 the saved C5 calculation qualify. Genuine saved `distribution` columns or an
@@ -685,7 +689,117 @@ for a later analysis. `analyze` never initiates fitting, deterministic replay or
 exports; any fitted replay needs its own explicit run, dependency audit and
 separate resource measurements. Source commit metadata that is absent stays
 unavailable. No real analysis or replay has been run as implementation validation.
-The saved-table HTML report remains a separate pending component.
+`argfallacy report summary DIR --format analysis` regenerates `DIR/summary.html`
+from that directory's statistical CSVs and manifest only. Automatic dispatch uses
+`manifest.report_format: thesis_analyses_v1`; `--format evaluation` retains the
+existing round-one/round-two renderer and its optional audit arguments. Analysis
+reports reject evaluation audit arguments. They do not load `.env`, run analysis,
+score predictions, fit systems, parse runs or read source annotations. Required
+columns, numeric values, row counts and SHA-256 fingerprints are checked against
+the saved table contracts. A missing optional table is pending only with an explicit
+manifest reason. Table search and pagination work offline; the CSV links and full
+source manifest preserve every row and denominator. HTML regeneration leaves the
+statistical CSVs unchanged. Existing conformal aggregates remain visible beside
+independently pending exact sets. Selected saved frequent-class summaries are imported
+as post-results exploratory tables; the `<20` rare-class diagnosis remains distinct
+from the `>=10` frequent-class cutoff. No substitution simulations are repeated.
+
+### CPU post-processing and replay readiness
+
+The three operations have distinct commands and resource scopes:
+
+```powershell
+# Saved-result analysis: no fitting; direct_verdict paths remain null.
+python serving/postprocess.py --site local --environment current-python --mode analysis --input configs/analyses_v1.yaml --output evaluations/analyses_v1
+# Report only: no external source content is opened.
+python serving/postprocess.py --site local --environment current-python --mode report --input evaluations/analyses_v1 --output evaluations/analyses_v1/summary.html
+# Readiness only: validates inputs for a separate fitted replay, without fitting.
+python serving/postprocess.py --site local --environment current-python --mode replay --input configs/analyses_v1.yaml --output evaluations/analysis_replay --evaluation round2 --check-only
+# Explicit heavy replay: run manually only after readiness and resource review.
+python serving/postprocess.py --site local --environment current-python --mode replay --input configs/analyses_v1.yaml --output evaluations/analysis_replay --evaluation round2
+```
+
+Replay reconstructs only primary C2 and the primary C1 conformal companion. It
+uses the selected source's original folds and grids, requires complete genuine
+zero-shot `p_label`, and verifies saved predictions before accepting exports.
+It never invokes a full evaluation. It profiles fitting separately and writes to
+a new directory. Other C5 systems are outside this replay command and remain
+pending unless they already have genuine saved distributions or companion exports.
+If `p_label` is unavailable, recover the parsed source on the machine holding its
+raw run before replay; rounded routing curves cannot repair it. Never overwrite
+the selected evaluation or replace frozen predictions to obtain agreement.
+
+For an analysis after a verified replay, copy `configs/analyses_v1.yaml` to an
+ignored `configs/analyses_replay.local.yaml`, set the round-two `routing_records`
+to the returned `routing/routing_records.csv`, `conformal_records` to the returned
+`conformal/` directory, and choose a different analysis output root. Keep both
+direct-human paths null. External human input has a separate, explicitly opted-in
+local configuration; D+Q can be enabled independently with `dq: ../evaluations/round2`
+or disabled with `dq: null`. Do not mix the recomputed or separate aggregator directories.
+
+`serving/slurm/postprocess.sbatch` takes explicit site, Python executable,
+environment identity, repository, mode, input and output arguments. It requests no
+GPU, starts no server, sources no serving configuration and has no site defaults.
+The following is a manual deployment template; all bracketed values are unresolved:
+
+```bash
+sbatch --partition='<CPU_PARTITION>' --account='<ACCOUNT>' --cpus-per-task='<CPUS>' \
+  --mem='<MEMORY>' --time='<TIME>' serving/slurm/postprocess.sbatch \
+  '<SITE>' '<ABSOLUTE_CPU_PYTHON>' '<ENVIRONMENT_ID>' '<ABSOLUTE_REPO>' \
+  replay '<ABSOLUTE_ANALYSIS_CONFIG>' '<NEW_ABSOLUTE_REPLAY_OUTPUT>' --evaluation round2
+# Use mode analysis with a separate output root, or mode report with INPUT/summary.html.
+```
+
+Transfer the committed code and dependencies, the chosen saved evaluations and
+their manifests/CSV tables, frozen `data/items.csv` and `data/annotations.csv`,
+scheme/label/burden files, and only the configured parsed run manifests and
+`summary.csv`, `answers.csv` and `ssoft.csv` where used. Preserve hashes and
+config-relative layout, or update the local configuration explicitly. Analysis
+and report need no raw responses, model weights, new human logs, exports or sample
+sheets. A replay blocked by missing parsed probabilities needs a separately
+verified parsed export first. Mathematics is a deployment option, not a verified
+account/location; the saved spec-10 runs used UPSCALE. The template supplies neither
+site's credentials, paths or partitions. No cluster invocation is made here.
+
+### Reproducing the full synthetic resource measurement
+
+```powershell
+python serving/benchmark_analysis.py --workdir ../scratch/report-benchmark-128 --batch-size 128
+# Optional second full profile, against exactly the same invented source exports:
+python serving/benchmark_analysis.py --workdir ../scratch/report-benchmark-64 --batch-size 64 --compare ../scratch/report-benchmark-128
+```
+
+Use new directories for each invocation. Both fresh processes use 601 invented
+items, all eight schemes, 10,000 resamples, 21 round-one and 43 round-two verdict
+systems, eleven imported D+Q/control/routing systems, five-model CQ grids, combined
+CQ vectors and synthetic historical human/difficulty ratings. They run the actual
+saved-result pipeline and the saved-table report, then compare statistical values
+exactly after excluding only source hashes/row provenance. The second process
+copies the same frozen invented inputs and changes only the batch boundary.
+`benchmark.json`
+records stage times, peak process memory, workload counts and limitations. It does
+not cover fitting/replay, real external humans, S-soft path occurrences or genuine
+conformal exports. The default remains batch size 128. A bootstrap-only profile
+does not establish the full pipeline's resource use, and synthetic analysis memory
+does not establish that fitted replay fits locally.
+
+Acceptance checks compare every saved scalar estimate and interval across batch
+boundaries on complete invented end-to-end cases, including optional humans,
+D+Q and conformal sets. A separate 601-item, 10,000-resample check compares shared
+draw fingerprints and scalar intervals at batch sizes 64 and 128, including omitted
+subgroup replicates and the 95%, 98.75% and 99% levels. This draw/score check is not
+the full-pipeline memory measurement.
+
+The recorded full profile is in [docs/analysis_resources.json](docs/analysis_resources.json):
+7,355.07 seconds for synthetic preparation and saved-result analysis, 8.89 seconds
+for HTML, 7,363.96 seconds overall, and a peak Windows working set of 1,000.01 MiB.
+It produced 39 CSV tables and a 105,919,803-byte self-contained report. Timing
+excludes module imports and overlaps other validation work during part of the run;
+peak memory includes the process lifetime. The synthetic parsed entries have one
+sample each, and imported D+Q diagnostic summaries are sparse; the record names
+these limits, source-code hashes and software versions. Actual-source analysis
+and fitted replay require their own measurements. Batch size 128 is retained.
+
 Collapsed main tables and the predicted-scheme verdict condition are deferred
 to level 3; stage-one scheme recognition is reported separately.
 
