@@ -439,25 +439,49 @@ def _pairs(reference: str, systems: Mapping[str, System]) -> list[tuple[str, str
 def evaluate_round2(config: EvaluationConfig, runs_dir: str | Path,
                     out_root: str | Path = EVALUATIONS_DIR, items_path: str | Path = ITEMS_FILE,
                     annotations_path: str | Path = ANNOTATIONS_FILE,
-                    progress: Callable[[str], None] | None = None) -> Path:
+                    progress: Callable[[str], None] | None = None,
+                    conformal_export_dir: str | Path | None = None) -> Path:
     """Write round two, release its fitted models, then compute the separate D+Q part."""
     import gc
+    import time
 
+    calculation_started = time.perf_counter()
+    if conformal_export_dir is not None:
+        from .analysis_inputs import overlaps, require
+
+        target = Path(conformal_export_dir).resolve()
+        require(not target.exists(), "conformal export directory already exists")
+        protected = [Path(out_root) / config.name, Path(runs_dir), Path(items_path),
+                     Path(annotations_path)]
+        require(not any(overlaps(target, p.resolve()) for p in protected),
+                "conformal export overlap with evaluation inputs or output")
+
+    capture = {} if conformal_export_dir is not None else None
+    extra = {"conformal_capture": capture} if capture is not None else {}
     out, items, folds, indices, without_indices, labels = _round2_tables(
-        config, runs_dir, out_root, items_path, annotations_path, progress)
+        config, runs_dir, out_root, items_path, annotations_path, progress, **extra)
     gc.collect()
     from .dq import evaluate_dq
     from .html_report import write_summary
 
     evaluate_dq(config, runs_dir, out, items, folds, indices, without_indices, labels=labels,
                 progress=progress)
+    if capture is not None:
+        from .analysis import peak_memory_bytes
+        from .analysis_conformal import export_calculated_conformal
+
+        export_calculated_conformal(config, runs_dir, out, items, capture,
+                                    conformal_export_dir, [items_path, annotations_path],
+                                    {"elapsed_seconds": time.perf_counter() - calculation_started,
+                                     "peak_process_memory_bytes": peak_memory_bytes()})
     write_summary(out)
     return out
 
 
 def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
                    out_root: str | Path, items_path: str | Path,
-                   annotations_path: str | Path, progress: Callable[[str], None] | None):
+                   annotations_path: str | Path, progress: Callable[[str], None] | None,
+                   conformal_capture=None):
     """Compute round 2 and write it into ``out_root/<name>/``."""
     say = progress or (lambda message: None)
     runs_dir = Path(runs_dir)
@@ -892,6 +916,8 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
                                        {"gold origin": origin, "scheme": scheme_of})
         choices += [{"fold": f, "component": f"conformal {name}", "scheme": "",
                      "parameter": "threshold", "value": q} for f, q in thresholds.items()]
+    if conformal_capture is not None:
+        conformal_capture.update({n: systems[n].aggregations for n in distributions})
 
     # output
     say("writing")

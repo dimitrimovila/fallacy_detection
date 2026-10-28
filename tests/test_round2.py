@@ -300,8 +300,13 @@ def test_the_configuration_of_round_2():
     for key in ("ssoft", "ssoft_nohistory"):
         assert isinstance(config.runs[key], list)
         assert all(isinstance(run, str) and run for run in config.runs[key])
-    for key in ("zeroshot_schemes_2", "zeroshot_rerun", "dq", "dq_schemes_2"):
-        assert config.runs[key] == []
+    assert {key: config.runs[key] for key in
+            ("zeroshot_schemes_2", "zeroshot_rerun", "dq", "dq_schemes_2")} == {
+        "zeroshot_schemes_2": ["20261026T101601Z_zeroshot_schemes_v2"],
+        "zeroshot_rerun": ["20261026T101601Z_zeroshot_rerun"],
+        "dq": ["20261026T101601Z_dq_full_v2"],
+        "dq_schemes_2": ["20261026T101601Z_dq_full_v3"],
+    }
     assert (config.name, config.reference_model, config.seed, config.resamples, config.folds,
             config.m) == ("round2", "qwen3_8_27b", 20261019, 10000, 5, 4)
     assert len(config.cq_label_exclusion) == 3
@@ -310,11 +315,35 @@ def test_the_configuration_of_round_2():
 
 @pytest.fixture(scope="module")
 def round2(tmp_path_factory):
+    from argfallacy.eval.round2 import evaluate_round2
+
     root = tmp_path_factory.mktemp("round2")
     hand = write_runs(root, {"analogy": 10, "example": 5})
-    out = evaluate(hand["config"], hand["runs"], hand["out"], hand["items"],
-                   hand["annotations"])
+    out = evaluate_round2(hand["config"], hand["runs"], hand["out"], hand["items"],
+                          hand["annotations"], conformal_export_dir=root / "exact_conformal")
     return hand, out
+
+
+def test_opt_in_conformal_companion_uses_actual_c5_sets(round2):
+    from types import SimpleNamespace
+
+    from argfallacy.eval.analysis_conformal import conformal_tables
+    from argfallacy.eval.analysis_inputs import Inputs, read_evaluation, scheme_registry
+
+    hand, out = round2
+    items = pd.read_csv(hand["items"]).sort_values("item_id").reset_index(drop=True)
+    items = items[items.in_test_set].reset_index(drop=True)
+    inputs = Inputs()
+    registry = scheme_registry(inputs)
+    source = dict(path=out, round=2, populations={},
+                  conformal_records=out.parent.parent / "exact_conformal")
+    evaluation = read_evaluation("round2", source, hand["config"], items, registry, inputs)
+    tables, status = conformal_tables(SimpleNamespace(evaluations={"round2": source}),
+        [evaluation], items, registry, None, inputs)
+    saved = pd.read_csv(out / "conformal.csv")
+    assert set(tables["conformal_items.csv"].system) == set(saved.system)
+    assert tables["conformal_items.csv"].shape[0] == len(items) * saved.system.nunique()
+    assert all(row["status"] == "computed" for row in status.values())
 
 
 def test_without_ssoft_runs_c4_is_missing_and_the_rest_is_computed(round2):

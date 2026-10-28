@@ -232,8 +232,8 @@ def test_outputs_denominators_pairing_gates_provenance_and_no_optional_reads(sav
 
     monkeypatch.setattr(LogisticRegression, "fit", no_fit)
     path, config, items = saved
-    config["direct_verdict"] = {"answers": "forbidden.csv", "samples": "forbidden_samples.csv"}
-    config["dq"] = "forbidden_dq.csv"
+    config["direct_verdict"] = {"answers": None, "samples": None}
+    config["dq"] = None
     path.write_text(yaml.safe_dump(config), encoding="utf-8")
     original = Path.open
 

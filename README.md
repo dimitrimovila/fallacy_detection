@@ -616,12 +616,76 @@ values unobserved. Difficulty uses rated, operationally eligible items for
 Spearman correlation with `1-confidence`; constant or insufficient samples and
 unusable bootstrap replicates remain explicit.
 
-`direct_verdict.answers`, `direct_verdict.samples` and `dq` default to null and
-are reserved: this component does not open them, even when configured. Keep
-external human paths in `configs/analyses_v1.local.yaml` (ignored), never in the
-published example. New human direct-verdict, disagreement, per-item conformal
-and saved-table report extensions remain pending. No real analysis has been run
-as part of these implementation components.
+`direct_verdict.answers` and `direct_verdict.samples` default to null. Both null
+means pending with no human file reads; supplying only one is an error. Keep
+external human paths in `configs/analyses_v1.local.yaml` (ignored). The reader
+accepts the unchanged app CSV, including an explicitly selected final export
+whose revisions start above zero. It selects the greatest revision, breaking
+equal revisions by physical row order, and rejects conflicting repeats of any
+revision. It validates timezone-aware timestamps, positions, sample membership,
+gold schemes and canonical terminal ids in the item's 1.1 menu. The sample CSV
+uses the existing `direct` identifier; CQ rows need no direct positions or rounds.
+Partial samples, incomplete rounds and zero answers are accepted. The manifest
+reports planned, answered and missing counts, round completeness, scheme/origin
+counts and whether 200 answers have been reached.
+
+`human_direct.csv` keeps direct-versus-gold disagreement separate from human paths
+and historical raters, includes paired direct/path scores against gold, and scores
+available systems against the direct human verdict as a second reference. It never
+replaces gold in primary tables or supplies labels to fitted systems.
+`uncertainty_disagreement.csv` reports confidence by observed agreement group,
+AUROC of `1-confidence` (half credit for ties), and disagreement prevalence among
+all, kept and rejected observed items. Selection ranks the global eligible system
+population before intersecting human observations or origins, on the shared whole-
+test item draws. Empty groups, single-class AUROC and unusable replicates stay
+undefined. `abstention_composition.csv` adds the human attribute with explicit
+known/missing denominators. These are associations with observed disagreement.
+
+`dq` is an optional source evaluation directory containing `manifest.json` and
+the dedicated `dq_*.csv` tables. The example selects `../evaluations/round2`;
+`dq: null` skips dedicated D+Q tables and their parsed runs. The directory must
+match an explicitly selected round-two source; no other evaluation is scanned or
+pooled, including `round2_recomputed_spec10_20261026`. The four registered full
+runs currently contain Qwen outputs; pilots and configured model lists add no
+test populations. Exact `manifest.dq` mappings keep declared DQ, DQ.path, DQ.soft,
+the version-2.0 zero-shot, the same-server rerun and exploratory C2 families
+distinct. Parsed verdicts must agree before recovering `p_label` and its lower-
+bound flag; path/soft/routing confidence is retained. Compatible 1.1 parsed D+Q
+CQs enter the existing item-clustered diagnostics; 2.0 human targets remain pending.
+
+The analysis imports the fourteen source tables under their original names:
+`dq_verdicts.csv`, `dq_main_table.csv`, `dq_deciding.csv`,
+`dq_deciding_breakdowns.csv`, `dq_exploratory.csv`, `dq_consistency.csv`,
+`dq_departures.csv`, `dq_cq_level.csv`, `dq_cq_changes.csv`, `dq_replication.csv`,
+`dq_abstention.csv`, `dq_abstention_curves.csv`, `dq_routing_curve.csv` and
+`dq_choices.csv`. Their source values and rounding are preserved, with source
+evaluation/table/hash/row keys. Imported abstention summaries remain separate
+from new analysis curves. New breakdowns from saved predictions are exploratory.
+H_DQ retains its own m=1 family at 95%, its same-server robustness reading and
+the original round-two m=4 and round-one m=5 families. New AUGRC pairs are still
+restricted to the exact four above. Rounded D+Q routing curves/choices cannot
+supply exact per-item decisions; new replay-dependent results stay pending.
+
+`conformal_items.csv` contains genuine C5 sets, folds, terminal ids, sizes, gold
+inclusion and full-precision calibration thresholds. Only systems selected by
+the saved C5 calculation qualify. Genuine saved `distribution` columns or an
+explicit source `conformal_records` directory can supply them. `conformal.csv`
+is recomputed from those sets and checked against saved aggregates at their
+serialization precision; human agreement groups are added only with explicit
+human inputs. Rounded source aggregates and `round2_choices.csv` are insufficient.
+Missing exact sources leave these tables pending without blocking other tables.
+
+The opt-in Python API `analysis_conformal.export_conformal` accepts already
+calculated genuine aggregations and exports them to a new, separate directory.
+`round2.evaluate_round2(..., conformal_export_dir=DIR)` provides a companion hook
+on the existing C5 calculation, with unchanged folds, alpha and terminal rules.
+It verifies saved predictions and aggregates and records hashes and resource
+measurements. Configure that directory as `evaluations.<identity>.conformal_records`
+for a later analysis. `analyze` never initiates fitting, deterministic replay or
+exports; any fitted replay needs its own explicit run, dependency audit and
+separate resource measurements. Source commit metadata that is absent stays
+unavailable. No real analysis or replay has been run as implementation validation.
+The saved-table HTML report remains a separate pending component.
 Collapsed main tables and the predicted-scheme verdict condition are deferred
 to level 3; stage-one scheme recognition is reported separately.
 

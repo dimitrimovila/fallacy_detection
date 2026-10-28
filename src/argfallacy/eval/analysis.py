@@ -18,7 +18,10 @@ import yaml
 
 from ..paths import REPO_ROOT
 from .analysis_bootstrap import Bootstrap
+from .analysis_conformal import conformal_tables
 from .analysis_diagnostics import integrity, stage_one
+from .analysis_direct import direct_tables, read_direct
+from .analysis_dq import integrate_dq
 from .analysis_human import human_tables, read_frozen_annotations
 from .analysis_inputs import (
     AnalysisConfig,
@@ -99,7 +102,7 @@ def _json(value):
 
 
 def analyze(config: AnalysisConfig, out_root=None, progress=None):
-    """Write only to the analysis root. Optional human/D+Q paths are never opened."""
+    """Write saved-system analyses to a separate root, without inference or fitting."""
     started = time.perf_counter()
     out = Path(out_root).resolve() if out_root is not None else config.output
     config.guard_output(out)
@@ -129,9 +132,21 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
         read_evaluation(name, source, config, items, registry, inputs)
         for name, source in config.evaluations.items()
     ]
+    imported_dq, dq_status = integrate_dq(config, evaluations, items, registry, inputs)
+    from ..schemes import load_all
+
+    direct, direct_status = read_direct(config, items, load_all(registry["1.1"]), inputs)
     bootstrap = Bootstrap(config.seed, config.resamples, config.bootstrap_batch_size)
     run_records, integrity_rows, stage_rows = {}, [], []
     for run_id, path in config.parsed_runs.items():
+        dedicated = {
+            r
+            for e in evaluations
+            for names in e.manifest.get("dq", {}).get("runs", {}).values()
+            for r in names
+        }
+        if config.dq is None and run_id in dedicated:
+            continue
         say(f"reading parsed run {run_id}")
         manifest, scheme_version, summary = read_run(path, run_id, items, registry, inputs)
         for evaluation in evaluations:
@@ -176,6 +191,8 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
             if run_id in referenced:
                 integrity_rows.extend({"evaluation": evaluation.name, **row} for row in diagnostics)
                 stage_rows.extend({"evaluation": evaluation.name, **row} for row in recognition)
+            elif config.dq is not None and evaluation.path == config.dq and run_id in dedicated:
+                integrity_rows.extend({"evaluation": evaluation.name, **row} for row in diagnostics)
         del summary
     confidence, systems_record = [], {}
     for evaluation in evaluations:
@@ -186,6 +203,8 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
             corpus_counts = items.loc[system.eligible, "source"].value_counts()
             systems_record[evaluation.name][system.name] = {
                 "scheme_version": system.version,
+                "source_table": system.source_table,
+                "source_provenance": system.source_provenance,
                 "eligible_item_ids": own.index.tolist(),
                 "n_items": len(own),
                 "missing_verdicts": missing,
@@ -202,6 +221,7 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
                         "evaluation": evaluation.name,
                         "system": system.name,
                         "scheme_version": system.version,
+                        "source_table": system.source_table,
                         "item_id": item,
                         "verdict": row.verdict,
                         "confidence": row.confidence,
@@ -239,16 +259,34 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
     routing, routing_status = routing_tables(config, evaluations, items, bootstrap, inputs)
     say("frozen CQ and historical human tables")
     annotations = read_frozen_annotations(config, inputs)
-    from ..schemes import load_all
     from .analysis_cq import cq_tables
 
     cq, cq_status = cq_tables(config, evaluations, items, registry, annotations, bootstrap, inputs)
     human, human_status = human_tables(
         annotations, evaluations, items, load_all(registry["1.1"]), bootstrap
     )
+    new_human = direct_tables(
+        direct, annotations, evaluations, items, load_all(registry["1.1"]), bootstrap
+    )
+    disagreement = new_human.pop("human_disagreement")
+    conformal, conformal_status = conformal_tables(
+        config,
+        evaluations,
+        items,
+        registry,
+        direct if config.direct_verdict["answers"] is not None else None,
+        inputs,
+    )
     say("selective prediction on saved confidence; sequential systems")
     selective = selective_tables(
-        evaluations, items, bootstrap, difficulty_ratings(annotations, items), registry
+        evaluations,
+        items,
+        bootstrap,
+        difficulty_ratings(annotations, items),
+        registry,
+        {"human disagreement": disagreement}
+        if config.direct_verdict["answers"] is not None
+        else None,
     )
     tables = {
         "main_table.csv": main,
@@ -281,6 +319,9 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
         **cq,
         **human,
         **selective,
+        **new_human,
+        **conformal,
+        **imported_dq,
     }
     parts = {
         name.removesuffix(".csv"): {"status": "computed", "rows": len(table)}
@@ -289,7 +330,8 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
     parts["routing_curve"] = routing_status
     parts["cq_populations"] = cq_status
     parts["historical_human"] = human_status
-    for name in (*cq, *human, *selective):
+    parts["conformal_sources"] = conformal_status
+    for name in (*cq, *human, *selective, *new_human, *conformal, *imported_dq):
         frame = tables[name]
         part = parts[name.removesuffix(".csv")]
         if frame.empty:
@@ -313,13 +355,11 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
     parts.update(
         {
             "direct_verdict": {
-                "status": "pending",
-                "reason": "reserved inputs; not opened by this component",
+                **direct_status,
                 "configured": {k: str(v) if v else None for k, v in config.direct_verdict.items()},
             },
             "dq": {
-                "status": "pending",
-                "reason": "reserved adapter; not opened by this component",
+                **dq_status,
                 "configured": str(config.dq) if config.dq else None,
             },
             "collapsed": {
@@ -335,8 +375,8 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
             "remaining_stage_two": {
                 "status": "pending",
                 "reason": (
-                    "new human direct verdict, disagreement, conformal item export "
-                    "and saved-table report"
+                    "saved-table report; exact conformal/routing sources "
+                    "remain optional pending inputs"
                 ),
             },
         }
@@ -432,7 +472,13 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
             index=False,
             lineterminator="\n",
             float_format=None
-            if filename in ("confidence.csv", "routing_curve.csv", "abstention_thresholds.csv")
+            if filename
+            in (
+                "confidence.csv",
+                "routing_curve.csv",
+                "abstention_thresholds.csv",
+                "conformal_items.csv",
+            )
             else "%.4f",
         )
     record["elapsed_seconds"] = time.perf_counter() - started

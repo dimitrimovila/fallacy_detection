@@ -330,10 +330,7 @@ def test_complete_offline_command_writes_new_tables_and_never_opens_reserved_inp
     annotations = notes_for(items, load_all())
     annotations.to_csv(path.parent / "frozen.csv", index=False)
     config["annotations"] = "frozen.csv"
-    config["direct_verdict"] = {
-        "answers": "forbidden_final.csv",
-        "samples": "forbidden_samples.csv",
-    }
+    config["direct_verdict"] = {"answers": None, "samples": None}
     path.write_text(yaml.safe_dump(config), encoding="utf-8")
     original = Path.open
 

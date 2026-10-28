@@ -298,9 +298,9 @@ new human annotations are opened. New annotations enter no fitted primary system
 
 The first implementation component uses an independent configuration contract
 (`version: 1`): `items`, `output`, `evaluations` (identity mapped to `path`,
-`round`, optional `populations` and `routing_records`), `parsed_runs` (run id
+`round`, optional `populations`, `routing_records` and `conformal_records`), `parsed_runs` (run id
 mapped to directory), `seed`, `resamples`, `bootstrap_batch_size`, and the
-reserved optional inputs above. The optional `annotations` path (null by default)
+optional inputs above. The optional `annotations` path (null by default)
 names the existing frozen 1.1 CQ/verdict/difficulty table; it does not open new
 direct-verdict answers, final exports or sample files. Every configured path
 resolves relative to the configuration file directory. `--out DIR` is an explicit alternate output root,
@@ -315,11 +315,11 @@ Absent rows do not implicitly define eligibility.
 This component supplies the main and comparison breakdowns, per-class and rare-
 class diagnosis, parser integrity, stage-one recognition and their manifest.
 `rare_classes.csv` holds the fixed C1 diagnosis; `confidence.csv` preserves
-item-level confidence recovery and `p_label_lower_bound` provenance. Reserved
-human and D+Q fields are validated as configuration paths but never opened here.
-The next component supplies CQ/human and selective-prediction outputs from frozen
-inputs. Later components supply new-human/disagreement, per-item conformal and
-saved-table HTML outputs. An optional saved `verdicts.csv` `distribution` column
+item-level confidence recovery and `p_label_lower_bound` provenance. CQ/historical
+human and selective-prediction outputs from frozen inputs are implemented.
+Explicit optional human inputs, saved spec-10 D+Q adapters and genuine conformal
+item interfaces are implemented; the saved-table HTML component remains pending.
+An optional saved `verdicts.csv` `distribution` column
 contains a JSON terminal-to-mass mapping; only genuine distributions validated
 against the saved verdict and confidence support the margin check. Without it,
 that check remains pending and no distribution is reconstructed from a label.
@@ -400,7 +400,7 @@ Keep difficulty levels 1 to 5, validate one unambiguous rating per item, and rep
 Spearman correlation of difficulty with `1 - confidence`, with an item-bootstrap
 interval, on rated items only. Constant inputs give an undefined correlation.
 
-**Future human input and D+Q.** Accept the app CSV unchanged:
+**Optional human input and saved D+Q.** Accept the app CSV unchanged:
 `item_id,position,verdict,answered_at,revision`, including `_final.csv`. Select the
 greatest revision per item, and the last physical row on equal revisions; repeated
 equal revisions must have the same verdict. Validate nonnegative integer revisions,
@@ -433,9 +433,47 @@ evaluation calculation to the new analysis directory; do not fabricate distribut
 from a chosen verdict or summary. If deterministic replay of a fitted system is
 unavoidable, separate it from bootstrap work, preserve its folds and settings,
 verify predictions against the saved evaluation, and record replay provenance.
-D+Q adapters are prepared with synthetic normalized inputs; actual run reading
-requires the format and version contract of spec 10. Until then D+Q stays pending.
-Keep the declared verdict and the CQ-derived diagram verdict as distinct systems.
+D+Q uses the saved spec-10 format and exact `manifest.dq` source mappings. The
+optional `dq` path names the same explicitly selected round-two evaluation
+directory, containing its manifest and dedicated `dq_*.csv` tables; the example
+selects `../evaluations/round2`. A null path disables dedicated reads. The four
+registered full runs supply only observed Qwen outputs, regardless of configured
+model lists. No directory discovery, pilot pooling or mixing with a recomputed
+evaluation is allowed. Declared verdict, hard path, soft traversal, version-matched
+zero-shot, same-server rerun and exploratory routing families stay distinct.
+They enter compatible existing breakdowns on their declared populations, with
+parsed verdict agreement checked before confidence recovery. No declared-verdict
+confidence is substituted for path, soft or routing confidence. S-soft keeps its
+dedicated path-occurrence file. Compatible D+Q 1.1 CQ diagnostics use existing
+targets; rewritten 2.0 targets stay unavailable.
+
+The fourteen dedicated source tables retain their `dq_` names in the analysis
+output, with source evaluation/table/hash/row keys and their original values and
+rounding: verdicts, main table, deciding, deciding breakdowns, exploratory,
+consistency, departures, CQ level, CQ changes, replication, abstention, abstention
+curves, routing curve and choices. Imported abstention summaries are distinct
+from new analysis curves. H_DQ remains m=1 at 95%, with its same-server robustness
+reading; original deciding families stay m=4 and m=5. New breakdowns are
+exploratory. Rounded routing summaries are imported but cannot supply new exact
+per-item routing decisions; these require a separate validated export.
+
+Both direct-human paths null means pending with no human file reads; one alone
+is an error. Configured malformed files fail. Explicit final exports need no
+preceding log rows. Equal-revision conflicts are checked even in older rows,
+without timestamp ordering. Planned and answered scheme/origin counts, complete
+and partial rounds and attainment of 200 answers are recorded. Global eligible
+rankings precede intersection with observed humans, also within bootstrap draws.
+
+Genuine C5 sources are saved distributions or an explicit `conformal_records`
+companion directory, never labels converted to one-hot masses. The opt-in
+`analysis_conformal.export_conformal` API and the existing round-two calculation's
+`conformal_export_dir` argument export exact sets and distributions separately,
+verifying saved predictions and source aggregates. Their manifest records source
+and dependency hashes, folds/settings and resource measurements. `analyze` only
+reads and validates them; it does not initiate fitted replay. Absent exact inputs
+leave conformal outputs pending without blocking lighter tables. Source commit
+metadata remains unavailable when absent. No real analysis or replay is part of
+implementation validation.
 
 **Other thesis outputs.** Export per-class precision, recall, F1, gold support and
 prediction counts, including Good Argumentation and unsupported classes. For the

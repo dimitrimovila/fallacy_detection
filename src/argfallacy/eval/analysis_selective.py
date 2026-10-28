@@ -18,6 +18,7 @@ from .uncertainty import (
     LEVELS,
     _cut,
     effective_thresholds,
+    saved_ranking,
     selective_bootstrap,
 )
 
@@ -108,7 +109,7 @@ def difficulty_correlation(difficulty, confidence, eligible, bootstrap):
     }
 
 
-def composition_rows(items, order, attributes=None):
+def composition_rows(items, order, attributes=None, selection_mask=None, include_base=True):
     """Optional attributes are aligned arrays; nulls are unobserved, never negatives."""
     origin = items.source.str.lower().map(ORIGINS).to_numpy()
     groups = {
@@ -117,42 +118,50 @@ def composition_rows(items, order, attributes=None):
         "gold origin": origin,
         "gold Good Argumentation": items.gold_fallacy.eq(good_terminal()).to_numpy(),
     }
+    if not include_base:
+        groups = {}
     for name, values in (attributes or {}).items():
         require(name not in groups, f"duplicate composition attribute: {name}")
         require(len(values) == len(items), f"{name}: attribute population mismatch")
         groups[name] = np.asarray(values, dtype=object)
     n = len(order)
+    subset = (
+        np.ones(len(items), bool) if selection_mask is None else np.asarray(selection_mask, bool)
+    )
     rows = []
     for level in LEVELS:
         cut = _cut(level, n) if n else 0
         kept, rejected = order[:cut], order[cut:]
+        kept, rejected = kept[subset[kept]], rejected[subset[rejected]]
+        own_order = order[subset[order]]
+        own_n = len(own_order)
         for kind, values in groups.items():
             known = pd.notna(values)
             known[known] &= values[known] != ""
-            categories = sorted(set(values[order][known[order]]), key=str)
+            categories = sorted(set(values[own_order][known[own_order]]), key=str)
             # An entirely missing optional attribute still reports its availability.
             for value in categories or [None]:
                 equal = np.zeros(len(items), bool)
                 if value is not None:
                     equal[known] = values[known] == value
-                all_count = int(equal[order].sum())
+                all_count = int(equal[own_order].sum())
                 count = int(equal[rejected].sum())
                 rows.append(
                     {
                         "requested_coverage": level,
                         "actual_cut": cut,
-                        "actual_coverage": cut / n if n else np.nan,
-                        "n_items": n,
-                        "n_kept": cut,
-                        "n_rejected": n - cut,
+                        "actual_coverage": len(kept) / own_n if own_n else np.nan,
+                        "n_items": own_n,
+                        "n_kept": len(kept),
+                        "n_rejected": len(rejected),
                         "kind": kind,
                         "value": value,
                         "count": count,
                         "group_items": all_count,
                         "share_rejected": count / len(rejected) if len(rejected) else np.nan,
                         "rejection_rate": count / all_count if all_count else np.nan,
-                        "known_all": int(known[order].sum()),
-                        "missing_all": int((~known[order]).sum()),
+                        "known_all": int(known[own_order].sum()),
+                        "missing_all": int((~known[own_order]).sum()),
                         "known_kept": int(known[kept].sum()),
                         "missing_kept": int((~known[kept]).sum()),
                         "known_rejected": int(known[rejected].sum()),
@@ -311,8 +320,28 @@ def selective_tables(evaluations, items, bootstrap, difficulty, registry, attrib
                     {**meta, **missingness, **r}
                     for r in effective_thresholds(ids, wrong, verdicts, confidence, mask)
                 )
-                attrs = {"difficulty": difficulty, **(attributes or {})}
-                composition.extend({**meta, **r} for r in composition_rows(items, order, attrs))
+                composition.extend(
+                    {**meta, **r}
+                    for r in composition_rows(items, order, {"difficulty": difficulty})
+                )
+                if attributes:
+                    global_order = saved_ranking(ids, verdicts, confidence)
+                    global_order = global_order[system.eligible[global_order]]
+                    composition.extend(
+                        {
+                            **meta,
+                            "ranking_population": "global eligible population",
+                            "global_n_items": len(global_order),
+                            **r,
+                        }
+                        for r in composition_rows(
+                            items,
+                            global_order,
+                            attributes,
+                            selection_mask=origin_mask,
+                            include_base=False,
+                        )
+                    )
                 eligible = mask & pd.notna(verdicts) & np.isfinite(confidence)
                 correlation = difficulty_correlation(difficulty, confidence, eligible, bootstrap)
                 for level in LEVELS:

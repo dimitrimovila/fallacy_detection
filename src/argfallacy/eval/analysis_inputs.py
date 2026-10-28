@@ -92,7 +92,11 @@ class AnalysisConfig:
         normal = {}
         for name, source in evaluations.items():
             require(isinstance(name, str) and bool(name), "evaluation identity must be a string")
-            mapping(source, name, {"path", "round", "populations", "routing_records"})
+            mapping(
+                source,
+                name,
+                {"path", "round", "populations", "routing_records", "conformal_records"},
+            )
             round_number = integer(source.get("round"), f"{name}.round", maximum=2)
             populations = source.get("populations", {})
             require(isinstance(populations, dict), f"{name}.populations: expected a mapping")
@@ -112,6 +116,9 @@ class AnalysisConfig:
                 "round": round_number,
                 "populations": populations,
                 "routing_records": resolve_path(base, routing) if routing is not None else None,
+                "conformal_records": resolve_path(base, source["conformal_records"])
+                if source.get("conformal_records") is not None
+                else None,
             }
         runs = raw.get("parsed_runs", {})
         require(isinstance(runs, dict), "parsed_runs must be a mapping")
@@ -123,6 +130,10 @@ class AnalysisConfig:
             k: resolve_path(base, direct[k]) if direct.get(k) is not None else None
             for k in ("answers", "samples")
         }
+        require(
+            (direct["answers"] is None) == (direct["samples"] is None),
+            "direct_verdict: both answers and samples must be supplied",
+        )
         dq = raw.get("dq")
         return cls(
             path,
@@ -155,12 +166,17 @@ class AnalysisConfig:
             for s in self.evaluations.values()
             if s["routing_records"] is not None
         )
+        inputs.extend(
+            s["conformal_records"]
+            for s in self.evaluations.values()
+            if s["conformal_records"] is not None
+        )
         for source in inputs:
             require(not overlaps(out, source), f"output overlap with input: {source}")
 
 
 class Inputs:
-    """Hash exactly the files consumed; reserved external files never enter this reader."""
+    """Hash exactly the explicitly configured files consumed."""
 
     def __init__(self):
         self.files: dict[Path, str] = {}
@@ -177,10 +193,13 @@ class Inputs:
         self.files[path] = value
         return path
 
-    def csv(self, path, columns=()):
+    def csv(self, path, columns=(), dtype=None):
         path = self.add(path)
         frame = pd.read_csv(
-            path, keep_default_na=False, dtype={"item_id": str}, float_precision="round_trip"
+            path,
+            keep_default_na=False,
+            dtype=dtype or {"item_id": str},
+            float_precision="round_trip",
         )
         require(set(columns) <= set(frame), f"{path}: missing columns {set(columns) - set(frame)}")
         return frame
@@ -264,6 +283,8 @@ class SavedSystem:
     main: bool
     role: str = ""
     description: str = ""
+    source_table: str = "verdicts.csv"
+    source_provenance: object = None
 
 
 @dataclass
@@ -314,7 +335,9 @@ def read_evaluation(name, source, config, items, registry, inputs):
     vocab = load_vocabulary(check_schemes=False)
     systems = {}
     require(
-        set(source["populations"]) <= set(verdicts.system), f"{name}: unknown population system"
+        set(source["populations"])
+        <= set(verdicts.system) | set(m.get("dq", {}).get("systems", {})),
+        f"{name}: unknown population system",
     )
     for system, frame in verdicts.groupby("system", sort=False):
         row = meta.get(system, {})
@@ -430,8 +453,18 @@ def read_run(path, run_id, items, registry, inputs):
     )
     models = set(manifest.get("models", {})) | set(manifest.get("config", {}).get("models", []))
     require(set(summary.model) <= models, f"{run_id}: unknown model entries")
+    allowed = {"stage1", "stage2", "zeroshot", "judge"}
+    if "dq" in set(summary.stage):
+        require(
+            manifest.get("config", {}).get("stages") == ["dq"],
+            f"{run_id}: unsupported parsed stages",
+        )
+        require(manifest.get("prompt_versions") == ["dq_v1"], f"{run_id}: D+Q prompt mismatch")
+        require(digest == schemes_hash(registry[version]), f"{run_id}: D+Q scheme hash mismatch")
+        require(set(summary.stage) == {"dq"}, f"{run_id}: mixed D+Q stages")
+        allowed.add("dq")
     require(
-        set(summary.stage) <= {"stage1", "stage2", "zeroshot", "judge"},
+        set(summary.stage) <= allowed,
         f"{run_id}: unsupported parsed stages",
     )
     gold = items.set_index("item_id").gold_scheme
@@ -453,7 +486,14 @@ def recover_confidence(evaluations, run_id, manifest, version, summary):
         m = evaluation.manifest
         for system in evaluation.systems.values():
             stage, entry, source = None, None, None
-            if system.name.startswith("zeroshot:"):
+            dq_source = m.get("dq", {}).get("systems", {}).get(system.name)
+            if system.source_table == "dq_verdicts.csv" and isinstance(dq_source, str):
+                if system.name.startswith(("DQ.path:", "DQ.soft:")):
+                    continue
+                stage = "dq" if system.name.startswith("DQ:") else "zeroshot"
+                entry = system.name.split(":", 1)[1].removesuffix("@2.0")
+                source = dq_source
+            elif system.name.startswith("zeroshot:"):
                 stage, entry = "zeroshot", system.name.split(":", 1)[1]
                 source = m.get("zeroshot_sources", {}).get(entry)
             elif system.name in ("A5", "A5.answers_only"):
@@ -491,8 +531,10 @@ def recover_confidence(evaluations, run_id, manifest, version, summary):
             require(set(own.index) <= set(rows.index), f"{run_id}: missing confidence source items")
             for item, saved in own.iterrows():
                 row = rows.loc[item]
+                parsed_verdict = terminal(row.answer, vocab)
                 require(
-                    terminal(row.answer, vocab) == saved.verdict,
+                    (parsed_verdict is None and pd.isna(saved.verdict))
+                    or parsed_verdict == saved.verdict,
                     f"{run_id}/{system.name}/{item}: saved verdict disagreement",
                 )
                 value = probability(row.get("p_label", ""), f"{run_id}/{item}")

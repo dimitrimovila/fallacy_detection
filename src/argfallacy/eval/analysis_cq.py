@@ -269,6 +269,104 @@ def combined_predictions(frame, summary, reference, items, schemes, assignment):
     return out
 
 
+def dq_cq_tables(config, evaluation, items, registry, binary, broad, empty, bootstrap, inputs):
+    levels, differences, statuses = [], [], {}
+    if config.dq is None or config.dq != evaluation.path:
+        return levels, differences, statuses
+    for name, run_id in evaluation.manifest.get("dq", {}).get("systems", {}).items():
+        if not name.startswith("DQ:"):
+            continue
+        if run_id not in config.parsed_runs:
+            statuses[name] = "pending: explicit parsed D+Q source unavailable"
+            continue
+        _, version, summary = read_run(config.parsed_runs[run_id], run_id, items, registry, inputs)
+        entry = name.split(":", 1)[1].removesuffix("@2.0")
+        schemes = load_all(registry[version])
+        system = evaluation.systems[name]
+        own_items = items.loc[system.eligible]
+        own = summary[
+            (summary.stage == "dq")
+            & (summary.model == entry)
+            & (summary.scheme_condition == "gold")
+            & (summary.cq_id != "")
+            & summary.item_id.isin(own_items.item_id)
+        ]
+        expected = pd.DataFrame(
+            [
+                dict(item_id=r.item_id, scheme=r.gold_scheme, cq_id=cq)
+                for r in own_items.itertuples()
+                for cq in schemes[r.gold_scheme].cqs
+            ]
+        )
+        require(
+            set(own[KEYS].itertuples(index=False, name=None))
+            <= set(expected[KEYS].itertuples(index=False, name=None)),
+            "unknown D+Q CQ keys/version",
+        )
+        frame = expected.merge(own, on=KEYS, how="left", validate="one_to_one")
+        frame["answer"] = frame.answer.replace("", None)
+        frame["p_first"] = [
+            probability(
+                r.get("p_logprob_" + schemes[r["scheme"]].answer_space(r["cq_id"])[0], ""),
+                "D+Q raw CQ probability",
+            )
+            for r in frame.to_dict("records")
+        ]
+        frame["brier_valid"] = frame.answer.notna() & frame.answer.ne(INVALID)
+        meta = dict(
+            evaluation=evaluation.name,
+            round=evaluation.round,
+            run=run_id,
+            system=name,
+            scheme_version=version,
+            source_table="summary.csv:dq CQ rows",
+            source_population="declared D+Q eligible items; compatible question version",
+            probability="p_logprob; outside-arc mass retained; no imputation",
+            supervision="none",
+        )
+        labels = binary if version == "1.1" else empty
+        levels.extend(
+            {**meta, **r}
+            for r in cq_scores(
+                frame,
+                labels,
+                items,
+                bootstrap,
+                C1_POPULATION
+                if version == "1.1"
+                else "D+Q 2.0 CQ vectors; compatible human targets pending",
+            )
+        )
+        levels.extend(
+            {**meta, **r}
+            for r in cq_scores(
+                frame, broad if version == "1.1" else empty, items, bootstrap, P7_POPULATION
+            )
+        )
+        old_run = evaluation.manifest.get("runs", {}).get("answers")
+        if version == "1.1" and old_run in config.parsed_runs:
+            old_manifest, old_version, old = read_run(
+                config.parsed_runs[old_run], old_run, items, registry, inputs
+            )
+            require(old_version == version, "D+Q/reference CQ version mismatch")
+            baseline = p7_predictions(
+                entry_predictions(old, items, schemes, entry, old_manifest["models"][entry]),
+                schemes,
+                "p_logprob",
+            )
+            differences.extend(
+                {**meta, "reference": f"entry:{entry}", **r}
+                for r in cq_differences(frame, baseline, labels, items, bootstrap)
+            )
+        statuses[name] = dict(
+            status="computed" if version == "1.1" else "pending human targets",
+            observed_cq_pairs=len(own),
+            planned_cq_pairs=len(expected),
+            version=version,
+        )
+    return levels, differences, statuses
+
+
 def cq_tables(config, evaluations, items, registry, annotations, bootstrap, inputs):
     original = load_all(registry["1.1"])
     empty = pd.DataFrame(columns=[*KEYS, "human", "target"])
@@ -495,6 +593,11 @@ def cq_tables(config, evaluations, items, registry, annotations, bootstrap, inpu
                             )
                         )
                 del summary
+        dq_levels, dq_differences, dq_status = dq_cq_tables(
+            config, evaluation, items, registry, binary, broad, empty, bootstrap, inputs
+        )
+        levels.extend(dq_levels)
+        differences.extend(dq_differences)
         statuses[evaluation.name] = {
             "binary_items": binary.item_id.nunique(),
             "binary_cq_pairs": len(binary),
@@ -504,6 +607,7 @@ def cq_tables(config, evaluations, items, registry, annotations, bootstrap, inpu
             "p7_population": P7_POPULATION,
             "annotation_version": "1.1",
             "rewritten_cq_targets": "pending: no compatible 2.0 annotations",
+            "dq": dq_status,
         }
     columns = [
         "evaluation",

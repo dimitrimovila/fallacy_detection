@@ -1,6 +1,5 @@
 # Paths are relative to this configuration's directory, including optional inputs.
-# Keep external human paths in an ignored local configuration. These reserved
-# fields are not opened by the provenance and verdict-breakdown component.
+# Keep external human paths in an ignored local configuration.
 version: 1
 items: ../data/items.csv
 # Existing frozen 1.1 CQ/verdict ratings and Enrico's five-level difficulty.
@@ -18,6 +17,8 @@ evaluations:
     round: 2
     # Optional exact side-record export, from a separate profiled calculation.
     routing_records: null
+    # Optional genuine C5 companion export; rounded aggregates cannot supply sets.
+    conformal_records: null
 parsed_runs:
   20261005T193017Z_full_v2: ../runs/20261005T193017Z_full_v2
   20261019T151336Z_full_v3: ../runs/20261019T151336Z_full_v3
@@ -27,7 +28,13 @@ parsed_runs:
   20261021T111110Z_judge_v1_answers_only: ../runs/20261021T111110Z_judge_v1_answers_only
   20261025T133031Z_ssoft_full_v3: ../runs/20261025T133031Z_ssoft_full_v3
   20261025T133031Z_ssoft_nohistory_full_v3: ../runs/20261025T133031Z_ssoft_nohistory_full_v3
+  20261026T101601Z_dq_full_v2: ../runs/20261026T101601Z_dq_full_v2
+  20261026T101601Z_dq_full_v3: ../runs/20261026T101601Z_dq_full_v3
+  20261026T101601Z_zeroshot_schemes_v2: ../runs/20261026T101601Z_zeroshot_schemes_v2
+  20261026T101601Z_zeroshot_rerun: ../runs/20261026T101601Z_zeroshot_rerun
 direct_verdict:
   answers: null
   samples: null
-dq: null
+# Dedicated dq_ tables and manifest.dq from this explicitly selected evaluation.
+# null disables D+Q-only reads, including these four parsed runs.
+dq: ../evaluations/round2

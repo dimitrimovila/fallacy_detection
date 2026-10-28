@@ -133,14 +133,29 @@ def integrity(run_id, version, manifest, summary, path, items, registry, inputs)
                 all(type(v) in (int, np.int64) and 0 <= v < samples for v in own.sample_index),
                 f"{run_id}/{entry}: sample index out of range",
             )
-            if stage == "stage2":
+            if stage in ("stage2", "dq"):
+                if stage == "dq":
+                    verdict_rows = summed[summed.cq_id == ""]
+                    add(
+                        entry,
+                        stage,
+                        "missing declared verdict rows",
+                        "item",
+                        len(items) - verdict_rows.item_id.nunique(),
+                        len(items),
+                        "all frozen-test items",
+                    )
+                    summed = summed[summed.cq_id != ""]
+                    sample_cqs = own[own.cq_id != ""]
+                else:
+                    sample_cqs = own
                 expected = {
                     (row.item_id, cq)
                     for row in items.itertuples()
                     for cq in schemes[row.gold_scheme].cq_order
                 }
                 observed = set(zip(summed.item_id, summed.cq_id, strict=True))
-                sample_questions = set(zip(own.item_id, own.cq_id, strict=True))
+                sample_questions = set(zip(sample_cqs.item_id, sample_cqs.cq_id, strict=True))
                 require(
                     observed <= expected and sample_questions <= expected,
                     f"{run_id}/{entry}: unknown CQ row",
@@ -170,6 +185,8 @@ def integrity(run_id, version, manifest, summary, path, items, registry, inputs)
                         "all frozen-test independent CQs",
                     )
                 expected_samples = denominator * samples
+                if stage == "dq":
+                    expected_samples += len(items) * samples
             elif stage == "ssoft":
                 node_keys = ["item_id", "cq_id"] + (["path"] if "path" in own else [])
                 denominator = len(own.drop_duplicates(node_keys))
