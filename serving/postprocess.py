@@ -23,6 +23,14 @@ from argfallacy.eval.analysis_inputs import (  # noqa: E402
 from argfallacy.eval.html_report import write_summary  # noqa: E402
 
 
+def fitting_summary(directory, inputs):
+    """Use the evaluator's numeric missing-value conventions for fitted inputs."""
+    import pandas as pd
+
+    path = inputs.add(Path(directory) / "summary.csv")
+    return pd.read_csv(path, dtype={"item_id": str})
+
+
 def replay(config, evaluation_name, out, check_only):
     """Refit only primary C1/C2, export after saved agreement, never evaluate a round."""
     from argfallacy.aggregate import load_burden, routes
@@ -109,6 +117,11 @@ def replay(config, evaluation_name, out, check_only):
     inputs.verify()
     if check_only:
         return audit
+    # The validated analysis reader preserves empty strings. Fitting uses the
+    # native evaluator's NaN representation for absent probability signals.
+    summary = fitting_summary(config.parsed_runs[answers_id], inputs)
+    native_zero = fitting_summary(config.parsed_runs[zero_id], inputs)
+    inputs.verify()
     schemes = load_all(registry["1.1"])
     burden = load_burden(registry["1.1"].name, schemes)
     routing = {sid: routes(schemes[sid], burden[sid]) for sid in schemes}
@@ -117,7 +130,9 @@ def replay(config, evaluation_name, out, check_only):
     labels = cq_labels(notes, items, schemes)
     folds = metadata["folds"]["assignment"]
     upstream = C1CrossFitter(data, labels, config.seed, PRIMARY_CONFIG)
-    side = _side(zero, "zeroshot:" + reference, reference, "zeroshot", items.item_id.tolist())
+    side = _side(
+        native_zero, "zeroshot:" + reference, reference, "zeroshot", items.item_id.tolist()
+    )
     print("Fitting isolated primary C2 with unchanged nested cross-fitting", flush=True)
     result = c2_out_of_fold(upstream, side, folds)
     import numpy as np
@@ -159,7 +174,9 @@ def replay(config, evaluation_name, out, check_only):
         )
         audit["conformal_records"] = str(out / "conformal")
     audit.update(
-        elapsed_seconds=time.perf_counter() - started, peak_process_memory_bytes=peak_memory_bytes()
+        elapsed_seconds=time.perf_counter() - started,
+        peak_process_memory_bytes=peak_memory_bytes(),
+        resource_status="profiled; see elapsed_seconds and peak_process_memory_bytes",
     )
     inputs.verify()
     (out / "replay.json").write_text(json.dumps(audit, indent=2) + "\n", encoding="utf-8")

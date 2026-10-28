@@ -729,6 +729,15 @@ If `p_label` is unavailable, recover the parsed source on the machine holding it
 raw run before replay; rounded routing curves cannot repair it. Never overwrite
 the selected evaluation or replace frozen predictions to obtain agreement.
 
+The selected `round2` and `round2_recomputed_spec10_20261026` have identical saved
+verdicts, main tables and deciding tables. Their base-system confidences differ
+beyond serialization precision (maximum absolute difference 0.0014600673485322124
+for C2 and 0.000009284341750293024 for C1); the dedicated D+Q verdict table is
+byte-identical. The analysis keeps the selected original source and records its
+hashes. Confidence-based results must not silently switch to the recomputed copy.
+The replay reader uses the native evaluator's numeric missing-value convention
+for fitting, while source-contract validation preserves literal empty fields.
+
 For an analysis after a verified replay, copy `configs/analyses_v1.yaml` to an
 ignored `configs/analyses_replay.local.yaml`, set the round-two `routing_records`
 to the returned `routing/routing_records.csv`, `conformal_records` to the returned

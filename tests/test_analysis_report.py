@@ -318,3 +318,33 @@ def test_full_size_shared_draws_and_scalar_intervals_are_batch_invariant():
             if previous is not None:
                 assert current == previous
             previous = current
+
+
+def test_fitted_replay_preserves_missing_numeric_signals_without_editing_csv(tmp_path):
+    import numpy as np
+    from serving.postprocess import fitting_summary
+
+    from argfallacy.aggregate.c1_inputs import build_dataset
+    from argfallacy.eval.analysis_inputs import Inputs
+    from test_c1 import example_data
+
+    original, _, summary, manifest = example_data(4, full_scheme=True)
+    summary.loc[summary.model.eq("e1"), [c for c in summary if c.startswith("p_")]] = np.nan
+    expected = build_dataset(
+        original.schemes, original.items, summary, manifest, original.reference, original.routing
+    )
+    path = tmp_path / "summary.csv"
+    summary.to_csv(path, index=False)
+    before = path.read_bytes()
+    inputs = Inputs()
+    native = fitting_summary(tmp_path, inputs)
+    observed = build_dataset(
+        original.schemes, original.items, native, manifest, original.reference, original.routing
+    )
+    for name in ("splits", "base_splits", "arc_mass", "outside", "x"):
+        np.testing.assert_allclose(
+            getattr(observed, name), getattr(expected, name), atol=1e-14, rtol=0, equal_nan=True
+        )
+    assert np.isnan(observed.splits).any()
+    assert path.read_bytes() == before
+    inputs.verify()
