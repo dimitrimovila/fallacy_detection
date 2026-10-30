@@ -854,3 +854,24 @@ It saves full trees, B1 fits, inner scores, exact OOF paths, paired IC95%,
 common-coverage and origin/class sensitivities, and protected-input hashes.
 The +0.03 practical-interest flag is separate from the interval and from
 argumentative validity. Run artifacts contain no new LLM calls or annotations.
+
+### Matched GOSDT/CART diagnostic on schemes 2.0
+
+The fixed protocol is in [spec 12](docs/specs/12_gosdt_structure_learning.md).
+The optional native GOSDT dependency is loaded by a separate worker from an
+explicitly supplied interpreter and vendor directory; the command never installs
+packages or submits cluster jobs. The checked local supervisor requires Windows.
+
+```powershell
+argfallacy evaluate-gosdt configs/gosdt_schemes2_diagnostic.yaml --worker-python <python-path> --worker-vendor <vendor-directory> --check-only
+```
+
+The readiness check uses invented inputs only and stops on inadequate free memory.
+After execution is authorized and readiness is verified, omit `--check-only` to
+run the experiment. Outputs go to a new evaluations directory; `--resume` verifies
+recorded hashes before reusing completed checkpoints. The run retains all 601
+arguments in canonical scoring and saves full trees, held-out library/replay
+comparisons, candidate scores, selected configurations, native status/bounds and
+resource records. Missing required solver fits make the scientific comparison
+incomplete. Linux runtime and resource supervision must be checked separately
+before using a CPU cluster.

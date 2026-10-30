@@ -86,11 +86,18 @@ class B1CrossFitter:
     def fit(self, ids: Sequence[str]) -> CQInputs:
         key = tuple(sorted(set(ids)))
         if key not in self._fitted:
-            model, choice = fit_b1(self.fit_data, self.labels, key, self.seed, self.config)
-            self.models[key] = model
-            self.choices.append({"training_items": key, **choice})
+            if key not in self.models:
+                model, choice = fit_b1(self.fit_data, self.labels, key, self.seed, self.config)
+                self.models[key] = model
+                self.choices.append({"training_items": key, **choice})
+            model = self.models[key]
             self._fitted[key] = self._inputs(model.predict(self.data), self.data.items.item_id)
         return self._fitted[key]
+
+    def release_predictions(self):
+        """Release dense prediction caches while retaining exact-context fitted models."""
+        self._fitted.clear()
+        self._crossed.clear()
 
     def cross_fit(self, ids: Sequence[str]) -> CQInputs:
         key = tuple(sorted(set(ids)))

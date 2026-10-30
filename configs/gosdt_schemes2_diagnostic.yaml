@@ -1,0 +1,17 @@
+name: gosdt_schemes2_diagnostic_20261030
+fit_run: 20261005T193017Z_full_v2
+target_run: 20261019T151336Z_full_v3
+reference_model: qwen3_8_27b
+seed: 20261019
+resamples: 10000
+practical_delta: 0.03
+protocol: docs/specs/12_gosdt_structure_learning.md
+baseline_evaluation: evaluations/round2
+historical_evaluation: evaluations/b3_schemes2_diagnostic_20261029
+depths: [2, 3, 4]
+leaf_coefficients: [2, 5]
+inner_folds: 3
+time_limit_seconds: 60
+memory_limit_bytes: 4000000000
+grace_seconds: 5
+minimum_free_bytes: 3221225472

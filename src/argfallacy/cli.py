@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 
 from .env import load_env
@@ -180,6 +181,23 @@ def _cmd_evaluate_b3(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_evaluate_gosdt(args: argparse.Namespace) -> int:
+    from .eval.gosdt_diagnostic import configuration, preflight, run
+    from .schemes import SchemeError
+
+    try:
+        if args.check_only:
+            result = preflight(configuration(args.config), args.worker_python,
+                               args.worker_vendor, args.preflight_dir)
+            print(json.dumps(result, indent=2))
+            return 0 if result["ready"] else 2
+        out = run(args.config, args.worker_python, args.worker_vendor, resume=args.resume)
+    except (SchemeError, ValueError, OSError, MemoryError) as error:
+        raise SystemExit(str(error)) from None
+    print(out / "summary.md")
+    return 0
+
+
 def _cmd_report_cqs(args: argparse.Namespace) -> int:
     from .client.run import default_runs_dir
     from .eval.cq import write_cq_report
@@ -338,6 +356,14 @@ def build_parser() -> argparse.ArgumentParser:
     b3_cmd.add_argument("config", help="a frozen B3 diagnostic configuration")
     b3_cmd.add_argument("--out", help="alternate output root; refuses to overwrite results")
     b3_cmd.set_defaults(func=_cmd_evaluate_b3)
+    gosdt_cmd = sub.add_parser("evaluate-gosdt", help="matched GOSDT/CART diagnostic")
+    gosdt_cmd.add_argument("config")
+    gosdt_cmd.add_argument("--worker-python", required=True)
+    gosdt_cmd.add_argument("--worker-vendor", required=True)
+    gosdt_cmd.add_argument("--resume", action="store_true")
+    gosdt_cmd.add_argument("--check-only", action="store_true")
+    gosdt_cmd.add_argument("--preflight-dir", default="scratch/gosdt_preflight")
+    gosdt_cmd.set_defaults(func=_cmd_evaluate_gosdt)
     analyze_cmd = sub.add_parser(
         "analyze", help="thesis breakdowns of saved out-of-fold predictions")
     analyze_cmd.add_argument("config", help="a versioned analysis configuration")

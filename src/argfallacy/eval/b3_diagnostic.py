@@ -184,7 +184,8 @@ def replay_tree(exported, row):
     return decide(distribution, 0, "").verdict, distribution, node, path
 
 
-def score_tables(items, predictions, seed, resamples):
+def score_tables(items, predictions, seed, resamples, *, primary_system=B3,
+                 reference_system=BASELINE):
     """Paired canonical scoring with shared draws and fixed common-coverage selection."""
     ids = items.item_id.tolist()
     by_system = {s: [None if pd.isna(v) else v
@@ -194,7 +195,8 @@ def score_tables(items, predictions, seed, resamples):
            for _, g in predictions.groupby("system")):
         raise SchemeError("prediction population is incomplete or duplicated")
     common = np.array([a is not None and b is not None
-                       for a, b in zip(by_system[B3], by_system[BASELINE], strict=True)])
+                       for a, b in zip(by_system[primary_system], by_system[reference_system],
+                                       strict=True)])
     masks = {"all": np.ones(len(ids), bool), "common_coverage": common,
              "reachable_gold": items.reachable_gold.to_numpy(bool),
              "unreachable_gold": ~items.reachable_gold.to_numpy(bool),
@@ -240,8 +242,8 @@ def score_tables(items, predictions, seed, resamples):
             if subset == "all":
                 classes.extend({"system": system, **row}
                                for row in canonical.classes.to_dict("records"))
-        for metric in scores[B3][0]:
-            a, b = scores[B3], scores[BASELINE]
+        for metric in scores[primary_system][0]:
+            a, b = scores[primary_system], scores[reference_system]
             deltas = a[1][metric] - b[1][metric]
             valid = deltas[np.isfinite(deltas)]
             low, high = interval(valid) if len(valid) else (None, None)
