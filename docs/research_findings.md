@@ -10,6 +10,21 @@ For every material new finding, record the question, date, population, scheme/pr
 
 This record is versioned. The machine-readable `evaluations/`, raw `runs/`, scratch files, external workbooks and detailed local diagnostic ledgers are not published with it. Evidence paths below are **local artifact identifiers**, written as code rather than broken public hyperlinks. `workspace:` means relative to the parent thesis workspace, outside this repository. Public readers can assess the reported reasoning, but cannot reproduce the calculations from this document alone. See [data provenance](data.md) and the [evaluation protocol](specs/08_evaluation.md) for the versioned contracts. A local manifest remains authoritative for the exact inputs of its own run; it does not automatically supersede later scientific interpretation.
 
+### Reading order
+
+The organization is thematic, following the research progression rather than the order in which files or conversations were inspected. It is a findings register, not a complete chronological experiment log:
+
+| Sections | Scientific question |
+| --- | --- |
+| F01–F03 | How were model regimes chosen, what happened in round 1, and how reliable are CQ confidence signals? |
+| F04–F06 | Did learned combinations, sequential questions or D+Q improve the verdict? |
+| F07–F11 | What do human answers, substitutions, collisions and initial learned mappings reveal about the bottleneck? |
+| F12–F15 | What changed with 2.0, and how do graph structure, gold provenance and individual cases affect interpretation? |
+| F16–F17 | Which analyses actually completed, what remains unreproduced, and what did C3@2.0 establish? |
+| F18 and decision table | Which directions remain open, and which choices have actually been confirmed? |
+
+These identifiers are stable so later corrections can cite them. Evidence lists deliberately point to detailed local records rather than copy every secondary table. Recovered observations with an unresolved denominator or source convention remain explicitly qualified; they must not be silently promoted to frozen-benchmark results.
+
 ## Current state and scientific objective
 
 The objective is a fallacy verdict computed from Walton critical-question answers by understandable, inspectable and argumentatively justified rules. Predictive improvement, competitiveness with other systems, numerical faithfulness of an explanation, and validity under Walton are distinct outcomes. A path reproducing the program is not automatically a sound argumentative justification.
@@ -22,7 +37,7 @@ Completed work includes pilots; five-model isolated-CQ runs on 1.1 and 2.0; dire
 
 ## F01 — Pilot choices and model operating regimes
 
-**Measured, pilot phase.** On the 50-item pilot, the recorded CQ-answer comparisons gave Qwen reasoning-on/off agreement scores 0.810/0.767 (paired p = 0.230) and Gemma 0.779/0.755 (p = 0.481). The predefined rule retained reasoning off. These results do not establish equivalence or that reasoning never helps. The later K2 comparison favored high over low effort: 127/163 versus 111/163 correct, with 22 versus 6 discordant pairs (p = 0.004); high versus low-effort majority gave p = 0.043. These are pilot CQ results, not 601-item verdict scores.
+**Measured, pilot phase.** Within the 50-item pilot, the reasoning ablations use the same 163 annotated CQ–argument pairs. Qwen reasoning-on/off agreement is 0.810/0.767 (exact paired McNemar p = 0.230) and Gemma 0.779/0.755 (p = 0.481). The predefined rule retained reasoning off. These results do not establish equivalence or that reasoning never helps. The later K2 comparison favored high over low effort: 127/163 versus 111/163 matches with the human answers, with 22 versus 6 discordant pairs (p = 0.004). The recorded low-effort reference in the deciding comparison uses logprob argmax; the historical supplementary comparison against low-effort sample majority gave p = 0.043. These are pilot CQ-agreement results, not 601-item verdict scores or independent CQ truth labels.
 
 Early pilots also exposed almost constant affirmative answers on some small scheme samples and frequent missing-information justifications: a recorded check found 223 IDK answers, 200 justified by missing information. This motivated explicit conventions about reasonable reconstruction, available knowledge and applicability. Those changes are methodological provenance, not evidence of a later accuracy gain in isolation. K2 low-effort empty reasoning in 1,740 calls was investigated as model/template behavior rather than assumed to be a client failure.
 
@@ -47,6 +62,8 @@ Evidence: `evaluations/decision_v2/{main_table.csv,deciding.csv,summary.md}`; `e
 For predicting agreement with the human answer, Qwen answer-logprob confidence has AUROC about 0.775, with 18% of values at least 0.99; Gemma has AUROC about 0.789 despite 96% at least 0.99. Thus a badly scaled signal may still rank answers usefully. K2 logprob is effectively 1 throughout, AUROC about 0.463. The proposed mechanism is that its reasoning settles the answer before the scored answer token. GPT-OSS mean logprob is almost identical to sample frequency (reported correlation 1.00). Verbal confidence AUROCs are roughly 0.58–0.67 and were the more useful signals for K2/GPT-OSS; sample-frequency AUROCs are about 0.62 and 0.58 for the two GPT-OSS sizes.
 
 **Interpretation:** confidence sources must be chosen and calibrated deliberately. Agreement with one annotator is the diagnostic target here; these AUROCs do not measure final-verdict accuracy or absolute CQ correctness.
+
+Do not infer the primary evaluation's chosen source from this later signal ranking. The saved round-1 manifest uses logprob for Qwen/Gemma, sample frequency for both GPT-OSS entries, and verbal confidence for K2. A retrospective comparison of AUROCs does not silently change those systems.
 
 Evidence: `evaluations/decision_v2/cq_report.md`; local thesis plan section 4; `docs/specs/07_aggregators.md`.
 
@@ -162,6 +179,8 @@ Qwen A0 correct counts increase 303→328: 94 errors corrected and 69 introduced
 
 All 124 Good golds are from the scheme-origin datasets: 80 NLAS and 44 EthiX. On fallacy-origin data, the direct model has a clearer advantage over diagram 2.0 than on scheme-origin data. **Interpretation:** source, scheme and gold construction interact; 2.0 is not universally superior. The comparison changes wording, answer definitions, ordering and sometimes terminals together, so it cannot isolate graph topology as the cause.
 
+The saved comparison with the original Qwen direct baseline also shows complementarity: on 601 items, 65 are correct only for A0@2.0 and 113 only for the direct model. Their labels disagree on 245 items, including 67 where both are wrong. An oracle choosing the correct member of these two saved predictions would get 441/601 right. That is an in-sample diagnostic Accuracy bound for selection between this fixed pair, not an achieved routing score, a Macro-F1 ceiling, or a bound on a system allowed to predict a third label. The ordinary intervals in the earlier direction audit differ slightly from the later paired audit because their resampling specifications differ; retain each interval with its own source rather than treating them as contradictory estimates.
+
 Evidence: `evaluations/decision_v2`, `evaluations/exploratory_aggregators_v3`; `workspace:reports/Diagnosi diagrammi 2 e prospettive.md` sections 1–2 and its paired tables; historical direction audit under `evaluations/_archive/`.
 
 ## F13 — Structural, error and CQ-transfer diagnosis on 2.0
@@ -172,6 +191,8 @@ Cause removes an evidence-presupposition gate but replaces it with different cri
 
 The saved replay reproduces all 3,005 A0 and 3,005 A2 verdicts across five models. Qwen has 273 A0 errors, 265 A2 errors and a union of 279 affected arguments; A2.pruned has the same 601 verdicts as A2. The detailed Qwen version-comparison report covers 367 arguments erroneous in at least one version. Replay establishes computational consistency, not independent adjudication of gold labels or explanations. A node frequently visited by errors is exposed to disagreement; it is not thereby the cause of those errors.
 
+**Measured explanation-fidelity issue:** for Qwen A2@2.0, seven of 601 winning verdicts differ from the terminal of the single most probable path. A2 sums probability mass from multiple paths. Showing only that path can therefore misrepresent the computation, even if its CQ tests are individually understandable. An A2 explanation must expose the relevant competing/aggregated masses; the most probable path alone is not always its decision rule. This is distinct from whether the winning verdict is correct against gold.
+
 Only 12 textually identical 1.1/2.0 CQs support direct annotation transfer in the audit. Six further mappings are candidates requiring validation, not equivalent merely because their IDs match. On 936 safely mapped binary pairs, Qwen agreement changes 0.7981→0.7906: no general CQ-quality improvement is established. No complete human 2.0 vectors were documented. A 94-item/396-pair screening was proposed, not completed or required before trying algorithms.
 
 Evidence: 2.0 diagnosis sections 2–6 and its graph, mapping and error-ledger manifests; `workspace:reports/qwen_errori_diagrammi_1.1_2.0/resoconto.html`.
@@ -179,6 +200,10 @@ Evidence: 2.0 diagnosis sections 2–6 and its graph, mapping and error-ledger m
 ## F14 — Gold provenance and the Enrico comparison
 
 **Measured provenance checks.** Gold labels were developed or selected partly alongside the schemes/diagrams. A historical file named after DeepSeek holds the input gold in the relevant column; matching that column is not agreement with independent model predictions. The 601 imported gold labels match that source. The audit traces 307 explicit Enrico records and 34 historical Slippery Slope records, with differing provenance strength. A high match with labels already incorporated into gold cannot independently validate the annotator or the normative correctness of the diagrams.
+
+The 307+34 breakdown concerns the 341 **scheme-origin** test items, not all 601. The 34 Slippery records lack an independent Enrico verdict cell; their historical agreement does not establish either model-generated labels or independent human validation. Nor is a graph hash documented per historical annotation, so these golds cannot all be attributed specifically to the current frozen 1.1 graph.
+
+Another dependency matters for human-verdict comparisons: the historical Dumitru verdict agrees with the recomputed human-CQ path on all 437 common usable cases in the diagnostic audit. It must not be treated as a second independent direct-verdict annotation. Among the 438 resolved paths, the fallacy-origin subset is 180 items (Accuracy 0.5667 / Macro-F1 0.5580) and scheme-origin 258 (0.5271/0.4133); these are selected subsets, not scores on all 260/341 original items.
 
 The later original-versus-Enrico comparison normalizes spelling and deduplicates within sections. It reports:
 
@@ -280,11 +305,15 @@ Evidence: recovered worksheet review and saved-output inspection; local audit `s
 
 **Measured execution status.** The real `analyses_v1` saved-input analysis completed and wrote 39 tables. It used original round2 D+Q and historical human annotations; new direct-verdict answer logs and newly drawn sample-sheet responses were not read. Optional empty tables are pending inputs, not zero effects. The pipeline's existence and synthetic acceptance checks are not additional completed real-data findings.
 
+Post-results class-weighting, prior-adjusted aggregators and frequent-class summaries were also retained, rather than becoming new primary successes. The frequent-class endpoint uses 12 classes with at least ten gold examples; the earlier rare-class recall diagnostic uses fewer than 20. These cutoffs answer different questions and are not interchangeable. The remaining eleven supported classes have one to eight examples. Bootstrap intervals over fixed OOF predictions do not include refitting uncertainty; per-scheme stratification does not guarantee rare-class representation in every training fold.
+
 Original round2 and the archived spec-10 recomputation have identical verdicts and main/deciding tables, but base confidence values differ beyond serialization precision (reported maximum absolute differences: C2 0.0014600673485322124; C1 0.000009284341750293024). Exact C2 routing/conformal item exports remain unaccepted because isolated replay did not match the selected saved outputs. Rounded curves cannot recover genuine item-level routing or conformal sets. Preserve original confidences and source hashes; do not substitute a convenient recomputation to obtain agreement.
 
 Human sample sheets were prepared: 111 items for 2.0 CQ annotation and 375 for direct verdict, with recorded seed and disjoint allocation. Their existence does not demonstrate completed answers. Independent human adjudication, predicted-scheme verdict evaluation, and retraining stability remain open. Synthetic resource measurements do not establish the cost of real fitted replay.
 
 Evidence: `evaluations/analyses_v1/execution_audit.json` and manifest; `evaluations/_archive/relocation_manifest.json`; analysis and replay source records; sample manifest outside the repository. Current execution records supersede older implementation-only status paragraphs.
+
+Technical checks also delimit what can be reproduced. A Unicode line-splitting problem in raw JSONL reading required streaming by actual file lines; this is a parser lesson, not a new model result. Near ties can make the generated hard answer differ from the answer with the largest summed token mass, so those two signals must not be silently equated. The local full-v2 raw file is kept on the cluster; its local stage-two summary was reconstructed from saved answer tables. A fresh full parse still requires the raw source. Legacy agreement on 2,416 of 2,428 prior verdicts is a compatibility check on those cases, not proof of general correctness. These issues belong to the client/parser/serving provenance, separate from the reported classifier comparisons.
 
 ## F17 — C3@2.0: completed controlled diagnostic
 
@@ -307,13 +336,15 @@ All 40 outer trees are retained, giving 184 leaf rules; exact exported replay ma
 
 One actual Expert rule predicts Strawman from high CQ5.1 outside mass with support three, without a source-attribution test. This numerical rule does not by itself establish misrepresentation. Other rules use dependent CQ5.1 without establishing CQ5's prerequisite answer. Export fidelity is established; independent adjudication of every rule and repeat-fit stability are not.
 
-**Interpretation:** this transferred C1/CART pipeline fails to improve its matched baseline and is not competitive with the saved Qwen contextual scores. The result does not rule out all optimized trees, other encodings, direct model CQ inputs or other rule architectures. Thresholding, outside mass and coverage differ as well as topology. An earlier recommendation to require manual semantic screening before any further learner is superseded by the confirmed 30 October direction.
+**Interpretation:** this transferred C1/CART pipeline fails to improve its matched baseline and has lower point scores than the saved Qwen contextual references. Those context rows were not additional primary paired tests. The result does not rule out all optimized trees, other encodings, direct model CQ inputs or other rule architectures. Thresholding, outside mass and coverage differ as well as topology. An earlier recommendation to require manual semantic screening before any further learner is superseded by the confirmed 30 October direction.
 
 Evidence: `evaluations/c3_schemes2_diagnostic_20261029/{protocol.md,summary.md,review.md,manifest.json,metrics.csv,differences.csv,rules.json}`. Its separate failed-preflight sibling is not an experimental result. The C3 implementation and some analysis improvements may be local changes not yet included in the published code; publishing this account does not assert they are all committed.
 
 ## F18 — Alternatives, feasibility and unresolved choices
 
 **Proposed.** A controlled globally optimized tree experiment could compare GOSDT with a fresh CART on identical Boolean CQ predicates and comparable complexity, alongside the version-matched manual baseline. Old continuous C3 alone would not isolate the solver effect. Encoding thresholds, selection, class weighting, stopping/timeout policy, budgets and nested upstream isolation must be specified before fitting. Weighted classification loss plus leaf penalty is not a claimed native Macro-F1 training objective.
+
+The methodological review also distinguishes library capability from a demonstrated experiment: standard CORELS uses a binary target, so a reduction would change the fine multiclass question; GOSDT/DL8.5 capability does not itself impose Walton prerequisites. A timeout incumbent must not be called a certified optimum without the corresponding termination/gap evidence. Transforming probabilities into deterministic threshold tests does not propagate uncertainty down branches, and using the same CQ twice does not create independent evidence. These are design constraints from the prior methods review, not results of an installed solver comparison.
 
 A 30 October metadata-only feasibility check found neither GOSDT nor PyDL8.5 installed in the active Windows Python 3.13.12 environment. The checked GOSDT 1.0.4 release listed Windows wheels through Python 3.12, and PyDL8.5 0.1.8 older Windows wheels; a separate compatible environment was proposed. This is a dated observation, not current package advice, successful installation or fit. No solver choice or runtime protocol is yet confirmed.
 
