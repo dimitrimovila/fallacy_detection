@@ -11,25 +11,25 @@ from scipy.optimize import minimize
 from scipy.special import expit, logit, logsumexp
 
 from ..schemes import SchemeError, enumerate_paths
+from .b1_inputs import B1Dataset, Signal
 from .burden import SPLIT
-from .c1_inputs import C1Dataset, Signal
 
 EPS = 1e-12
 GOLD_EPS = 1e-6
 
 
-def majority(data: C1Dataset) -> np.ndarray:
+def majority(data: B1Dataset) -> np.ndarray:
     """The share of arc votes on the first arc; outside votes do not enter the split."""
     first, second = (data.observations == 0).sum(axis=1), (data.observations == 1).sum(axis=1)
     return np.divide(first, first + second, out=np.full(len(first), 0.5), where=first + second > 0)
 
 
-def majority_codes(data: C1Dataset) -> np.ndarray:
+def majority_codes(data: B1Dataset) -> np.ndarray:
     """Initialise EM with the majority split and the common outside-mass rule."""
     return combined_codes(data, majority(data))
 
 
-def combined_codes(data: C1Dataset, p: np.ndarray) -> np.ndarray:
+def combined_codes(data: B1Dataset, p: np.ndarray) -> np.ndarray:
     """Outside mass above one half abstains; arc ties prefer the reference arc."""
     out = np.where(np.asarray(p) >= 0.5, 0, 1)
     ref = data.observations[:, data.entries.index(data.reference)]
@@ -46,7 +46,7 @@ class WeightedPool:
     shrinkage: float = 0.0
 
     @classmethod
-    def equal(cls, data: C1Dataset) -> WeightedPool:
+    def equal(cls, data: B1Dataset) -> WeightedPool:
         return cls(
             {q: np.full(5, 0.2) for q in data.questions},
             tuple(data.sources[e] for e in data.entries),
@@ -74,7 +74,7 @@ class WeightedPool:
             shrinkage,
         )
 
-    def predict(self, data: C1Dataset) -> np.ndarray:
+    def predict(self, data: B1Dataset) -> np.ndarray:
         if data.entries != self.entries:
             raise SchemeError("weighted pool entries differ from its fitted entries")
         split = np.zeros_like(data.base_splits)
@@ -178,7 +178,7 @@ class DiagramLoss:
     the items of the loss, so that each verdict weighs the same in total.
     """
 
-    def __init__(self, data: C1Dataset, ids: Sequence[str], balanced: bool = False):
+    def __init__(self, data: B1Dataset, ids: Sequence[str], balanced: bool = False):
         self.data = data
         lookup = {
             (row.item_id, row.cq_id): i for i, row in enumerate(data.pairs.itertuples(index=False))

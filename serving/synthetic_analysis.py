@@ -32,40 +32,40 @@ SECOND = [
     "A5.answers_only",
     "A3",
     "majority",
-    "C1",
-    "C2",
-    "C3",
-    "C4",
-    "C1.hard",
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B1.hard",
     "A0:qwen3_8_27b@2.0",
     "A2.pruned",
-    "C4.path",
-    "C4.nohistory",
-    "C1.majority.none.soft",
-    "C1.majority.none.hard",
-    "C1.dawid_skene.none.soft",
-    "C1.dawid_skene.none.hard",
-    "C1.weighted.cq.soft",
-    "C1.weighted.cq.hard",
-    "C1.stacking.gold.soft",
-    "C1.stacking.gold.hard",
-    "C1.annotation_exclusion",
-    "C1.majority.none.soft@2.0",
-    "C1.majority.none.hard@2.0",
-    "C1.dawid_skene.none.soft@2.0",
-    "C1.dawid_skene.none.hard@2.0",
-    "C1.stacking.gold.soft@2.0",
-    "C1.stacking.gold.hard@2.0",
-    "C1@2.0",
-    "C1.hard@2.0",
-    "C2.A0",
-    "C3.pooled",
+    "B4.path",
+    "B4.nohistory",
+    "B1.majority.none.soft",
+    "B1.majority.none.hard",
+    "B1.dawid_skene.none.soft",
+    "B1.dawid_skene.none.hard",
+    "B1.weighted.cq.soft",
+    "B1.weighted.cq.hard",
+    "B1.stacking.gold.soft",
+    "B1.stacking.gold.hard",
+    "B1.annotation_exclusion",
+    "B1.majority.none.soft@2.0",
+    "B1.majority.none.hard@2.0",
+    "B1.dawid_skene.none.soft@2.0",
+    "B1.dawid_skene.none.hard@2.0",
+    "B1.stacking.gold.soft@2.0",
+    "B1.stacking.gold.hard@2.0",
+    "B1@2.0",
+    "B1.hard@2.0",
+    "B2.A0",
+    "B3.pooled",
     "A3.tree",
-    "C1.stacking.gold_balanced.soft",
-    "C1.stacking.gold_balanced.hard",
-    "C3.pooled.balanced",
+    "B1.stacking.gold_balanced.soft",
+    "B1.stacking.gold_balanced.hard",
+    "B3.pooled.balanced",
     "A2.prior",
-    "C1.prior",
+    "B1.prior",
     "A3.combined",
 ]
 
@@ -227,12 +227,12 @@ def build(root, batch_size=128):
             version = (
                 "2.0"
                 if system.endswith("@2.0")
-                or system in ("C4", "C4.path", "C4.nohistory", "A2.pruned")
+                or system in ("B4", "B4.path", "B4.nohistory", "A2.pruned")
                 else "1.1"
             )
             own = (
                 items[items.gold_scheme.ne("example")]
-                if system == "C1.annotation_exclusion"
+                if system == "B1.annotation_exclusion"
                 else items
             )
             main.append(
@@ -262,7 +262,7 @@ def build(root, batch_size=128):
                         confidence=round(float(rng.random()), 3),
                     )
                 )
-                if round_number == 2 and system.startswith("C1"):
+                if round_number == 2 and system.startswith("B1"):
                     combined.extend(
                         dict(
                             system=system,
@@ -285,12 +285,12 @@ def build(root, batch_size=128):
             [("A" + str(i), "A0:" + ENTRIES[0]) for i in range(1, 6)]
             if round_number == 1
             else [
-                ("C1", "A0:" + ENTRIES[0]),
-                ("C1", "zeroshot:" + ENTRIES[0]),
-                ("C2", "zeroshot:" + ENTRIES[0]),
-                ("C3", "C1.hard"),
-                ("C3", "zeroshot:" + ENTRIES[0]),
-                ("C4", "A2.pruned"),
+                ("B1", "A0:" + ENTRIES[0]),
+                ("B1", "zeroshot:" + ENTRIES[0]),
+                ("B2", "zeroshot:" + ENTRIES[0]),
+                ("B3", "B1.hard"),
+                ("B3", "zeroshot:" + ENTRIES[0]),
+                ("B4", "A2.pruned"),
             ]
         )
         pd.DataFrame(
@@ -312,7 +312,7 @@ def build(root, batch_size=128):
                 for a, b in (
                     [("A2", "A4")]
                     if round_number == 1
-                    else [("A3.combined", "A3"), ("C1.hard", "C1"), ("C4.nohistory", "C4")]
+                    else [("A3.combined", "A3"), ("B1.hard", "B1"), ("B4.nohistory", "B4")]
                 )
             ]
         ).to_csv(directory / "exploratory.csv", index=False)
@@ -418,7 +418,7 @@ def build(root, batch_size=128):
                     description="invented saved DQ result",
                 )
             )
-    for system, version in [("C2.dq", "1.1"), ("C2@2.0", "2.0"), ("C2.dq@2.0", "2.0")]:
+    for system, version in [("B2.dq", "1.1"), ("B2@2.0", "2.0"), ("B2.dq@2.0", "2.0")]:
         mappings[system] = dict(
             answers="full_v1" if version == "1.1" else "full_v2",
             fit_answers="full_v1",
@@ -426,9 +426,9 @@ def build(root, batch_size=128):
             if version == "1.1"
             else "invented_zeroshot_schemes_2",
         )
-        if system != "C2@2.0":
+        if system != "B2@2.0":
             mappings[system]["dq"] = "invented_dq" if version == "1.1" else "invented_dq_schemes_2"
-        if system == "C2.dq@2.0":
+        if system == "B2.dq@2.0":
             # Mapping only; no S-soft parsed path workload is claimed by this benchmark.
             manifest["runs"]["ssoft"] = ["synthetic_ssoft_not_configured"]
             mappings[system]["ssoft"] = manifest["runs"]["ssoft"]

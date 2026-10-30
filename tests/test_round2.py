@@ -84,18 +84,18 @@ WRONG_HALF = [g if n % 2 else "post_hoc" for n, g in enumerate(GOLD)]
 
 
 def test_the_deciding_intervals_follow_m():
-    results = _results({"C1": RIGHT, "A0:q": HALF, "zeroshot:q": RIGHT, "C2": HALF, "C3": HALF,
-                        "C1.hard": HALF})
+    results = _results({"B1": RIGHT, "A0:q": HALF, "zeroshot:q": RIGHT, "B2": HALF, "B3": HALF,
+                        "B1.hard": HALF})
     family = hypotheses("q")
     table = deciding_family(results, family, m=4).set_index("hypothesis")
-    spread = results["C1"].resampled["macro_f1"] - results["A0:q"].resampled["macro_f1"]
+    spread = results["B1"].resampled["macro_f1"] - results["A0:q"].resampled["macro_f1"]
     h11 = table.loc["H1.1"]
     assert h11["level"] == pytest.approx(1 - 0.05 / 4)
     assert (h11["macro_f1_low"], h11["macro_f1_high"]) == tuple(
         np.percentile(spread, [0.625, 99.375]))
     assert h11["improvement"] and h11["read"] and h11["outcome"] == "improvement"
     # what is reported beside decides nothing and stays at 95 per cent
-    accuracy = results["C1"].resampled["accuracy"] - results["A0:q"].resampled["accuracy"]
+    accuracy = results["B1"].resampled["accuracy"] - results["A0:q"].resampled["accuracy"]
     assert (h11["accuracy_low"], h11["accuracy_high"]) == tuple(
         np.percentile(accuracy, [2.5, 97.5]))
 
@@ -111,8 +111,8 @@ def test_the_deciding_intervals_follow_m():
 
 
 def test_the_second_comparison_is_read_only_after_the_first_passes():
-    results = _results({"C1": RIGHT, "A0:q": HALF, "zeroshot:q": RIGHT, "C2": WRONG_HALF,
-                        "C3": HALF, "C1.hard": HALF})
+    results = _results({"B1": RIGHT, "A0:q": HALF, "zeroshot:q": RIGHT, "B2": WRONG_HALF,
+                        "B3": HALF, "B1.hard": HALF})
     table = deciding_family(results, hypotheses("q"), m=4).set_index("hypothesis")
 
     # H1.1 passes, so H1.2 is read: equal to the zero-shot is no measurable difference
@@ -120,7 +120,7 @@ def test_the_second_comparison_is_read_only_after_the_first_passes():
     assert table.loc["H1.2", "outcome"] == "no measurable difference"
     assert not table.loc["H1.2", "improvement"]
 
-    # H3.1 does not pass (C3 equals the diagram on the same answers): H3.2 is not read,
+    # H3.1 does not pass (B3 equals the diagram on the same answers): H3.2 is not read,
     # even though its interval is computed and reported
     assert not table.loc["H3.1", "improvement"]
     assert table.loc["H3.2", "computed"] and not table.loc["H3.2", "read"]
@@ -133,7 +133,7 @@ def test_the_second_comparison_is_read_only_after_the_first_passes():
     assert table.loc["H2", "outcome"] == "cost of the diagram"
 
     # with H1.1 failing, H1.2 is not read either
-    failing = _results({"C1": HALF, "A0:q": HALF, "zeroshot:q": RIGHT})
+    failing = _results({"B1": HALF, "A0:q": HALF, "zeroshot:q": RIGHT})
     table = deciding_family(failing, hypotheses("q"), m=4).set_index("hypothesis")
     assert not table.loc["H1.2", "read"]
     assert table.loc["H1.2", "outcome"] == "not read: H1.1 does not pass"
@@ -324,7 +324,7 @@ def round2(tmp_path_factory):
     return hand, out
 
 
-def test_opt_in_conformal_companion_uses_actual_c5_sets(round2):
+def test_opt_in_conformal_companion_uses_actual_b5_sets(round2):
     from types import SimpleNamespace
 
     from argfallacy.eval.analysis_conformal import conformal_tables
@@ -346,7 +346,7 @@ def test_opt_in_conformal_companion_uses_actual_c5_sets(round2):
     assert all(row["status"] == "computed" for row in status.values())
 
 
-def test_without_ssoft_runs_c4_is_missing_and_the_rest_is_computed(round2):
+def test_without_ssoft_runs_b4_is_missing_and_the_rest_is_computed(round2):
     _, out = round2
     for name in ("manifest.json", "verdicts.csv", "cq_combined.csv", "round2_choices.csv",
                  "cq_level.csv", "routing_curve.csv", "conformal.csv", "deciding.csv",
@@ -355,15 +355,15 @@ def test_without_ssoft_runs_c4_is_missing_and_the_rest_is_computed(round2):
         assert (out / name).is_file(), name
     verdicts = pd.read_csv(out / "verdicts.csv")
     systems = set(verdicts.system)
-    assert {"C1", "C2", "C3", "C1.hard", "A2.pruned", "A0:m0", "A0:m0@2.0", "zeroshot:m0", "A2",
-            "A4", "A5", "C1.majority.none.soft", "C1.dawid_skene.none.hard",
-            "C1.weighted.cq.soft", "C1.stacking.gold.hard", "C1.annotation_exclusion",
-            "C1@2.0", "C1.hard@2.0", "C1.majority.none.soft@2.0",
-            "C1.stacking.gold.soft@2.0", "C2.A0", "C3.pooled", "A3.tree"} <= systems
-    assert not {"C4", "C4.path", "C4.nohistory"} & systems
+    assert {"B1", "B2", "B3", "B1.hard", "A2.pruned", "A0:m0", "A0:m0@2.0", "zeroshot:m0", "A2",
+            "A4", "A5", "B1.majority.none.soft", "B1.dawid_skene.none.hard",
+            "B1.weighted.cq.soft", "B1.stacking.gold.hard", "B1.annotation_exclusion",
+            "B1@2.0", "B1.hard@2.0", "B1.majority.none.soft@2.0",
+            "B1.stacking.gold.soft@2.0", "B2.A0", "B3.pooled", "A3.tree"} <= systems
+    assert not {"B4", "B4.path", "B4.nohistory"} & systems
     assert not verdicts.duplicated(["system", "item_id"]).any()
-    # the exploratory C1 without the CQ labels of example is scored on the other scheme
-    excluded = verdicts[verdicts.system == "C1.annotation_exclusion"]
+    # the exploratory B1 without the CQ labels of example is scored on the other scheme
+    excluded = verdicts[verdicts.system == "B1.annotation_exclusion"]
     assert len(excluded) == 10 and excluded.item_id.str.startswith("analog").all()
 
     decide = pd.read_csv(out / "deciding.csv").set_index("hypothesis")
@@ -374,25 +374,25 @@ def test_without_ssoft_runs_c4_is_missing_and_the_rest_is_computed(round2):
     assert decide.loc["H4", "outcome"] == "missing: no S-soft run (runs.ssoft is empty)"
     manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
     assert (manifest["round"], manifest["m"]) == (2, 4)
-    for name in ("C4", "C4.path", "C4.nohistory", "C4 against C4.nohistory",
-                 "C4.nohistory against A2.pruned"):
+    for name in ("B4", "B4.path", "B4.nohistory", "B4 against B4.nohistory",
+                 "B4.nohistory against A2.pruned"):
         assert name in manifest["missing"], name
 
     explored = pd.read_csv(out / "exploratory.csv")
-    assert {("C1", "A4"), ("C1", "A2"), ("C1.annotation_exclusion", "C1")} <= set(
+    assert {("B1", "A4"), ("B1", "A2"), ("B1.annotation_exclusion", "B1")} <= set(
         zip(explored.system, explored.reference, strict=True))
-    assert explored.set_index("system").loc["C1.annotation_exclusion", "n_items"] == 10
+    assert explored.set_index("system").loc["B1.annotation_exclusion", "n_items"] == 10
     breakdown = pd.read_csv(out / "deciding_breakdowns.csv")
     assert set(breakdown.subset) == {"fallacy corpora", "scheme corpora", "analogy", "example",
                                      "without NLAS"}
     combined = pd.read_csv(out / "cq_combined.csv")
     assert not combined.duplicated(["system", "item_id", "cq_id"]).any()
     conformal = pd.read_csv(out / "conformal.csv")
-    assert {"C1", "C3.pooled", "A2", "A4", "C1.stacking.gold.soft@2.0"} <= set(conformal.system)
-    assert not set(conformal.system) & {"C1.hard", "C3", "C2"}
+    assert {"B1", "B3.pooled", "A2", "A4", "B1.stacking.gold.soft@2.0"} <= set(conformal.system)
+    assert not set(conformal.system) & {"B1.hard", "B3", "B2"}
     abstained = set(pd.read_csv(out / "abstention.csv").system)
-    assert {"C1", "C2", "C3", "A2", "A4", "zeroshot:m0", "A5"} <= abstained
-    assert not abstained & {"C1.hard", "A0:m0", "majority"}
+    assert {"B1", "B2", "B3", "A2", "A4", "zeroshot:m0", "A5"} <= abstained
+    assert not abstained & {"B1.hard", "A0:m0", "majority"}
     page = (out / "summary.html").read_text(encoding="utf-8")
     for anchor in ("deciding", "cq-level", "supervision", "routing", "ssoft", "uncertainty"):
         assert f'id="{anchor}"' in page
@@ -405,7 +405,7 @@ def test_the_same_seed_gives_the_same_outputs(round2, tmp_path):
         assert path.read_bytes() == (again / path.name).read_bytes(), path.name
 
 
-def test_the_ssoft_runs_give_c4_and_its_control(tmp_path):
+def test_the_ssoft_runs_give_b4_and_its_control(tmp_path):
     from argfallacy.aggregate import load_burden, routes
     from argfallacy.eval.round2 import _ssoft_rows, ssoft_systems
 
@@ -423,14 +423,14 @@ def test_the_ssoft_runs_give_c4_and_its_control(tmp_path):
     # answers that do not depend on the history give A2.pruned, path by path
     for item in scheme_of:
         reference = found["A2.pruned"][item]
-        for name in ("C4", "C4.nohistory"):
+        for name in ("B4", "B4.nohistory"):
             assert found[name][item].distribution == pytest.approx(reference.distribution,
                                                                    abs=1e-12)
             assert found[name][item].pruned == pytest.approx(reference.pruned, abs=1e-12)
-        assert found["C4.path"][item].verdict == reference.path_verdict
+        assert found["B4.path"][item].verdict == reference.path_verdict
     assert pending == {"ssoft": [], "ssoft_nohistory": []}
     for item in scheme_of:
-        assert found["C4"][item] == found["C4.nohistory"][item]
+        assert found["B4"][item] == found["B4.nohistory"][item]
     assert changes.set_index("scheme").loc["all", "changed"] == 0
     # a run with history is not the control, and the reverse
     with pytest.raises(SchemeError, match="without history"):
@@ -461,14 +461,14 @@ def test_incomplete_ssoft_runs_exclude_only_their_systems(
         rows[rows.item_id != missing_item].to_csv(path, index=False)
     out = evaluate(hand["config"], runs, tmp_path / "evaluations", hand["items"],
                    hand["annotations"])
-    excluded = ({"C4", "C4.path"} if "ss" in incomplete else set()) | (
-        {"C4.nohistory"} if "ssn" in incomplete else set())
+    excluded = ({"B4", "B4.path"} if "ss" in incomplete else set()) | (
+        {"B4.nohistory"} if "ssn" in incomplete else set())
     manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["m"] == 4
     assert "ssoft_items_with_pending_mass" not in manifest
     for run, field, names in (
-            ("ss", "ssoft_pending_items", ("C4", "C4.path")),
-            ("ssn", "ssoft_nohistory_pending_items", ("C4.nohistory",))):
+            ("ss", "ssoft_pending_items", ("B4", "B4.path")),
+            ("ssn", "ssoft_nohistory_pending_items", ("B4.nohistory",))):
         expected = [missing_item] if run in incomplete else []
         assert manifest[field] == {"count": len(expected), "item_ids": expected}
         for name in names:
@@ -491,7 +491,7 @@ def test_incomplete_ssoft_runs_exclude_only_their_systems(
         assert (out / "ssoft_changes.csv").read_text().strip() == "scheme,cq_id,changed"
     explored = pd.read_csv(out / "exploratory.csv")
     assert excluded.isdisjoint(explored.system) and excluded.isdisjoint(explored.reference)
-    for a, b in (("C4", "C4.nohistory"), ("C4.nohistory", "A2.pruned")):
+    for a, b in (("B4", "B4.nohistory"), ("B4.nohistory", "A2.pruned")):
         if a in excluded or b in excluded:
             reason = manifest["missing"][f"{a} against {b}"]
             assert "incomplete S-soft run" in reason and missing_item in reason

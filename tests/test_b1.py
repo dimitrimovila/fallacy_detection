@@ -15,7 +15,7 @@ from argfallacy.schemes import SchemeError, load_all
 
 
 def example_data(n=40, seed=34, full_scheme=False):
-    from argfallacy.aggregate.c1_inputs import build_dataset
+    from argfallacy.aggregate.b1_inputs import build_dataset
 
     original = load_all(REPO_ROOT / "schemes/v1")["analogy"]
     scheme = (
@@ -88,7 +88,7 @@ def example_data(n=40, seed=34, full_scheme=False):
 
 
 def test_sources_features_and_missing_entries_follow_a4():
-    from argfallacy.aggregate.c1_inputs import build_dataset
+    from argfallacy.aggregate.b1_inputs import build_dataset
     from argfallacy.aggregate.combiners import WeightedPool
 
     data, _, summary, manifest = example_data(2)
@@ -110,8 +110,8 @@ def test_sources_features_and_missing_entries_follow_a4():
 
 
 def test_every_entry_omitted_has_whole_outside_mass_and_no_hard_verdict():
-    from argfallacy.aggregate.c1 import aggregate_combined
-    from argfallacy.aggregate.c1_inputs import build_dataset
+    from argfallacy.aggregate.b1 import aggregate_combined
+    from argfallacy.aggregate.b1_inputs import build_dataset
     from argfallacy.aggregate.combiners import DawidSkene, Stacking, WeightedPool, majority
 
     data, _, summary, manifest = example_data(2)
@@ -132,7 +132,7 @@ def test_every_entry_omitted_has_whole_outside_mass_and_no_hard_verdict():
 
 @pytest.mark.parametrize("omit", [False, True])
 def test_lambda_zero_matches_a4_with_unequal_outside_masses(omit):
-    from argfallacy.aggregate.c1_inputs import build_dataset
+    from argfallacy.aggregate.b1_inputs import build_dataset
     from argfallacy.aggregate.combiners import WeightedPool
 
     data, _, summary, manifest = example_data(2)
@@ -146,7 +146,7 @@ def test_lambda_zero_matches_a4_with_unequal_outside_masses(omit):
         summary = summary[summary.model != "e1"]
     data = build_dataset(data.schemes, data.items, summary, manifest, "e0", data.routing)
     split = WeightedPool.equal(data).predict(data)
-    from argfallacy.aggregate.c1 import aggregate_combined
+    from argfallacy.aggregate.b1 import aggregate_combined
 
     for item in data.items.item_id:
         selected = summary[summary.item_id == item]
@@ -223,19 +223,19 @@ def test_gold_stacking_improves_log_mass_without_using_cq_labels():
     "combiner,supervision", [("stacking", "cq"), ("stacking", "gold"), ("weighted", "cq")]
 )
 def test_own_cq_and_gold_labels_change_no_held_out_prediction(combiner, supervision):
-    from argfallacy.aggregate.c1 import C1Config, c1_out_of_fold
+    from argfallacy.aggregate.b1 import B1Config, b1_out_of_fold
 
     data, labels, _, _ = example_data(20)
     folds = {item: i % 5 for i, item in enumerate(data.items.item_id)}
-    cfg = C1Config(combiner=combiner, supervision=supervision)
-    first = c1_out_of_fold(data, labels, folds, 23, cfg)
+    cfg = B1Config(combiner=combiner, supervision=supervision)
+    first = b1_out_of_fold(data, labels, folds, 23, cfg)
     changed = labels.copy()
     changed.loc[changed.item_id == "i000", "target"] = (
         1 - changed.loc[changed.item_id == "i000", "target"]
     )
     other_items = data.items.copy()
     other_items.loc[other_items.item_id == "i000", "gold_fallacy"] = "weak_analogy"
-    second = c1_out_of_fold(replace(data, items=other_items), changed, folds, 23, cfg)
+    second = b1_out_of_fold(replace(data, items=other_items), changed, folds, 23, cfg)
     assert first.aggregations["i000"] == second.aggregations["i000"]
     a = first.combined[first.combined.item_id == "i000"].p_first.to_numpy()
     b = second.combined[second.combined.item_id == "i000"].p_first.to_numpy()
@@ -266,27 +266,27 @@ def test_dawid_skene_recovers_known_confusions_and_is_deterministic():
 
 
 def test_same_seed_same_outputs_and_no_label_access_without_supervision():
-    from argfallacy.aggregate.c1 import C1Config, c1_out_of_fold, configurations
+    from argfallacy.aggregate.b1 import B1Config, b1_out_of_fold, configurations
 
     data, labels, _, _ = example_data(20)
     folds = {item: i % 5 for i, item in enumerate(data.items.item_id)}
     for name in ("majority", "dawid_skene"):
-        cfg = C1Config(combiner=name, supervision="none")
-        first = c1_out_of_fold(data, None, folds, 9, cfg)
-        second = c1_out_of_fold(data, labels.assign(target=1 - labels.target), folds, 9, cfg)
+        cfg = B1Config(combiner=name, supervision="none")
+        first = b1_out_of_fold(data, None, folds, 9, cfg)
+        second = b1_out_of_fold(data, labels.assign(target=1 - labels.target), folds, 9, cfg)
         pd.testing.assert_frame_equal(first.combined, second.combined)
         assert len(first.models) == 1
-    cfg = C1Config()
-    first, second = [c1_out_of_fold(data, labels, folds, 9, cfg) for _ in range(2)]
+    cfg = B1Config()
+    first, second = [b1_out_of_fold(data, labels, folds, 9, cfg) for _ in range(2)]
     pd.testing.assert_frame_equal(first.combined, second.combined)
     assert first.choices == second.choices
     names = {c.name for c in configurations()}
-    assert "C1" in names and "C1.hard" in names and len(names) == 10
+    assert "B1" in names and "B1.hard" in names and len(names) == 10
 
 
 @pytest.mark.parametrize("other_scheme", ["ad_hominem", "none", "idk"])
 def test_cq_labels_are_binary_and_only_from_the_gold_sheet(other_scheme):
-    from argfallacy.eval.c1 import cq_labels
+    from argfallacy.eval.b1 import cq_labels
 
     schemes = load_all(REPO_ROOT / "schemes/v1")
     items = pd.DataFrame([{"item_id": "i0", "gold_scheme": "analogy"}])
@@ -337,7 +337,7 @@ def test_cq_labels_are_binary_and_only_from_the_gold_sheet(other_scheme):
 def test_frozen_cq_labels_have_2656_pairs_under_the_pool_a_rule():
     from argfallacy.annotation_samples import pool_a
     from argfallacy.annotations import load_annotations
-    from argfallacy.eval.c1 import cq_labels, gold_scheme_answers
+    from argfallacy.eval.b1 import cq_labels, gold_scheme_answers
     from argfallacy.eval.prior import load_test_set
 
     items, annotations = load_test_set(), load_annotations()
@@ -350,21 +350,21 @@ def test_frozen_cq_labels_have_2656_pairs_under_the_pool_a_rule():
 
 
 def test_item_bootstrap_keeps_all_cqs_together_and_uses_paired_differences():
-    from argfallacy.eval.c1 import cq_evaluation
+    from argfallacy.eval.b1 import cq_evaluation
 
     data, labels, _, _ = example_data(2, full_scheme=True)
     outputs = data.pairs.copy()
     outputs["p_first"], outputs["answer"] = 0.9, "yes"
-    outputs["system"], outputs["supervision"] = "C1", "cq"
+    outputs["system"], outputs["supervision"] = "B1", "cq"
     reference = outputs.assign(system="entry:e0", p_first=0.1, answer="no", supervision="none")
     # Whole items, with no resample containing both items.
     indices = np.array([[0, 0], [1, 1]])
     report = cq_evaluation(data, labels, pd.concat([outputs, reference]), indices)
-    row = report.level[(report.level.system == "C1") & (report.level.scheme == "all")].iloc[0]
+    row = report.level[(report.level.system == "B1") & (report.level.scheme == "all")].iloc[0]
     assert row.agreement == pytest.approx(0.5)
     assert row.agreement_low == pytest.approx(0.025) and row.agreement_high == pytest.approx(0.975)
     diff = report.differences[
-        (report.differences.system == "C1")
+        (report.differences.system == "B1")
         & (report.differences.reference == "entry:e0")
         & (report.differences.scheme == "all")
     ].iloc[0]
@@ -373,7 +373,7 @@ def test_item_bootstrap_keeps_all_cqs_together_and_uses_paired_differences():
 
 
 def test_duplicate_or_misaligned_model_rows_fail_with_context():
-    from argfallacy.aggregate.c1_inputs import build_dataset
+    from argfallacy.aggregate.b1_inputs import build_dataset
 
     data, _, summary, manifest = example_data(2)
     with pytest.raises(SchemeError, match="i000.*CQ4|CQ4.*i000"):
@@ -388,7 +388,7 @@ def test_duplicate_or_misaligned_model_rows_fail_with_context():
 
 
 def test_majority_uses_mean_outside_mass_and_reference_arc_ties():
-    from argfallacy.aggregate.c1 import aggregate_combined, hard_codes
+    from argfallacy.aggregate.b1 import aggregate_combined, hard_codes
     from argfallacy.aggregate.combiners import majority, majority_codes
 
     data, _, _, _ = example_data(4)
@@ -421,21 +421,21 @@ def test_unanimous_weighted_pool_for_arbitrary_nonnegative_weights_and_shrinkage
 
 
 def test_transfer_and_exploratory_exclusions_keep_the_original_fit():
-    from argfallacy.aggregate.c1 import C1Config, c1_out_of_fold, training_labels, transfer_c1
+    from argfallacy.aggregate.b1 import B1Config, b1_out_of_fold, training_labels, transfer_b1
 
     data, labels, _, _ = example_data(20)
     folds = {item: i % 5 for i, item in enumerate(data.items.item_id)}
-    source = c1_out_of_fold(data, labels, folds, 9)
-    transferred = transfer_c1(source, data)
+    source = b1_out_of_fold(data, labels, folds, 9)
+    transferred = transfer_b1(source, data)
     np.testing.assert_equal(
         source.combined.p_first.to_numpy(), transferred.combined.p_first.to_numpy()
     )
-    assert transferred.config.name == "C1@2.0"
-    config = C1Config(exclude_schemes=tuple(data.schemes))
+    assert transferred.config.name == "B1@2.0"
+    config = B1Config(exclude_schemes=tuple(data.schemes))
     kept, excluded = training_labels(data, labels, data.items.item_id, config)
     assert kept.empty and excluded == set(data.questions)
     repeats = labels.assign(target=1 - labels.target)
-    config = C1Config(unstable=True)
+    config = B1Config(unstable=True)
     assert training_labels(data, labels, data.items.item_id[:9], config, repeats)[1] == set()
     assert training_labels(data, labels, data.items.item_id[:10], config, repeats)[1] == set(
         data.questions
@@ -443,7 +443,7 @@ def test_transfer_and_exploratory_exclusions_keep_the_original_fit():
 
 
 def test_exploratory_registry_and_baselines():
-    from argfallacy.aggregate.c1 import aggregate_combined, baseline_aggregations, configurations
+    from argfallacy.aggregate.b1 import aggregate_combined, baseline_aggregations, configurations
     from argfallacy.aggregate.combiners import WeightedPool
 
     configs = configurations(excluded_label_schemes=("analogy",), include_unstable=True)
@@ -462,7 +462,7 @@ def test_exploratory_registry_and_baselines():
 
 
 def test_human_path_reference_reports_coverage_on_both_denominators():
-    from argfallacy.eval.c1 import human_path_reference
+    from argfallacy.eval.b1 import human_path_reference
 
     data, _, _, _ = example_data(2, full_scheme=True)
     scheme = next(iter(data.schemes.values()))
@@ -498,8 +498,8 @@ def test_human_path_reference_reports_coverage_on_both_denominators():
 @pytest.mark.parametrize("folder", ["v1", "v2"])
 def test_gold_mass_and_gradient_follow_all_burden_routes_and_diagram_paths(folder):
     from argfallacy.aggregate import load_burden, routes
-    from argfallacy.aggregate.c1 import aggregate_combined
-    from argfallacy.aggregate.c1_inputs import build_dataset
+    from argfallacy.aggregate.b1 import aggregate_combined
+    from argfallacy.aggregate.b1_inputs import build_dataset
     from argfallacy.aggregate.combiners import DiagramLoss, Stacking
 
     schemes = load_all(REPO_ROOT / "schemes" / folder)

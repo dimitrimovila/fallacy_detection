@@ -297,7 +297,7 @@ def comparisons(evaluations, items, bootstrap):
 
 
 def rare_diagnosis(evaluations, items, bootstrap):
-    """Fix the <20 list on the full test set; compare C1's four common populations."""
+    """Fix the <20 list on the full test set; compare B1's four common populations."""
     vocabulary = bootstrap.scorer(items.gold_fallacy.tolist()).vocab
     classes = label_space("fine", vocabulary)
     support = items.gold_fallacy.value_counts()
@@ -305,12 +305,12 @@ def rare_diagnosis(evaluations, items, bootstrap):
     rows = []
     for evaluation in evaluations:
         names = [
-            "C1",
+            "B1",
             f"A0:{evaluation.manifest['reference_model']}",
             "A2",
             f"zeroshot:{evaluation.manifest['reference_model']}",
         ]
-        if "C1" not in evaluation.systems:
+        if "B1" not in evaluation.systems:
             continue
         available = [evaluation.systems[n] for n in names if n in evaluation.systems]
         common = np.logical_and.reduce([s.eligible for s in available])

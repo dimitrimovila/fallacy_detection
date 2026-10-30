@@ -13,7 +13,7 @@ from sklearn.model_selection import KFold
 from ..eval.folds import assign_folds
 from ..prompts import CANNOT_BE_DETERMINED, NOT_APPLICABLE
 from ..schemes import SchemeError
-from .c1_inputs import C1Dataset
+from .b1_inputs import B1Dataset
 from .combiners import DawidSkene, Stacking, WeightedPool, combined_codes, majority
 from .diagram import a0
 from .interface import TIE, Aggregation, decide, macro_f1
@@ -24,8 +24,8 @@ LAMBDA_GRID = (0.0, 0.25, 0.5, 0.75, 1.0)
 
 
 @dataclass(frozen=True)
-class C1Config:
-    name: str = "C1"
+class B1Config:
+    name: str = "B1"
     combiner: str = "stacking"
     supervision: str = "cq"
     traversal: str = "soft"
@@ -43,22 +43,22 @@ class C1Config:
             ("stacking", "gold"),
         }
         if (self.combiner, self.supervision) not in valid or self.traversal not in {"soft", "hard"}:
-            raise SchemeError("unsupported C1 combiner, supervision or traversal")
+            raise SchemeError("unsupported B1 combiner, supervision or traversal")
         if (self.exclude_schemes or self.unstable) and self.supervision != "cq":
             raise SchemeError("CQ annotation exclusions require CQ supervision")
         if self.balanced and self.supervision != "gold":
             raise SchemeError("balanced class weights require gold supervision")
 
 
-PRIMARY_CONFIG = C1Config()
+PRIMARY_CONFIG = B1Config()
 
 
 def configurations(
     *, schemes_version="1.1", excluded_label_schemes=(), include_unstable=False
-) -> tuple[C1Config, ...]:
-    """Named fits; CQ-supervised transfer to 2.0 uses transfer_c1 instead of refitting."""
+) -> tuple[B1Config, ...]:
+    """Named fits; CQ-supervised transfer to 2.0 uses transfer_b1 instead of refitting."""
     if schemes_version not in {"1.1", "2.0"}:
-        raise SchemeError(f"unsupported C1 schemes version {schemes_version!r}")
+        raise SchemeError(f"unsupported B1 schemes version {schemes_version!r}")
     out = []
     for combiner, supervision in [
         ("majority", "none"),
@@ -72,25 +72,25 @@ def configurations(
                 continue
             primary = combiner == "stacking" and supervision == "cq"
             name = (
-                ("C1" if traversal == "soft" else "C1.hard")
+                ("B1" if traversal == "soft" else "B1.hard")
                 if primary
-                else (f"C1.{combiner}.{supervision}.{traversal}")
+                else (f"B1.{combiner}.{supervision}.{traversal}")
             )
             if schemes_version == "2.0":
                 name += "@2.0"
-            out.append(C1Config(name, combiner, supervision, traversal))
+            out.append(B1Config(name, combiner, supervision, traversal))
     if schemes_version == "1.1":
         if excluded_label_schemes:
             out.append(
-                C1Config("C1.annotation_exclusion", exclude_schemes=tuple(excluded_label_schemes))
+                B1Config("B1.annotation_exclusion", exclude_schemes=tuple(excluded_label_schemes))
             )
         if include_unstable:
-            out.append(C1Config("C1.stable_cqs", unstable=True))
+            out.append(B1Config("B1.stable_cqs", unstable=True))
     return tuple(out)
 
 
 BALANCED_CONFIGS = tuple(
-    C1Config(f"C1.stacking.gold_balanced.{traversal}", "stacking", "gold", traversal,
+    B1Config(f"B1.stacking.gold_balanced.{traversal}", "stacking", "gold", traversal,
              balanced=True) for traversal in ("soft", "hard"))
 """Stacking supervised by the gold verdicts with balanced class weights, on schemes 1.1;
 named after the results of round 2, so kept apart from the configurations above."""
@@ -105,7 +105,7 @@ class Majority:
 def training_labels(data, labels, ids, config, repeats=None):
     """Estimate an instability exclusion using training labels only, including inner fits."""
     if labels is None:
-        raise SchemeError("CQ-supervised C1 needs binary CQ labels")
+        raise SchemeError("CQ-supervised B1 needs binary CQ labels")
     unknown = set(config.exclude_schemes) - set(data.schemes)
     if unknown:
         raise SchemeError(f"unknown schemes in CQ label exclusions: {sorted(unknown)}")
@@ -136,7 +136,7 @@ def _fit(data, labels, ids, config, parameter, selections=None, repeats=None):
     return Stacking.fit_gold(data, ids, parameter, config.balanced)
 
 
-def fit_c1(data, labels, ids, seed, config=PRIMARY_CONFIG, repeats=None):
+def fit_b1(data, labels, ids, seed, config=PRIMARY_CONFIG, repeats=None):
     """Fit one training partition; suitable for nested cross-fitting by later components."""
     ids = sorted(set(ids))
     if config.supervision == "none":
@@ -226,7 +226,7 @@ def hard_codes(data, p):
 
 
 def aggregate_combined(
-    data: C1Dataset, p: Sequence[float], traversal: str
+    data: B1Dataset, p: Sequence[float], traversal: str
 ) -> dict[str, Aggregation]:
     """A0 or A2 on the combined split and the fixed mean mass outside the arcs."""
     p = np.asarray(p, dtype=float)
@@ -265,13 +265,13 @@ def aggregate_combined(
             explanation = _explain(scheme, terminals, abstention, arcs, note)
             output[item] = decide(terminals, abstention, explanation)
         else:
-            raise SchemeError(f"unknown C1 traversal {traversal!r}")
+            raise SchemeError(f"unknown B1 traversal {traversal!r}")
     return output
 
 
 @dataclass(frozen=True)
-class C1Result:
-    config: C1Config
+class B1Result:
+    config: B1Config
     aggregations: Mapping[str, Aggregation]
     combined: pd.DataFrame
     choices: list[dict]
@@ -298,23 +298,23 @@ def _result(data, p, config, choices, models, folds):
         combined = combined[~combined.scheme.isin(config.exclude_schemes)].reset_index(drop=True)
         keep = set(combined.item_id)
         aggregations = {i: v for i, v in aggregations.items() if i in keep}
-    return C1Result(config, aggregations, combined, choices, models, dict(folds))
+    return B1Result(config, aggregations, combined, choices, models, dict(folds))
 
 
-def c1_out_of_fold(
-    data: C1Dataset,
+def b1_out_of_fold(
+    data: B1Dataset,
     labels: pd.DataFrame | None,
     folds: Mapping[str, int] | None,
     seed: int,
-    config: C1Config = PRIMARY_CONFIG,
+    config: B1Config = PRIMARY_CONFIG,
     repeats=None,
-) -> C1Result:
+) -> B1Result:
     """Fit labelled parameters only on other items; unsupervised DS fits all items once."""
     folds = dict(folds) if folds is not None else assign_folds(data.items, seed)
     if missing := set(data.items.item_id) - set(folds):
-        raise SchemeError(f"C1 items have no fold: {sorted(missing)}")
+        raise SchemeError(f"B1 items have no fold: {sorted(missing)}")
     if config.supervision == "none":
-        model, _ = fit_c1(data, None, data.items.item_id, seed, config)
+        model, _ = fit_b1(data, None, data.items.item_id, seed, config)
         return _result(data, model.predict(data), config, [], {None: model}, folds)
     p, models, choices = np.full(len(data.pairs), np.nan), {}, []
     for fold in sorted(set(folds.values())):
@@ -322,7 +322,7 @@ def c1_out_of_fold(
         test = [i for i in data.items.item_id if folds[i] == fold]
         if not test:
             continue
-        model, choice = fit_c1(data, labels, train, seed, config, repeats)
+        model, choice = fit_b1(data, labels, train, seed, config, repeats)
         models[fold] = model
         choices.append({"fold": fold, "component": config.name, **choice})
         selected = data.pair_indices(test)
@@ -330,7 +330,7 @@ def c1_out_of_fold(
     return _result(data, p, config, choices, models, folds)
 
 
-def retraverse(data: C1Dataset, source: C1Result, config: C1Config) -> C1Result:
+def retraverse(data: B1Dataset, source: B1Result, config: B1Config) -> B1Result:
     """The combined answers of ``source`` through the traversal of ``config``, with no new
     fit: a traversal changes no combined answer."""
     same = ("combiner", "supervision", "exclude_schemes", "unstable", "balanced")
@@ -342,10 +342,10 @@ def retraverse(data: C1Dataset, source: C1Result, config: C1Config) -> C1Result:
     return _result(data, p, config, source.choices, source.models, source.folds)
 
 
-def transfer_c1(source: C1Result, target: C1Dataset, name=None) -> C1Result:
+def transfer_b1(source: B1Result, target: B1Dataset, name=None) -> B1Result:
     """Apply the original CQ-supervised coefficients of each item's held-out fold."""
     if source.config.combiner != "stacking" or source.config.supervision != "cq":
-        raise SchemeError("cross-version C1 transfer requires CQ-supervised stacking")
+        raise SchemeError("cross-version B1 transfer requires CQ-supervised stacking")
     if name is None:
         name = source.config.name + "@2.0"
     p = np.full(len(target.pairs), np.nan)
@@ -358,7 +358,7 @@ def transfer_c1(source: C1Result, target: C1Dataset, name=None) -> C1Result:
     )
 
 
-def combined_rows(data: C1Dataset, p: Sequence[float]) -> dict[str, dict[str, dict]]:
+def combined_rows(data: B1Dataset, p: Sequence[float]) -> dict[str, dict[str, dict]]:
     """item -> CQ -> a row of ``summary.csv`` that carries the combined answer: the hard
     combined answer and, as ``p_logprob_<answer>``, the masses of the two arcs and the mass
     outside them, so that an aggregator of round 1 reads it with the source ``logprob``."""
@@ -380,7 +380,7 @@ def combined_rows(data: C1Dataset, p: Sequence[float]) -> dict[str, dict[str, di
     return out
 
 
-def baseline_aggregations(data: C1Dataset) -> dict[str, dict[str, Aggregation]]:
+def baseline_aggregations(data: B1Dataset) -> dict[str, dict[str, Aggregation]]:
     """A2 of the reference entry and A4, using the unchanged round-one aggregators."""
     output = {f"A2:{data.reference}": {}, "A4": {}}
     for item, group in data.pairs.groupby("item_id", sort=False):

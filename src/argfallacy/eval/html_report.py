@@ -755,29 +755,29 @@ def write_summary(folder, judge_audit=None, revised_cqs=None, report_format="aut
 # ------------------------------------------------------------------ round 2
 
 ROUND2_METHODS = {
-    "C1": "C1 · combined CQ answers, soft diagram",
-    "C1.hard": "C1.hard · combined answers, hard diagram",
-    "C2": "C2 · routing between diagram and zero-shot",
-    "C3": "C3 · scheme trees on the combined answers",
-    "C4": "C4 · S-soft",
-    "C4.path": "C4.path · single S-soft path",
-    "C4.nohistory": "C4.nohistory · S-soft without history",
+    "B1": "B1 · combined CQ answers, soft diagram",
+    "B1.hard": "B1.hard · combined answers, hard diagram",
+    "B2": "B2 · routing between diagram and zero-shot",
+    "B3": "B3 · scheme trees on the combined answers",
+    "B4": "B4 · S-soft",
+    "B4.path": "B4.path · single S-soft path",
+    "B4.nohistory": "B4.nohistory · S-soft without history",
     "A2.pruned": "A2.pruned · independent answers, same pruning",
     "A2": "A2 · probabilistic diagram (round 1)",
     "A4": "A4 · equal-weight ensemble (round 1)",
     "A5": "A5 · LLM judge with explanations",
     "A5.answers_only": "A5 · LLM judge, answers only",
-    "C2.A0": "C2.A0 · routing with the reference diagram",
-    "C3.pooled": "C3.pooled · recalibrated terminal masses",
+    "B2.A0": "B2.A0 · routing with the reference diagram",
+    "B3.pooled": "B3.pooled · recalibrated terminal masses",
     "A3.tree": "A3.tree · trees on the reference answers",
     "majority": "Majority per scheme (oracle)",
     "A3": "A3 · logistic regression per scheme (round 1)",
     "A3.combined": "A3.combined · A3 on the combined answers of the majority",
     "A2.prior": "A2.prior · A2, mass divided by the class frequency",
-    "C1.prior": "C1.prior · C1, mass divided by the class frequency",
-    "C3.pooled.balanced": "C3.pooled.balanced · recalibration with balanced classes",
-    "C1.stacking.gold_balanced.soft": "(c) with balanced classes · soft diagram",
-    "C1.stacking.gold_balanced.hard": "(c) with balanced classes · hard diagram",
+    "B1.prior": "B1.prior · B1, mass divided by the class frequency",
+    "B3.pooled.balanced": "B3.pooled.balanced · recalibration with balanced classes",
+    "B1.stacking.gold_balanced.soft": "(c) with balanced classes · soft diagram",
+    "B1.stacking.gold_balanced.hard": "(c) with balanced classes · hard diagram",
 }
 OUTCOMES = {"improvement": "pill", "no measurable difference": "pill neutral"}
 PALETTE = ("#176aa2", "#c4622d", "#24938b", "#8a4fb5", "#b8912f", "#b15b76", "#4d6b85",
@@ -988,10 +988,10 @@ def write_round2_summary(folder):
                                         ("dawid_skene", "none", "(a)"),
                                         ("weighted", "cq", "(b)"), ("stacking", "cq", "(b)"),
                                         ("stacking", "gold", "(c)")):
-        soft = "C1" if (combiner, supervision) == ("stacking", "cq") else \
-            f"C1.{combiner}.{supervision}.soft"
-        hard = "C1.hard" if soft == "C1" else soft.removesuffix(".soft") + ".hard"
-        cq_row = (level_table[(level_table.system == f"C1.{combiner}.{supervision}")
+        soft = "B1" if (combiner, supervision) == ("stacking", "cq") else \
+            f"B1.{combiner}.{supervision}.soft"
+        hard = "B1.hard" if soft == "B1" else soft.removesuffix(".soft") + ".hard"
+        cq_row = (level_table[(level_table.system == f"B1.{combiner}.{supervision}")
                               & (level_table.scheme == "all")] if len(level_table) else [])
         got = cq_row.iloc[0] if len(cq_row) else {}
         rows.append(
@@ -1041,15 +1041,15 @@ def write_round2_summary(folder):
         content = figure + table(["Requested share", "τ", "Share reached", "Macro F1 · 95%",
                                   "Accuracy · 95%"], rows)
     else:
-        content = '<p class="empty">C2 was not computed.</p>'
+        content = '<p class="empty">B2 was not computed.</p>'
     sections.append(section(
         "routing", "The cost of staying explainable",
-        "C2 with every threshold τ from −1 to 1: the diagram where P_d ≥ P_z − τ. Agreeing "
+        "B2 with every threshold τ from −1 to 1: the diagram where P_d ≥ P_z − τ. Agreeing "
         "verdicts count as explained by the diagram. Thresholds are read on the pooled "
         "out-of-fold estimates and fixed across resamples. Descriptive.", content))
 
     # S-soft
-    shown = [n for n in ("C4", "C4.path", "C4.nohistory", "A2.pruned",
+    shown = [n for n in ("B4", "B4.path", "B4.nohistory", "A2.pruned",
                          f"A0:{manifest['reference_model']}@2.0") if n in by_system.index]
     content = metric_table(main[main.system.isin(shown)], label) if shown else ""
     pending_history = manifest.get("ssoft_pending_items", {}).get("count", 0)
@@ -1059,14 +1059,14 @@ def write_round2_summary(folder):
             item = "item" if count == 1 else "items"
             content += (f'<p class="note">Incomplete S-soft {run} run: {count} {item} with '
                         "pending mass; its systems and comparisons are not computed.</p>")
-    if "C4" not in by_system.index and not (pending_history or pending_control):
-        content += ('<p class="note">No S-soft run yet: C4, C4.path, C4.nohistory and their '
+    if "B4" not in by_system.index and not (pending_history or pending_control):
+        content += ('<p class="note">No S-soft run yet: B4, B4.path, B4.nohistory and their '
                     "comparisons are listed as missing; H4 is not computed and m stays "
                     f"{manifest['m']}.</p>")
-    elif "C4" in by_system.index:
+    elif "B4" in by_system.index:
         content += (f'<p class="note">Items with pending mass (calls missing from the run): '
                     f"{pending_history}.</p>")
-        ssoft_rows = explored[explored.system.str.startswith("C4")] if len(explored) else []
+        ssoft_rows = explored[explored.system.str.startswith("B4")] if len(explored) else []
         if len(ssoft_rows):
             content += table(["Comparison", "Δ macro F1 · 95%"], [
                 f"<tr><th>{E(label(r['system']))} vs {E(label(r['reference']))}<br><small>"
@@ -1099,7 +1099,7 @@ def write_round2_summary(folder):
         content += table(["System", "AUGRC ↓", "AURC ↓",
                           *[f"Accuracy at {v}%" for v in levels], "AUGRC by margin ↓"], rows)
         curves = tables["abstention_curves"]
-        drawn = [n for n in ("C1", "C2", "C3", "C4", "A2", "A4",
+        drawn = [n for n in ("B1", "B2", "B3", "B4", "A2", "A4",
                              f"zeroshot:{manifest['reference_model']}", "A5")
                  if len(curves) and n in set(curves.system)]
         if drawn:
@@ -1333,7 +1333,7 @@ def dq_section(folder, manifest, read):
     content += part("abstention", "Abstention", uncertainty)
     routing = tables["exploratory"]
     if "comparison" in routing:
-        routing = routing[routing.comparison == "C2"]
+        routing = routing[routing.comparison == "B2"]
     routing_content = values(routing, ["system", "reference", "n_items"],
                              ["macro_f1_difference", "explained_share"])
     curve = tables["routing_curve"]
@@ -1342,16 +1342,16 @@ def dq_section(folder, manifest, read):
         routing_content += _figure([
             ("Macro F1", PALETTE[0], list(zip(line.explained_share, line.macro_f1, strict=True))),
             ("Accuracy", PALETTE[1], list(zip(line.explained_share, line.accuracy, strict=True)))
-        ], "share of verdicts explained by C1@2.0", "score")
+        ], "share of verdicts explained by B1@2.0", "score")
         routing_content += values(curve[curve.requested_share.notna()],
                                   ["requested_share", "tau", "attainable"],
                                   ["explained_share", "macro_f1", "accuracy"])
     routing_content += ('<p class="note">All routing comparisons here are exploratory. '
-                        "C2@2.0 uses two sides and threshold zero; its curve varies the threshold. "
-                        "C2.dq adds D+Q on schemes 1.1. C2.dq@2.0 adds D+Q and S-soft on "
-                        "schemes 2.0. A verdict is explained when it equals C1, C4, or a "
+                        "B2@2.0 uses two sides and threshold zero; its curve varies the threshold. "
+                        "B2.dq adds D+Q on schemes 1.1. B2.dq@2.0 adds D+Q and S-soft on "
+                        "schemes 2.0. A verdict is explained when it equals B1, B4, or a "
                         "consistent D+Q verdict. Added confidences use training-item mean "
-                        "imputation and a missing indicator. C1 is cross-fitted within every "
+                        "imputation and a missing indicator. B1 is cross-fitted within every "
                         "training partition, fitting the original CQ labels for transfer "
                         "to 2.0.</p>")
     routing_content += "<details><summary>Routing and upstream hyperparameters</summary>" + values(

@@ -1,4 +1,4 @@
-"""C2: estimate correctness on disagreements and choose an available side."""
+"""B2: estimate correctness on disagreements and choose an available side."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from sklearn.linear_model import LogisticRegression
 from ..eval.folds import assign_folds
 from ..parse import INVALID
 from ..schemes import SchemeError
-from .c1 import C_GRID
+from .b1 import C_GRID
 from .crossfit import CQInputs, inner_partitions
 from .interface import TIE, Aggregation, decide
 from .soft import OUTSIDE, _most_probable_path, _route
@@ -282,7 +282,7 @@ def _choose(source, fixed, train):
 
 
 @dataclass(frozen=True)
-class C2Result:
+class B2Result:
     aggregations: Mapping[str, Aggregation]
     records: pd.DataFrame
     models: Mapping[int, Router]
@@ -312,9 +312,9 @@ class C2Result:
         return replace(self, aggregations=predictions, records=records)
 
 
-def c2_out_of_fold(
-    source, zero: Side, folds=None, *, tau=0.0, extra_sides=(), name="C2", schemes_version=None
-) -> C2Result:
+def b2_out_of_fold(
+    source, zero: Side, folds=None, *, tau=0.0, extra_sides=(), name="B2", schemes_version=None
+) -> B2Result:
     data = source.data
     folds = dict(folds) if folds is not None else assign_folds(data.items, source.seed)
     fixed = (zero, *extra_sides)
@@ -384,7 +384,7 @@ def c2_out_of_fold(
                     "probabilities": dict(zip(names, p, strict=True)),
                 }
             )
-    return C2Result(
+    return B2Result(
         predictions,
         pd.DataFrame(records).sort_values("item_id").reset_index(drop=True),
         models,

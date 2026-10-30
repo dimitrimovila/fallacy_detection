@@ -1,4 +1,4 @@
-"""CQ-label provenance and paired item-bootstrap evaluation of C1 answers."""
+"""CQ-label provenance and paired item-bootstrap evaluation of B1 answers."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from itertools import combinations
 import numpy as np
 import pandas as pd
 
-from ..aggregate.c1_inputs import C1Dataset
+from ..aggregate.b1_inputs import B1Dataset
 from ..annotations import gold_scheme_rows
 from ..schemes import SchemeError, traverse
 from .canonical import score_fallacies
@@ -40,7 +40,7 @@ def cq_labels(annotations, items, schemes):
     return pd.DataFrame(records, columns=["item_id", "scheme", "cq_id", "answer", "target"])
 
 
-def entry_answers(data: C1Dataset):
+def entry_answers(data: B1Dataset):
     """Each entry with its regime's distribution, including outside hard answers."""
     frames = []
     for e, entry in enumerate(data.entries):
@@ -59,7 +59,7 @@ class CQEvaluation:
 
 
 def cq_evaluation(
-    data: C1Dataset,
+    data: B1Dataset,
     labels: pd.DataFrame,
     predictions: pd.DataFrame,
     indices=None,

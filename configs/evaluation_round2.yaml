@@ -1,9 +1,9 @@
-# The evaluation of round 2: C1, C2 and C3 on full run v2, their exploratory configurations
-# on full run v3, C4 and its control on the S-soft runs, the uncertainty of C5, and the four
+# The evaluation of round 2: B1, B2 and B3 on full run v2, their exploratory configurations
+# on full run v3, B4 and its control on the S-soft runs, the uncertainty of B5, and the four
 # deciding comparisons at level 1 - 0.05/m. `argfallacy evaluate configs/evaluation_round2.yaml`
 # writes it into evaluations/round2/, replacing the previous output.
 # The runs must have been parsed by the current parser; the zero-shot run of the reference
-# model needs its p_label, a feature of C2.
+# model needs its p_label, a feature of B2.
 
 name: round2
 runs:
@@ -29,6 +29,6 @@ resamples: 10000
 folds: 5
 # the number of components with a primary configuration, for the Bonferroni level
 m: 4
-# the exploratory C1 without the CQ labels of these schemes, whose sheets went through a
+# the exploratory B1 without the CQ labels of these schemes, whose sheets went through a
 # different checking procedure; it is scored on the other schemes
 cq_label_exclusion: [example, cause_to_effect, correlation_to_cause]

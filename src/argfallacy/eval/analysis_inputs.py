@@ -344,7 +344,7 @@ def read_evaluation(name, source, config, items, registry, inputs):
         version = str(row.get("schemes", default))
         require(version in registry, f"{name}/{system}: unknown scheme version {version}")
         rule = source["populations"].get(system)
-        if rule is None and system == "C1.annotation_exclusion":
+        if rule is None and system == "B1.annotation_exclusion":
             require(bool(m.get("cq_label_exclusion")), f"{name}: absent population declaration")
             rule = {"exclude_schemes": m["cq_label_exclusion"]}
         eligible = np.ones(len(items), bool)

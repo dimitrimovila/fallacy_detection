@@ -1,16 +1,16 @@
-# C3 on schemes 2.0: controlled diagnostic experiment
+# B3 on schemes 2.0: controlled diagnostic experiment
 
 Protocol frozen on 29 October 2026, before the new fits. This is an exploratory
 extension selected after inspecting this benchmark, not a new confirmatory test.
 
 ## Question and scope
 
-Does the original C3 learner improve the mapping from transferred C1 CQ signals
-to the frozen fine-grained gold, relative to C1.hard on schemes 2.0?
+Does the original B3 learner improve the mapping from transferred B1 CQ signals
+to the frozen fine-grained gold, relative to B1.hard on schemes 2.0?
 Predictive improvement, competitiveness, and Walton validity are separate outcomes.
 The contrast changes numerical thresholds and abstention handling as well as tree
 structure; it cannot isolate topology alone. A negative result applies to this
-transferred C1 pipeline, not to every learner or to CQ sufficiency in general.
+transferred B1 pipeline, not to every learner or to CQ sufficiency in general.
 
 No new LLM calls, schemes, labels, prompts, datasets, solver, or grid. Historical
 evaluations are read-only. A separate command and output directory prevent a
@@ -19,14 +19,14 @@ rerun of unrelated round-two fits. Existing user changes are preserved.
 ## Inputs and isolation
 
 * All 601 frozen test arguments, gold scheme supplied, canonical fine scoring.
-* Five-model isolated CQ outputs: full_v2 (1.1) trains CQ-supervised C1; full_v3
-  (2.0) supplies target features. C1 coefficients are global signal weights,
+* Five-model isolated CQ outputs: full_v2 (1.1) trains CQ-supervised B1; full_v3
+  (2.0) supplies target features. B1 coefficients are global signal weights,
   transferred across versions, not human labels mapped by CQ identifier.
 * The same five historical outer folds, seed 20261019; all CQ/model rows of an
   argument stay together. This retains the historical argument split and does
   not assert a new semantic-duplicate grouping. No new repeat search.
-* Reconstruct C1 inside every training partition, including inner model
-  selection and training-feature cross-fitting, with C1CrossFitter.fit_data.
+* Reconstruct B1 inside every training partition, including inner model
+  selection and training-feature cross-fitting, with B1CrossFitter.fit_data.
   Globally saved OOF CQ rows are never training inputs for the downstream model.
 * Save exact training/held-out IDs for upstream fits and downstream tuning.
   Held-out gold/CQ-label mutation must not change its own prediction under fixed
@@ -36,11 +36,11 @@ rerun of unrelated round-two fits. Existing user changes are preserved.
 
 ## Unchanged learner
 
-Original CQTree/C3: one balanced Gini CART per scheme; features in YAML order are
+Original CQTree/B3: one balanced Gini CART per scheme; features in YAML order are
 p_first and outside-arc mass for every CQ. max_depth in {1,2,3};
 min_samples_leaf in {1,3,5}. Preserve original grid order (shallower, then larger
 leaves on tied inner pooled Macro-F1), four shuffled inner folds and small-sample
-fallbacks. C1 retains its original grid, shrinkage, and CQ-label supervision.
+fallbacks. B1 retains its original grid, shrinkage, and CQ-label supervision.
 Do not impose new Walton constraints during fitting: semantic rejection is an
 audit outcome, not an unrecorded change to the learner.
 
@@ -50,8 +50,8 @@ items remain in the primary test scoring and receive explicit audit records.
 
 ## Baseline and context
 
-Primary pair: C3@2.0 minus C1.hard@2.0, generated from identical outer-held-out
-C1 numerical signals. Reconstruct the hard baseline from the same source fits;
+Primary pair: B3@2.0 minus B1.hard@2.0, generated from identical outer-held-out
+B1 numerical signals. Reconstruct the hard baseline from the same source fits;
 compare its verdicts, coverage and numerical signals against the original saved
 baseline. Record any drift before interpretation; do not silently substitute a
 historical snapshot with different confidence values. Historical tables remain
@@ -91,7 +91,7 @@ running/complete/failed, timing, peak process memory, package versions, code
 hashes, input/output hashes and any baseline drift. Refuse to overwrite outputs.
 Save OOF predictions, full-precision distributions, features, choices, every
 inner candidate's train/validation scores, final training scores, missing
-training classes and excluded IDs. Serialize full trees and C1 coefficients,
+training classes and excluded IDs. Serialize full trees and B1 coefficients,
 not only observed paths; store raw and weighted leaf support separately.
 
 Export every root-to-leaf rule, CQ text/version, first-arc meaning, numerical

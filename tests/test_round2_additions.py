@@ -14,8 +14,8 @@ import pytest
 from argfallacy.aggregate.interface import decide
 from argfallacy.paths import REPO_ROOT
 from argfallacy.schemes import load_all, traverse
-from test_c1 import example_data
-from test_c2_c3 import two_schemes
+from test_b1 import example_data
+from test_b2_b3 import two_schemes
 
 # ------------------------------------------------------------- balanced losses
 
@@ -121,7 +121,7 @@ def test_the_mass_divided_by_the_class_frequency_favours_the_rare_class():
 
 def test_the_combined_rows_carry_the_combined_answer_to_the_aggregators_of_round_1():
     from argfallacy.aggregate import LOGPROB
-    from argfallacy.aggregate.c1 import combined_rows, hard_codes
+    from argfallacy.aggregate.b1 import combined_rows, hard_codes
     from argfallacy.aggregate.checklist import a3_out_of_fold
     from argfallacy.aggregate.combiners import majority
     from argfallacy.aggregate.soft import OUTSIDE, answer_masses
@@ -230,8 +230,8 @@ def test_the_additions_are_written_marked_and_paired(every_class_frequent):
                  "substitution.csv", "substitution_curve.csv"):
         assert (out / name).is_file(), name
     verdicts = pd.read_csv(out / "verdicts.csv")
-    added = {"A3.combined", "A2.prior", "C1.prior", "C3.pooled.balanced",
-             "C1.stacking.gold_balanced.soft", "C1.stacking.gold_balanced.hard"}
+    added = {"A3.combined", "A2.prior", "B1.prior", "B3.pooled.balanced",
+             "B1.stacking.gold_balanced.soft", "B1.stacking.gold_balanced.hard"}
     assert added | {"A3"} <= set(verdicts.system)
     main = pd.read_csv(out / "main_table.csv").set_index("system")
     assert all(main.loc[n, "description"].endswith("(added after the results)") for n in added)
@@ -241,9 +241,9 @@ def test_the_additions_are_written_marked_and_paired(every_class_frequent):
     assert set(manifest["added_after_the_results"]) == added
     assert manifest["frequent_classes"]["minimum_gold_items"] == 1
     explored = pd.read_csv(out / "exploratory.csv")
-    assert {("A3.combined", "C1.majority.none.hard"), ("A3.combined", "A3"),
-            ("C3.pooled.balanced", "C3.pooled"), ("A2.prior", "A2"), ("C1.prior", "C1"),
-            ("C1.stacking.gold_balanced.soft", "C1.stacking.gold.soft")} <= set(
+    assert {("A3.combined", "B1.majority.none.hard"), ("A3.combined", "A3"),
+            ("B3.pooled.balanced", "B3.pooled"), ("A2.prior", "A2"), ("B1.prior", "B1"),
+            ("B1.stacking.gold_balanced.soft", "B1.stacking.gold.soft")} <= set(
         zip(explored.system, explored.reference, strict=True))
     # every class is frequent here: the two macro F1 are the same number
     frequent = pd.read_csv(out / "frequent_classes.csv").set_index("system")

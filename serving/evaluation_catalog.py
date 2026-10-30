@@ -17,8 +17,8 @@ FOLDERS = {
         "Cross-round breakdowns, CQ/human agreement, uncertainty and provenance. "
         "Reuses saved experiments."
     ),
-    "c3_schemes2_diagnostic_20261029": (
-        "Completed C3@2.0 versus C1.hard@2.0 diagnostic: full trees, paired "
+    "b3_schemes2_diagnostic_20261029": (
+        "Completed B3@2.0 versus B1.hard@2.0 diagnostic: full trees, paired "
         "sensitivities and qualified semantic review."
     ),
 }
@@ -32,17 +32,17 @@ QUESTIONS = [
     (
         "Overall round-2 results",
         "round2/main_table.csv",
-        "C1–C4, controls and exploratory variants; deciding.csv contains the original tests.",
+        "B1–B4, controls and exploratory variants; deciding.csv contains the original tests.",
     ),
     (
         "Aggregators on schemes 2.0",
         "exploratory_aggregators_v3/main_table.csv",
-        "A1, A3 and A4 are exploratory. The separate C3@2.0 diagnostic is complete.",
+        "A1, A3 and A4 are exploratory. The separate B3@2.0 diagnostic is complete.",
     ),
     (
-        "C3@2.0 diagnostic result and full rules",
-        "c3_schemes2_diagnostic_20261029/review.md",
-        "Macro-F1 0.2853 versus C1.hard 0.3893; paired delta -0.1040 "
+        "B3@2.0 diagnostic result and full rules",
+        "b3_schemes2_diagnostic_20261029/review.md",
+        "Macro-F1 0.2853 versus B1.hard 0.3893; paired delta -0.1040 "
         "[-0.1539, -0.0019]. Full trees and exact replay are retained.",
     ),
     (
@@ -92,9 +92,9 @@ SELECTED = [
     ("decision_v2/main_table.csv", "A0:qwen3_8_27b", "1.1", "Qwen · fixed diagram"),
     ("decision_v2/main_table.csv", "zeroshot:qwen3_8_27b", "1.1", "Qwen · original zero-shot"),
     ("decision_v2/main_table.csv", "A5", "1.1", "Qwen · judge with justifications"),
-    ("round2/main_table.csv", "C1", "1.1", "C1 · learned CQ combination"),
-    ("round2/main_table.csv", "C2", "1.1", "C2 · routing"),
-    ("round2/main_table.csv", "C3", "1.1", "C3 · learned trees"),
+    ("round2/main_table.csv", "B1", "1.1", "B1 · learned CQ combination"),
+    ("round2/main_table.csv", "B2", "1.1", "B2 · routing"),
+    ("round2/main_table.csv", "B3", "1.1", "B3 · learned trees"),
     (
         "exploratory_aggregators_v3/main_table.csv",
         "A0:qwen3_8_27b",
@@ -120,7 +120,7 @@ SELECTED = [
         "A4 · equal-weight models (exploratory)",
     ),
     ("round2/main_table.csv", "A2.pruned", "2.0", "Qwen · soft traversal, S-soft reference"),
-    ("round2/main_table.csv", "C4", "2.0", "Qwen · S-soft"),
+    ("round2/main_table.csv", "B4", "2.0", "Qwen · S-soft"),
     ("round2/dq_main_table.csv", "zeroshot.rerun:qwen3_8_27b", "1.1", "Qwen · matched zero-shot"),
     ("round2/dq_main_table.csv", "DQ:qwen3_8_27b", "1.1", "Qwen · D+Q"),
     ("round2/dq_main_table.csv", "zeroshot:qwen3_8_27b@2.0", "2.0", "Qwen · matched zero-shot"),
@@ -252,8 +252,8 @@ def build(root):
         table(["Method", "Schemes", "N", "Accuracy", "Macro F1", "Saved source / system"], rows),
         "## What the comparisons support",
         (
-            "The primary round-2 comparisons do not establish improvements for C1, C2 "
-            "or C3. S-soft is worse than its matched A2.pruned reference; further "
+            "The primary round-2 comparisons do not establish improvements for B1, B2 "
+            "or B3. S-soft is worse than its matched A2.pruned reference; further "
             "S-soft experiments were discontinued. D+Q does not demonstrate a verdict "
             "improvement over its matched direct baseline. An interval containing "
             "zero does not establish equivalence. Schemes 2.0 and later aggregator "
@@ -264,10 +264,10 @@ def build(root):
         (
             "Use decision_v2 and round2 as the original evaluation sources. "
             "analyses_v1 provides extra breakdowns and records imported sources; it "
-            "does not replace those originals. The completed C3@2.0 diagnostic "
-            "is in c3_schemes2_diagnostic_20261029; it does not improve its matched "
+            "does not replace those originals. The completed B3@2.0 diagnostic "
+            "is in b3_schemes2_diagnostic_20261029; it does not improve its matched "
             "baseline. See ../docs/research_findings.md for scientific conclusions. "
-            "Exact C2 routing and conformal item exports are pending because replay "
+            "Exact B2 routing and conformal item exports are pending because replay "
             "has not passed saved-output verification. The alternative round-2 "
             "snapshot must not replace original confidence values. New human "
             "direct-verdict inputs remain pending in analyses_v1."
@@ -341,7 +341,7 @@ def build(root):
             "Start with [the result review](review.md), [the summary](summary.md) "
             "and [the frozen protocol](protocol.md). Complete trees, rules and "
             "CSV tables remain available locally.\n\n"
-            if name == "c3_schemes2_diagnostic_20261029"
+            if name == "b3_schemes2_diagnostic_20261029"
             else "Start with the main table and paired comparisons; open the "
             "[detailed report](summary.html) only for its explanations. "
             "Complete CSV tables are preserved.\n\n"

@@ -53,7 +53,7 @@ def routed(records, tau):
 def routing_tables(config, evaluations, items, bootstrap, inputs):
     rows, statuses = [], {}
     for evaluation in evaluations:
-        if "C2" not in evaluation.systems:
+        if "B2" not in evaluation.systems:
             continue
         path = config.evaluations[evaluation.name]["routing_records"]
         if path is None:
@@ -70,7 +70,7 @@ def routing_tables(config, evaluations, items, bootstrap, inputs):
                 "saved_curve_precision": "rounded thresholds; insufficient for subgroup replay",
                 "replay_requirements": [
                     "unchanged source folds, seed, grids and nested fitting settings",
-                    "verify all saved C2 verdicts before export",
+                    "verify all saved B2 verdicts before export",
                     "record elapsed time and peak memory separately from resampling",
                 ],
             }
@@ -91,9 +91,9 @@ def routing_tables(config, evaluations, items, bootstrap, inputs):
         unique(records, ["item_id"], "routing records")
         require(set(records.item_id) == set(items.item_id), "routing population mismatch")
         records = records.set_index("item_id").loc[items.item_id].reset_index()
-        system = evaluation.systems["C2"]
+        system = evaluation.systems["B2"]
         require(metadata.get("scheme_version") == system.version, "routing version mismatch")
-        require(metadata.get("system") == "C2", "routing system mismatch")
+        require(metadata.get("system") == "B2", "routing system mismatch")
         assignment = evaluation.manifest["folds"]["assignment"]
         require(
             all(assignment[i] == f for i, f in zip(records.item_id, records.fold, strict=True)),
@@ -125,7 +125,7 @@ def routing_tables(config, evaluations, items, bootstrap, inputs):
                 mask = view.mask & system.eligible
                 row = {
                     "evaluation": evaluation.name,
-                    "system": "C2",
+                    "system": "B2",
                     "scheme_version": system.version,
                     "subset_kind": view.kind,
                     "subset": view.name,
@@ -196,7 +196,7 @@ def routing_tables(config, evaluations, items, bootstrap, inputs):
 
 
 def export_routing_records(result, items, out, source_evaluation):
-    """Opt-in export from an already computed C2Result; performs no fitting.
+    """Opt-in export from an already computed B2Result; performs no fitting.
 
     The export belongs in a separate analysis/replay directory, then is supplied
     explicitly as input to an analysis using another output root.
@@ -209,14 +209,14 @@ def export_routing_records(result, items, out, source_evaluation):
     out, source = Path(out).resolve(), Path(source_evaluation).resolve()
     require(not overlaps(out, source), "routing export output overlaps source evaluation")
     require(
-        len(result.fixed_sides) == 1 and result.name == "C2",
-        "export requires the primary two-side C2",
+        len(result.fixed_sides) == 1 and result.name == "B2",
+        "export requires the primary two-side B2",
     )
     inputs = Inputs()
     manifest = inputs.json(source / "manifest.json")
     saved = inputs.csv(source / "verdicts.csv", ["system", "item_id", "verdict", "fold"])
     main = inputs.csv(source / "main_table.csv", ["system", "schemes"])
-    own = saved[saved.system == "C2"].set_index("item_id")
+    own = saved[saved.system == "B2"].set_index("item_id")
     ordered = items.sort_values("item_id")
     ids = ordered.item_id.tolist()
     require(set(own.index) == set(ids), "routing export saved population mismatch")
@@ -240,8 +240,8 @@ def export_routing_records(result, items, out, source_evaluation):
     metadata = {
         "source_evaluation": str(source),
         "source_manifest_sha256": inputs.files[(source / "manifest.json").resolve()],
-        "system": "C2",
-        "scheme_version": str(main.loc[main.system == "C2", "schemes"].iloc[0]),
+        "system": "B2",
+        "scheme_version": str(main.loc[main.system == "B2", "schemes"].iloc[0]),
         "analysis": code_state(),
         "folds": result.folds,
         "source_settings": manifest,

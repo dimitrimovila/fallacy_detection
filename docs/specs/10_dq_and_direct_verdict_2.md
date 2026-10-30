@@ -17,11 +17,11 @@ D+Q has a matched control: the direct verdict rendered on schemes 2.0. It differ
 Version 2.0 of D+Q is the primary one. Version 1.1 is the control, because the 2.0 questions were written while looking at the errors of full run v2 on the test set (section 6.3).
 
 Two results of round 2, computed before this spec, shape the reading. They use no D+Q output.
-* S-soft lost to `A2.pruned` (H4, −0.065 [−0.122, −0.003]). Its control without history placed the loss on the list of all the CQs in the prompt, not on the earlier answers: `C4.nohistory` against `A2.pruned`, −0.057 [−0.094, −0.011].
+* S-soft lost to `A2.pruned` (H4, −0.065 [−0.122, −0.003]). Its control without history placed the loss on the list of all the CQs in the prompt, not on the earlier answers: `B4.nohistory` against `A2.pruned`, −0.057 [−0.094, −0.011].
 * With the list in view, 9.1 per cent of the 3,162 answers of `qwen3_8_27b` differ from those of full run v3, in both directions: 152 `no` became `yes`, 103 `yes` became `no`. The largest moves are on analogy CQ4 (`yes` from 28 to 52 per cent), example CQ3 (from 56 to 27 per cent), popular opinion CQ1 (from 17 to 30 per cent), expert opinion CQ2 (from 65 to 81 per cent) and slippery slope CQ3 (from 78 to 94 per cent). `na` on expert opinion CQ5.1 goes from 0 to 13 per cent.
 * The list of the other questions changes how some questions are read, with no single direction.
 
-D+Q shows every CQ by construction: the list is part of the treatment. The primary comparison is on the verdict, so it stays as planned. The answers of D+Q through the diagram are expected to lose against answers given in isolation. Their right reference is `C4.nohistory`, which has the same list and separate calls (section 6.2).
+D+Q shows every CQ by construction: the list is part of the treatment. The primary comparison is on the verdict, so it stays as planned. The answers of D+Q through the diagram are expected to lose against answers given in isolation. Their right reference is `B4.nohistory`, which has the same list and separate calls (section 6.2).
 
 The reference model is that of spec 08, P10, `qwen3_8_27b`.
 
@@ -229,10 +229,10 @@ All are paired, on macro F1 with 95 per cent intervals unless stated, and none d
    * `DQ.path@2.0` against `A0:qwen3_8_27b@2.0`;
    * `DQ.soft@2.0` against `A2.pruned`;
    * on schemes 1.1, `DQ.path` against `A0:qwen3_8_27b`.
-4. The answers of D+Q through the diagram against S-soft: `DQ.soft@2.0` against `C4`, and `DQ.path@2.0` against `C4.path`.
-5. `DQ.soft@2.0` against `C4.nohistory`. The two have the same list of the CQs; they differ in that D+Q answers every CQ in one generation, each after the earlier ones, with the verdicts in view. The comparison separates this part of D+Q from the effect of the list, already measured by `C4.nohistory` against `A2.pruned`.
+4. The answers of D+Q through the diagram against S-soft: `DQ.soft@2.0` against `B4`, and `DQ.path@2.0` against `B4.path`.
+5. `DQ.soft@2.0` against `B4.nohistory`. The two have the same list of the CQs; they differ in that D+Q answers every CQ in one generation, each after the earlier ones, with the verdicts in view. The comparison separates this part of D+Q from the effect of the list, already measured by `B4.nohistory` against `A2.pruned`.
 6. The answers at the level of each CQ (spec 09, section 2.5): on the 2,656 binary labels of schemes 1.1, the agreement of the hard answers of `DQ:qwen3_8_27b` and the Brier score of their `p_logprob`. They are set against those of `qwen3_8_27b` in full run v2 on the same pairs. Every pair of an item moves together in the resamples. Reported in total and by scheme. This measures with far more power than 601 verdicts whether answering inside the prompt of the verdict changes the answers.
-7. The answers that change, descriptive, per scheme and CQ: the share of items whose hard answer differs between `DQ@2.0` and full run v3, and between `DQ@2.0` and `C4.nohistory`; on schemes 1.1, between `DQ` and full run v2. Each share comes with the share of the first admitted answer in each source.
+7. The answers that change, descriptive, per scheme and CQ: the share of items whose hard answer differs between `DQ@2.0` and full run v3, and between `DQ@2.0` and `B4.nohistory`; on schemes 1.1, between `DQ` and full run v2. Each share comes with the share of the first admitted answer in each source.
 8. The menus and the server, descriptive and exploratory:
    * `zeroshot:qwen3_8_27b@2.0` against the zero-shot v1 of round 2, on the 601 items and on the 192 items where the menus differ;
    * the verdict agreement between the two on the 409 items whose prompts are identical;
@@ -250,33 +250,33 @@ All are paired, on macro F1 with 95 per cent intervals unless stated, and none d
 
 * **The bias of the 2.0 questions.** The 2.0 questions were written while looking at the errors of full run v2 on the test set. The primary comparison gives D+Q the tuned questions and its control only the 2.0 menus, so it leans in favour of D+Q. Rule fixed now: an improvement in H_DQ is read as robust only if the point estimate of comparison 1 (D+Q 1.1 against `zeroshot.rerun`) is also above zero. Otherwise it is reported as possibly due to the tuning. It is a rule of reading, not a second test. An interval of H_DQ at or below zero needs no such check, since the bias goes in favour of D+Q.
 * **D+Q above the direct verdict:** the CQs help as a guide to the verdict (Castagna, Sassoon and Parsons 2024).
-* **D+Q level with it and consistent:** the same accuracy, with an explanation that leads to the verdict. The share of consistent items is the share of verdicts explained at no cost. It is read beside the curve of C2, where 61 per cent of the verdicts come from the diagram at the macro F1 of the direct verdict.
+* **D+Q level with it and consistent:** the same accuracy, with an explanation that leads to the verdict. The share of consistent items is the share of verdicts explained at no cost. It is read beside the curve of B2, where 61 per cent of the verdicts come from the diagram at the macro F1 of the direct verdict.
 * **D+Q level with it or below, with low consistency:** the CQ answers do not explain the verdict (Turpin et al. 2023).
 * **D+Q below:** imposing the CQs hurts the verdict. With the result of S-soft, the likely mechanism is the reading of each question with its siblings in view.
   * If consistency is high and the answers through the diagram are poor (comparisons 3 to 6), the verdict followed answers made worse by the list.
   * If consistency is low, the verdict did not follow them.
 * **The answers through the diagram:**
-  * Below the diagram 2.0: the effect of the list already measured by `C4.nohistory` is expected.
+  * Below the diagram 2.0: the effect of the list already measured by `B4.nohistory` is expected.
   * Comparison 5 says whether answering in one generation with the verdicts in view adds to it or recovers part of it.
   * Comparison 6 says whether the answers move away from Dumitru's labels. Lower agreement together with high consistency means answers bent toward the verdict.
 
-## 7. D+Q in C2
+## 7. D+Q in B2
 
 Exploratory, as in spec 09, section 3. Two families:
-* **Schemes 1.1:** `C2.dq`, with the sides C1, `zeroshot:qwen3_8_27b` (zero-shot v1 of round 2) and `DQ:qwen3_8_27b`.
+* **Schemes 1.1:** `B2.dq`, with the sides B1, `zeroshot:qwen3_8_27b` (zero-shot v1 of round 2) and `DQ:qwen3_8_27b`.
 * **Schemes 2.0:**
-  * `C2@2.0`, with C1@2.0 (stacking (b) on full run v3, spec 09, section 2.4) and `zeroshot:qwen3_8_27b@2.0`, threshold 0, with its curve;
-  * `C2.dq@2.0`, with C1@2.0, `zeroshot:qwen3_8_27b@2.0`, `DQ:qwen3_8_27b@2.0` and `C4`.
+  * `B2@2.0`, with B1@2.0 (stacking (b) on full run v3, spec 09, section 2.4) and `zeroshot:qwen3_8_27b@2.0`, threshold 0, with its curve;
+  * `B2.dq@2.0`, with B1@2.0, `zeroshot:qwen3_8_27b@2.0`, `DQ:qwen3_8_27b@2.0` and `B4`.
 
-S-soft enters only the family of schemes 2.0, whose menus and diagrams are its own. This replaces the earlier plan of S-soft as a third side next to C1 on schemes 1.1, which the terminal `false_premise` of example 2.0 prevented.
+S-soft enters only the family of schemes 2.0, whose menus and diagrams are its own. This replaces the earlier plan of S-soft as a third side next to B1 on schemes 1.1, which the terminal `false_premise` of example 2.0 prevented.
 
-* **Features.** Each side added beyond the two of spec 09 brings its own confidence as a feature: `p_label` for D+Q, the mass of the verdict for C4. A missing value takes the mean of the training items, with an indicator, as `p_label` in spec 09. D+Q also brings whether its verdict is consistent with its path. With more than two sides there is one regression per side and the side with the highest estimate is chosen, as spec 09 states; the curve exists only for two sides.
-* **Explained.** A final verdict counts as explained when it equals the verdict of C1, of C4, or of a consistent D+Q.
+* **Features.** Each side added beyond the two of spec 09 brings its own confidence as a feature: `p_label` for D+Q, the mass of the verdict for B4. A missing value takes the mean of the training items, with an indicator, as `p_label` in spec 09. D+Q also brings whether its verdict is consistent with its path. With more than two sides there is one regression per side and the side with the highest estimate is chosen, as spec 09 states; the curve exists only for two sides.
+* **Explained.** A final verdict counts as explained when it equals the verdict of B1, of B4, or of a consistent D+Q.
 * **Comparisons, exploratory:**
-  * `C2@2.0` against `zeroshot:qwen3_8_27b@2.0`;
-  * `C2.dq` against `zeroshot:qwen3_8_27b`;
-  * `C2.dq@2.0` against `zeroshot:qwen3_8_27b@2.0` and against `DQ:qwen3_8_27b@2.0`.
-* **Out of fold.** The inputs of C1 are cross-fitted as in spec 09, section 1, and no verdict depends on the labels of its own item.
+  * `B2@2.0` against `zeroshot:qwen3_8_27b@2.0`;
+  * `B2.dq` against `zeroshot:qwen3_8_27b`;
+  * `B2.dq@2.0` against `zeroshot:qwen3_8_27b@2.0` and against `DQ:qwen3_8_27b@2.0`.
+* **Out of fold.** The inputs of B1 are cross-fitted as in spec 09, section 1, and no verdict depends on the labels of its own item.
 
 ## 8. Evaluation
 
@@ -313,7 +313,7 @@ The systems of this spec, those of section 7 included, appear only in the new fi
 * the family of H_DQ and its level;
 * the systems of the spec and what is missing.
 
-The four entries of the round 2 `missing` list that wait for this spec ("C2 with S-soft as another side", "C2 with D+Q as another side", "C2 on schemes 2.0", "C4 against the zero-shot with the 2.0 menus") point to the D+Q section when the corresponding system is computed. The comparison of C4 against the zero-shot with the 2.0 menus (spec 09, section 6.4) is computed in `dq_exploratory.csv`. `summary.html` keeps its sections and adds one at the end.
+The four entries of the round 2 `missing` list that wait for this spec ("B2 with S-soft as another side", "B2 with D+Q as another side", "B2 on schemes 2.0", "B4 against the zero-shot with the 2.0 menus") point to the D+Q section when the corresponding system is computed. The comparison of B4 against the zero-shot with the 2.0 menus (spec 09, section 6.4) is computed in `dq_exploratory.csv`. `summary.html` keeps its sections and adds one at the end.
 
 ### 8.3 Output
 
@@ -328,7 +328,7 @@ The four entries of the round 2 `missing` list that wait for this spec ("C2 with
 * `dq_cq_changes.csv`: section 6.2, comparison 7;
 * `dq_replication.csv`: section 6.2, comparison 8;
 * `dq_abstention.csv` and `dq_abstention_curves.csv`: section 6.2, comparison 9;
-* `dq_routing_curve.csv`: the curve of `C2@2.0`, as `routing_curve.csv`;
+* `dq_routing_curve.csv`: the curve of `B2@2.0`, as `routing_curve.csv`;
 * `dq_choices.csv`: the hyperparameters of section 7;
 * the D+Q section of `summary.html`, in this order:
   1. the primary comparison;
@@ -337,7 +337,7 @@ The four entries of the round 2 `missing` list that wait for this spec ("C2 with
   4. the level of each CQ;
   5. the exploratory comparisons;
   6. the abstention curves as a figure;
-  7. C2;
+  7. B2;
   8. what was not computed.
 
 The systems are computed for every entry present in the D+Q and zero-shot runs. The comparisons named in sections 6 and 7 are computed for the reference model.
@@ -386,7 +386,7 @@ On the diagrams of `schemes/v1/` and `schemes/v2/`, on lines and tables written 
    * the reading rule gives `robust` only with a positive point estimate of comparison 1;
    * without the runs, `dq_deciding.csv` has the row with outcome `missing`.
 10. **CQ level:** on hand-written labels the agreement and the Brier score of the D+Q answers are those computed by hand, and all the pairs of an item move together.
-11. **C2 with more sides:**
+11. **B2 with more sides:**
     * changing the gold of an item changes no verdict of that item;
     * equal verdicts on every side give that verdict, counted as explained;
     * the explained rule of section 7 holds;
@@ -411,7 +411,7 @@ On the diagrams of `schemes/v1/` and `schemes/v2/`, on lines and tables written 
 * Spec 04: the stage `dq`, the pairing rule restricted to the CQ stages, the format check and `runs.sbatch`.
 * Spec 05: the rows of `dq` and the column `keys_in_order`.
 * Spec 08, "Round 2": the D+Q part of the evaluation and its family of one comparison.
-* Spec 09, section 3: one sentence saying that the families of C2 with D+Q and S-soft are those of this spec, section 7.
+* Spec 09, section 3: one sentence saying that the families of B2 with D+Q and S-soft are those of this spec, section 7.
 
 ## 12. Definition of done
 

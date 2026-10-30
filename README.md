@@ -28,7 +28,7 @@ explanation: the path through the diagram, or the weights of the model that deci
 
 ## Research results and decisions
 
-Read [the research findings register](docs/research_findings.md) for completed results, limitations, annotation/provenance lessons and confirmed methodological choices. It includes the negative C3@2.0 diagnostic and distinguishes proposals from decisions. The narrative is versioned; raw runs, full evaluation tables and local audit ledgers are not included.
+Read [the research findings register](docs/research_findings.md) for completed results, limitations, annotation/provenance lessons and confirmed methodological choices. It includes the negative B3@2.0 diagnostic and distinguishes proposals from decisions. The narrative is versioned; raw runs, full evaluation tables and local audit ledgers are not included.
 
 ## Repository structure
 
@@ -208,9 +208,9 @@ It computes the declared verdict, hard and soft CQ traversals, consistency,
 CQ-level diagnostics, replication and abstention. H_DQ is its own family of one
 comparison at 95%, with the reading rule based on the 1.1 control. Round-two
 models are released before D+Q and its bootstrap uses the existing item draws.
-Exploratory routing adds `C2@2.0` and its `dq_routing_curve.csv`, `C2.dq` on
-schemes 1.1, and `C2.dq@2.0` with D+Q and S-soft on schemes 2.0. The selected
-penalties, including nested C1 fits, are recorded in `dq_choices.csv`.
+Exploratory routing adds `B2@2.0` and its `dq_routing_curve.csv`, `B2.dq` on
+schemes 1.1, and `B2.dq@2.0` with D+Q and S-soft on schemes 2.0. The selected
+penalties, including nested B1 fits, are recorded in `dq_choices.csv`.
 
 The judge stage (`stages: [judge]`) gives the same prompt plus the answers of one entry of a
 run to the critical questions of the scheme, read from the `summary.csv` of that run, which
@@ -325,11 +325,11 @@ below).
 
 ## Combining critical-question answers
 
-Round-two C1 combines the five entries before traversing the diagram. Its primary
+Round-two B1 combines the five entries before traversing the diagram. Its primary
 configuration is centred stacking supervised by the binary answers on the gold
 scheme's `Annotazione Dumitru` sheet, with soft traversal on schemes 1.1.
-`argfallacy.aggregate.c1_inputs.build_dataset` reads supplied `summary.csv` and
-manifest frames; `argfallacy.eval.c1.cq_labels` selects those labels. The annotation
+`argfallacy.aggregate.b1_inputs.build_dataset` reads supplied `summary.csv` and
+manifest frames; `argfallacy.eval.b1.cq_labels` selects those labels. The annotation
 row must also judge the gold scheme present; answers from a row judging another
 scheme do not enter the labelled population or the human path reference.
 
@@ -337,21 +337,21 @@ The offline API takes these prepared inputs, the shared folds and the evaluation
 seed; it does not open a run or launch inference:
 
 ```python
-from argfallacy.aggregate.c1 import c1_out_of_fold, configurations
-from argfallacy.eval.c1 import cq_evaluation, entry_answers
+from argfallacy.aggregate.b1 import b1_out_of_fold, configurations
+from argfallacy.eval.b1 import cq_evaluation, entry_answers
 import pandas as pd
 
 configs = configurations(excluded_label_schemes=(
     "example", "cause_to_effect", "correlation_to_cause",
 ))
-results = {c.name: c1_out_of_fold(data, labels, folds, seed, c) for c in configs}
+results = {c.name: b1_out_of_fold(data, labels, folds, seed, c) for c in configs}
 predictions = pd.concat([entry_answers(data), *[r.combined for r in results.values()]])
 cq_report = cq_evaluation(data, labels, predictions, indices=bootstrap_indices)
 ```
 
 The named alternatives cover majority, Dawid–Skene, CQ-weighted A4 and stacking
 supervised by gold verdicts, each with soft and hard traversal, including
-`C1.hard`. Labelled fits use the other four outer folds and choose hyperparameters
+`B1.hard`. Labelled fits use the other four outer folds and choose hyperparameters
 with four inner folds split by item. Dawid–Skene instead fits all items once,
 without labels. Weighted A4 chooses its signals jointly by inner Brier score;
 ties prefer equal weights, then each entry's distribution signal and the fixed
@@ -365,7 +365,7 @@ Dawid–Skene can disagree with unanimous hard inputs; no unanimity override is
 applied. The stacking centre and the two supervised objectives share all features.
 
 `configurations(schemes_version="2.0")` supplies the unsupervised and gold-fitted
-alternatives on revised schemes. `transfer_c1(result, revised_data)` applies each
+alternatives on revised schemes. `transfer_b1(result, revised_data)` applies each
 original held-out fold's CQ-stacking coefficients without fitting revised labels.
 `configurations(include_unstable=True)` enables the optional re-annotation
 exclusion; pass binary paired labels as `repeats`. Its exclusions are estimated
@@ -380,26 +380,26 @@ two runs all of this on the real runs (see "Round-two evaluation").
 
 ## Routing and learned trees
 
-C2 routes between C1 and the reference zero-shot. C3 fits one decision tree of
-depth at most three per scheme on C1's combined probabilities and outside masses.
-Their offline APIs share a `C1CrossFitter`, which caches fits by their exact
+B2 routes between B1 and the reference zero-shot. B3 fits one decision tree of
+depth at most three per scheme on B1's combined probabilities and outside masses.
+Their offline APIs share a `B1CrossFitter`, which caches fits by their exact
 training items. Training inputs come from four inner item folds; held-out inputs
-come from C1 fitted on the complete training partition. Hyperparameter validation
-rebuilds both levels inside each split, including C1's own parameter selection.
-Globally out-of-fold C1 predictions are not reused as second-level training data.
+come from B1 fitted on the complete training partition. Hyperparameter validation
+rebuilds both levels inside each split, including B1's own parameter selection.
+Globally out-of-fold B1 predictions are not reused as second-level training data.
 
 ```python
-from argfallacy.aggregate import C1CrossFitter, Side, c2_out_of_fold, c3_out_of_fold
+from argfallacy.aggregate import B1CrossFitter, Side, b2_out_of_fold, b3_out_of_fold
 from argfallacy.eval.routing import routing_curve
 
-source = C1CrossFitter(data, labels, seed)
+source = B1CrossFitter(data, labels, seed)
 zero = Side.from_summary(zeroshot_summary, f"zeroshot:{data.reference}", data.reference)
-c2 = c2_out_of_fold(source, zero, folds)  # primary tau = 0
-c3 = c3_out_of_fold(source, folds)
-curve = routing_curve(c2, data.items, indices=bootstrap_indices)
+b2 = b2_out_of_fold(source, zero, folds)  # primary tau = 0
+b3 = b3_out_of_fold(source, folds)
+curve = routing_curve(b2, data.items, indices=bootstrap_indices)
 ```
 
-The correctness regressions of C2 fit only disagreements between available
+The correctness regressions of B2 fit only disagreements between available
 verdicts. Agreement selects the diagram; one available verdict is used directly;
 no available verdict means abstention. Each regression chooses C by pooled inner
 log loss. Its features are diagram confidence, terminal margin, abstention,
@@ -407,10 +407,10 @@ mean binary entropy in bits along the most probable path, zero-shot `p_label`
 with a missing indicator, and the scheme. Missing probabilities use the mean of
 all training items, or 0.5 if none is observed. A correctness target with one class
 uses that constant probability; with no disagreement observations it uses 0.5.
-The selected side's distribution is retained, while C2 confidence is its estimated
+The selected side's distribution is retained, while B2 confidence is its estimated
 probability of correctness. The explanation includes the side and both estimates.
 
-`c2.at_tau(tau)` applies another threshold to the same held-out estimates.
+`b2.at_tau(tau)` applies another threshold to the same held-out estimates.
 `routing_curve` reports every change in the curve between -1 and 1 and the
 thresholds attaining at least 60, 70, 80, 90 and 100 per cent explained items.
 The denominator includes every test item. Discrete jumps retain the achieved
@@ -418,7 +418,7 @@ share; unavailable diagram verdicts can make a target unreachable, which is
 reported explicitly. The 95 per cent intervals reuse the evaluation's item
 resamples with thresholds fixed from the pooled estimates.
 
-C3 uses Gini splits and balanced class weights. Its terminal distribution is the
+B3 uses Gini splits and balanced class weights. Its terminal distribution is the
 weighted leaf distribution; confidence is the unweighted share of its chosen
 class among the training items of the leaf. Explanations list CQ features and
 thresholds along the tree path. Tied validation scores prefer smaller depth,
@@ -426,25 +426,25 @@ then larger leaves. One training class gives that class; no eligible training
 item gives an abstention. Gold labels absent from their scheme's terminals stay
 out of tree and recalibration training.
 
-Exploratory APIs accept `ReferenceInputs(data, seed, hard=True)` as C2's A0 side,
-or `ReferenceInputs(data, seed)` for C3's tree on the reference hard answers.
+Exploratory APIs accept `ReferenceInputs(data, seed, hard=True)` as B2's A0 side,
+or `ReferenceInputs(data, seed)` for B3's tree on the reference hard answers.
 That tree encodes the first/second arc as 1/0 and outside answers as a missing
-split with outside mass 1. `c3_out_of_fold(source, folds, kind="pooled")` instead
+split with outside mass 1. `b3_out_of_fold(source, folds, kind="pooled")` instead
 fits one shared terminal-mass slope and one bias per label, shrinking toward
 identity with L-BFGS and choosing C by inner log loss. It normalises over the
 terminals of each item's scheme.
 
-For revised schemes, `C1CrossFitter(revised_data, labels, seed, fit_data=data)`
+For revised schemes, `B1CrossFitter(revised_data, labels, seed, fit_data=data)`
 fits only the original CQ labels and predicts the revised signals; supply the
 zero-shot with matching revised menus. Additional fixed predictions, including
-D+Q and S-soft when available, enter C2 as `extra_sides=(Side(name, predictions,
+D+Q and S-soft when available, enter B2 as `extra_sides=(Side(name, predictions,
 p_label=confidence, consistent=flags, schemes_version=version),)`. D+Q supplies
 consistency flags; S-soft instead sets `explained=True`. Pass `schemes_version`
 to the router as well. Each added confidence uses training-mean imputation and a
 missing indicator; D+Q also supplies its consistency with its path. Each side
 gets a correctness regression on the shared features; the largest
 estimate among available sides wins, with ties to the diagram then input order.
-A final verdict counts as explained when it equals C1, C4 or a consistent D+Q.
+A final verdict counts as explained when it equals B1, B4 or a consistent D+Q.
 Use the `name` argument to identify exploratory results and parameter choices.
 
 ## Sequential critical questions
@@ -496,20 +496,20 @@ argfallacy evaluate configs/evaluation_round2.yaml        # evaluations/round2/
 ```
 
 A configuration whose `runs` name `answers_schemes_2`, `ssoft` or `ssoft_nohistory` is
-evaluated as round two. The command computes C1 (every combiner, supervision and
+evaluated as round two. The command computes B1 (every combiner, supervision and
 traversal on full run v2, the unsupervised, gold-fitted and transferred ones on full run
-v3), C2 and its curve, C3 with the pooled recalibration and the tree on the reference
-answers, A2.pruned, and C4, C4.path and C4.nohistory from the `ssoft.csv` of the runs
-listed under `ssoft` and `ssoft_nohistory`; with those lists empty, C4 and its
+v3), B2 and its curve, B3 with the pooled recalibration and the tree on the reference
+answers, A2.pruned, and B4, B4.path and B4.nohistory from the `ssoft.csv` of the runs
+listed under `ssoft` and `ssoft_nohistory`; with those lists empty, B4 and its
 comparisons are listed as missing and the rest is computed. The zero-shot run of the
-reference model must have `p_label`, a feature of C2 and the confidence of its abstention
+reference model must have `p_label`, a feature of B2 and the confidence of its abstention
 curve: a `summary.csv` without it is refused, so parse that run again where its
 `raw.jsonl` is. `cq_label_exclusion` names the schemes whose CQ labels the exploratory
-`C1.annotation_exclusion` leaves out; it is scored on the other schemes.
+`B1.annotation_exclusion` leaves out; it is scored on the other schemes.
 
 Added after the results, all exploratory and marked "(added after the results)" in their
-description: `C1.stacking.gold_balanced.soft` and `.hard` and `C3.pooled.balanced`, the
-models fitted on the gold verdicts with balanced class weights; `A2.prior` and `C1.prior`,
+description: `B1.stacking.gold_balanced.soft` and `.hard` and `B3.pooled.balanced`, the
+models fitted on the gold verdicts with balanced class weights; `A2.prior` and `B1.prior`,
 each terminal mass divided by the frequency of its class in the other folds; and
 `A3.combined`, A3 of round 1 on the combined answers of the majority of the five entries,
 beside `A3` itself. The command also scores every system and comparison on the macro F1
@@ -517,8 +517,8 @@ over the frequent classes (at least 10 gold verdicts in the test set), and puts 
 human CQ answers in place of the reference model's, CQ by CQ and at random shares of the
 disagreements, through the diagram 1.1.
 
-The four deciding comparisons (C1, C2, C3 and C4 against their references, and the second
-comparison of C1 and C3 against the zero-shot) have their interval at level 1 - 0.05/m with
+The four deciding comparisons (B1, B2, B3 and B4 against their references, and the second
+comparison of B1 and B3 against the zero-shot) have their interval at level 1 - 0.05/m with
 m = 4. A second comparison is marked as not read when the first does not pass, and a
 component not computed keeps its place in m. Beside them, at 95 per cent: accuracy and
 balanced accuracy, the same comparisons by gold origin, by scheme and without NLAS, and the
@@ -536,8 +536,8 @@ not computed and why), `verdicts.csv`, `main_table.csv`, `deciding.csv`,
 `frequent_classes_differences.csv`, `substitution.csv`, `substitution_curve.csv` and
 `summary.html`, which
 `argfallacy report summary evaluations/round2` redraws from those tables. The nested
-cross-fitting of C2 and C3 refits C1 several hundred times: on runs of the size of the
-test set the command takes about ten minutes on a laptop, most of it in C3.
+cross-fitting of B2 and B3 refits B1 several hundred times: on runs of the size of the
+test set the command takes about ten minutes on a laptop, most of it in B3.
 
 ## Analyses of saved evaluations
 
@@ -565,7 +565,7 @@ Scheme and corpus breakdowns retain the small-group rules. Comparisons use the
 common declared eligible items; intentionally restricted systems keep their own
 populations. Additional restrictions can be declared per source with
 `populations: {SYSTEM: {exclude_schemes: [...]}}` or `{item_ids: [...]}`.
-The recorded `C1.annotation_exclusion` rule is read from its source manifest.
+The recorded `B1.annotation_exclusion` rule is read from its source manifest.
 Original full-population deciding levels and reading gates are retained; new
 views and diagnostic comparisons are exploratory at 95%.
 
@@ -578,12 +578,12 @@ versions, denominators, elapsed time and peak process memory. Tables count omitt
 empty replicates per metric. The rare-class list uses gold support below 20 on the full frozen test
 set, before any subset is selected.
 
-The saved C2 curve has rounded thresholds and cannot reconstruct origin views.
+The saved B2 curve has rounded thresholds and cannot reconstruct origin views.
 Without exact side records, the new routing table has headers and a pending
 manifest status. `argfallacy.eval.routing.routing_curve` accepts opt-in
 `export_dir` and `source_evaluation` arguments; alternatively call
 `argfallacy.eval.analysis_routing.export_routing_records` on an already computed
-primary `C2Result`. This verifies saved verdicts and exports full-precision
+primary `B2Result`. This verifies saved verdicts and exports full-precision
 side probabilities, verdicts and folds into a separate analysis/replay directory.
 Configure its `routing_records.csv` under the source's `routing_records` key,
 using a different final output root. Every origin then uses the pooled threshold
@@ -594,7 +594,7 @@ starts it or reconstructs terminal distributions from chosen labels.
 `annotations` optionally names the existing frozen annotations table (null by
 default); the published configuration uses `data/annotations.csv`. It supplies
 the historical 1.1 CQ/verdict ratings and Enrico's unchanged difficulty levels
-1 to 5. C1's binary labels retain the positive scheme-judgement selection of
+1 to 5. B1's binary labels retain the positive scheme-judgement selection of
 `annotations.gold_scheme_rows`; P7 also includes the gold-scheme sheet's negative
 scheme judgements and nonbinary answers. CQ tables identify these populations,
 item counts and pair counts separately, with pooled, scheme and individual-CQ
@@ -653,7 +653,7 @@ match an explicitly selected round-two source; no other evaluation is scanned or
 pooled, including `round2_recomputed_spec10_20261026`. The four registered full
 runs currently contain Qwen outputs; pilots and configured model lists add no
 test populations. Exact `manifest.dq` mappings keep declared DQ, DQ.path, DQ.soft,
-the version-2.0 zero-shot, the same-server rerun and exploratory C2 families
+the version-2.0 zero-shot, the same-server rerun and exploratory B2 families
 distinct. Parsed verdicts must agree before recovering `p_label` and its lower-
 bound flag; path/soft/routing confidence is retained. Compatible 1.1 parsed D+Q
 CQs enter the existing item-clustered diagnostics; 2.0 human targets remain pending.
@@ -671,12 +671,12 @@ the original round-two m=4 and round-one m=5 families. New AUGRC pairs are still
 restricted to the exact four above. Rounded D+Q routing curves/choices cannot
 supply exact per-item decisions; new replay-dependent results stay pending.
 
-`source_conformal.csv` preserves the existing saved C5 aggregate summaries,
+`source_conformal.csv` preserves the existing saved B5 aggregate summaries,
 versions and source hashes even when exact per-item inputs are unavailable. It
 does not reconstruct sets or add human-disagreement estimates.
-`conformal_items.csv` contains genuine C5 sets, folds, terminal ids, sizes, gold
+`conformal_items.csv` contains genuine B5 sets, folds, terminal ids, sizes, gold
 inclusion and full-precision calibration thresholds. Only systems selected by
-the saved C5 calculation qualify. Genuine saved `distribution` columns or an
+the saved B5 calculation qualify. Genuine saved `distribution` columns or an
 explicit source `conformal_records` directory can supply them. `conformal.csv`
 is recomputed from those sets and checked against saved aggregates at their
 serialization precision; human agreement groups are added only with explicit
@@ -686,7 +686,7 @@ Missing exact sources leave these tables pending without blocking other tables.
 The opt-in Python API `analysis_conformal.export_conformal` accepts already
 calculated genuine aggregations and exports them to a new, separate directory.
 `round2.evaluate_round2(..., conformal_export_dir=DIR)` provides a companion hook
-on the existing C5 calculation, with unchanged folds, alpha and terminal rules.
+on the existing B5 calculation, with unchanged folds, alpha and terminal rules.
 It verifies saved predictions and aggregates and records hashes and resource
 measurements. Configure that directory as `evaluations.<identity>.conformal_records`
 for a later analysis. `analyze` never initiates fitting, deterministic replay or
@@ -723,11 +723,11 @@ python serving/postprocess.py --site local --environment current-python --mode r
 python serving/postprocess.py --site local --environment current-python --mode replay --input configs/analyses_v1.yaml --output evaluations/analysis_replay --evaluation round2
 ```
 
-Replay reconstructs only primary C2 and the primary C1 conformal companion. It
+Replay reconstructs only primary B2 and the primary B1 conformal companion. It
 uses the selected source's original folds and grids, requires complete genuine
 zero-shot `p_label`, and verifies saved predictions before accepting exports.
 It never invokes a full evaluation. It profiles fitting separately and writes to
-a new directory. Other C5 systems are outside this replay command and remain
+a new directory. Other B5 systems are outside this replay command and remain
 pending unless they already have genuine saved distributions or companion exports.
 If `p_label` is unavailable, recover the parsed source on the machine holding its
 raw run before replay; rounded routing curves cannot repair it. Never overwrite
@@ -736,7 +736,7 @@ the selected evaluation or replace frozen predictions to obtain agreement.
 The selected `round2` and `round2_recomputed_spec10_20261026` have identical saved
 verdicts, main tables and deciding tables. Their base-system confidences differ
 beyond serialization precision (maximum absolute difference 0.0014600673485322124
-for C2 and 0.000009284341750293024 for C1); the dedicated D+Q verdict table is
+for B2 and 0.000009284341750293024 for B1); the dedicated D+Q verdict table is
 byte-identical. The analysis keeps the selected original source and records its
 hashes. Confidence-based results must not silently switch to the recomputed copy.
 The replay reader uses the native evaluator's numeric missing-value convention
@@ -828,7 +828,7 @@ Start with [evaluations/README.md](evaluations/README.md) or the browser entry
 [evaluations/index.html](evaluations/index.html). They contain a question-to-table
 map and selected saved point estimates. Five active collections remain at the
 top level: `decision_v2`, `round2`, `exploratory_aggregators_v3`, `analyses_v1`,
-and `c3_schemes2_diagnostic_20261029`.
+and `b3_schemes2_diagnostic_20261029`.
 Historical audits, standalone CQ 2.0 diagnostics and the alternative round-2
 recomputation are preserved in `evaluations/_archive/`, with a relocation map.
 Recorded historical provenance paths are unchanged.
@@ -842,15 +842,15 @@ preserved in `evaluations/_archive/reports/analyses_v1_complete_html_20261029.zi
 For targeted reading, filter the CSV by system, version and population rather
 than opening all detailed reports or importing all item-level records.
 
-### Isolated C3 diagnostic on schemes 2.0
+### Isolated B3 diagnostic on schemes 2.0
 
-`argfallacy evaluate-c3 configs/c3_schemes2_diagnostic.yaml` runs only the
-approved exploratory C3@2.0 versus transferred C1.hard@2.0 experiment. The
-original CART grid and nested C1 isolation are retained; Qwen A0/A2 are saved
+`argfallacy evaluate-b3 configs/b3_schemes2_diagnostic.yaml` runs only the
+approved exploratory B3@2.0 versus transferred B1.hard@2.0 experiment. The
+original CART grid and nested B1 isolation are retained; Qwen A0/A2 are saved
 contextual references. The protocol is in
-[spec 11](docs/specs/11_c3_schemes2_diagnostic.md). Results go to a new directory
+[spec 11](docs/specs/11_b3_schemes2_diagnostic.md). Results go to a new directory
 under evaluations/; the command refuses to overwrite existing outputs.
-It saves full trees, C1 fits, inner scores, exact OOF paths, paired IC95%,
+It saves full trees, B1 fits, inner scores, exact OOF paths, paired IC95%,
 common-coverage and origin/class sensitivities, and protected-input hashes.
 The +0.03 practical-interest flag is separate from the interval and from
 argumentative validity. Run artifacts contain no new LLM calls or annotations.

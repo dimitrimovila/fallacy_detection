@@ -6,12 +6,12 @@ import numpy as np
 import pandas as pd
 
 from ..aggregate.interface import TIE
-from ..aggregate.routing import C2Result
+from ..aggregate.routing import B2Result
 from .evaluate import Bench, Scorer, interval, resample_indices
 
 
 def routing_curve(
-    result: C2Result, items: pd.DataFrame, indices=None, *, seed=20261019, resamples=10000,
+    result: B2Result, items: pd.DataFrame, indices=None, *, seed=20261019, resamples=10000,
     export_dir=None, source_evaluation=None,
 ) -> pd.DataFrame:
     """Use the smallest pooled threshold attaining at least each requested share.

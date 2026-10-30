@@ -48,19 +48,19 @@ def __getattr__(name):
         from . import checklist
 
         return getattr(checklist, name)
-    if name in {"C1Config", "C1Result", "c1_out_of_fold", "configurations", "transfer_c1"}:
-        from . import c1
+    if name in {"B1Config", "B1Result", "b1_out_of_fold", "configurations", "transfer_b1"}:
+        from . import b1
 
-        return getattr(c1, name)
-    if name in {"CQInputs", "C1CrossFitter", "ReferenceInputs"}:
+        return getattr(b1, name)
+    if name in {"CQInputs", "B1CrossFitter", "ReferenceInputs"}:
         from . import crossfit
 
         return getattr(crossfit, name)
-    if name in {"Side", "Router", "C2Result", "c2_out_of_fold", "route"}:
+    if name in {"Side", "Router", "B2Result", "b2_out_of_fold", "route"}:
         from . import routing
 
         return getattr(routing, name)
-    if name in {"CQTree", "PooledCalibration", "C3Result", "c3_out_of_fold"}:
+    if name in {"CQTree", "PooledCalibration", "B3Result", "b3_out_of_fold"}:
         from . import tree
 
         return getattr(tree, name)
@@ -75,8 +75,8 @@ __all__ = [
     "answer_masses", "mean_masses", "traverse_soft", "source_of", "sources_of",
     "SOURCES", "LOGPROB", "SAMPLE", "VERBAL", "OUTSIDE",
     "Expansion", "NodeCall", "expand", "a2_pruned", "ssoft",
-    "C1Config", "C1Result", "c1_out_of_fold", "configurations", "transfer_c1",
-    "CQInputs", "C1CrossFitter", "ReferenceInputs",
-    "Side", "Router", "C2Result", "c2_out_of_fold", "route",
-    "CQTree", "PooledCalibration", "C3Result", "c3_out_of_fold",
+    "B1Config", "B1Result", "b1_out_of_fold", "configurations", "transfer_b1",
+    "CQInputs", "B1CrossFitter", "ReferenceInputs",
+    "Side", "Router", "B2Result", "b2_out_of_fold", "route",
+    "CQTree", "PooledCalibration", "B3Result", "b3_out_of_fold",
 ]

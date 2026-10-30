@@ -17,7 +17,7 @@ evaluations:
     round: 2
     # Optional exact side-record export, from a separate profiled calculation.
     routing_records: null
-    # Optional genuine C5 companion export; rounded aggregates cannot supply sets.
+    # Optional genuine B5 companion export; rounded aggregates cannot supply sets.
     conformal_records: null
 parsed_runs:
   20261005T193017Z_full_v2: ../runs/20261005T193017Z_full_v2

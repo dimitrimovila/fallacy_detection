@@ -125,13 +125,13 @@ def dq_saved(saved):
                 config={"stages": [stage], "models": ["ref"]},
             ),
         )
-    sources["C2.dq"] = dict(
+    sources["B2.dq"] = dict(
         answers="parsed", fit_answers="parsed", zeroshot="parsed", dq="synthetic_dq"
     )
-    main.append(dict(system="C2.dq", schemes="1.1", role="exploratory", n_items=len(items)))
+    main.append(dict(system="B2.dq", schemes="1.1", role="exploratory", n_items=len(items)))
     predictions.extend(
         dict(
-            system="C2.dq",
+            system="B2.dq",
             item_id=i,
             fold=manifest["folds"]["assignment"][i],
             verdict=GOOD,
@@ -218,8 +218,8 @@ def test_dq_merges_only_own_systems_and_exact_confidence_sources(dq_saved):
     assert declared.p_label_lower_bound.astype(bool).all()
     assert declared.confidence.eq(0.834567891234).all()
     assert soft.confidence.eq(0.634567891234).all() and soft.p_label.isna().all()
-    assert second.systems["C2.dq"].rows.confidence.eq(0.4123456789).all()
-    assert second.systems["C2.dq"].rows.p_label.isna().all()
+    assert second.systems["B2.dq"].rows.confidence.eq(0.4123456789).all()
+    assert second.systems["B2.dq"].rows.p_label.isna().all()
     assert second.systems["DQ.path:ref@2.0"].rows.confidence.isna().all()
     assert (
         second.systems["zeroshot.rerun:ref"]

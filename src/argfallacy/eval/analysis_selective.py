@@ -23,9 +23,9 @@ from .uncertainty import (
 )
 
 AUGRC_PAIRS = (
-    ("C2", "zeroshot:qwen3_8_27b"),
-    ("C4", "A2.pruned"),
-    ("C1", "A2"),
+    ("B2", "zeroshot:qwen3_8_27b"),
+    ("B4", "A2.pruned"),
+    ("B1", "A2"),
     ("A5", "zeroshot:qwen3_8_27b"),
 )
 

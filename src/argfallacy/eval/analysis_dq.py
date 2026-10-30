@@ -106,8 +106,8 @@ def _population(source, metadata, name, items):
 
 def validate_mapping(name, version, value, metadata, evaluation):
     """An @2.0 or rerun identity never falls back to the old zero-shot source."""
-    if name in ("C2.dq", "C2@2.0", "C2.dq@2.0"):
-        require(version == ("1.1" if name == "C2.dq" else "2.0"), f"{name}: version mismatch")
+    if name in ("B2.dq", "B2@2.0", "B2.dq@2.0"):
+        require(version == ("1.1" if name == "B2.dq" else "2.0"), f"{name}: version mismatch")
         require(isinstance(value, dict), f"{name}: routing source mapping required")
         runs = evaluation.manifest.get("runs", {})
         require(
@@ -126,13 +126,13 @@ def validate_mapping(name, version, value, metadata, evaluation):
             value.get("zeroshot") == zero and zero is not None,
             f"{name}: zero-shot mapping mismatch",
         )
-        if name != "C2@2.0":
+        if name != "B2@2.0":
             dq = metadata["systems"].get(
                 f"DQ:{evaluation.manifest['reference_model']}"
                 + ("@2.0" if version == "2.0" else "")
             )
             require(value.get("dq") == dq and dq is not None, f"{name}: D+Q mapping mismatch")
-        if name == "C2.dq@2.0":
+        if name == "B2.dq@2.0":
             require(
                 value.get("ssoft") == runs.get("ssoft") and bool(value.get("ssoft")),
                 f"{name}: S-soft mapping mismatch",

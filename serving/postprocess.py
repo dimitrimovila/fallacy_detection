@@ -1,4 +1,4 @@
-"""Explicit CPU-only analysis, report regeneration or isolated primary-C2 replay."""
+"""Explicit CPU-only analysis, report regeneration or isolated primary-B2 replay."""
 
 import argparse
 import gc
@@ -32,17 +32,17 @@ def fitting_summary(directory, inputs):
 
 
 def replay(config, evaluation_name, out, check_only):
-    """Refit only primary C1/C2, export after saved agreement, never evaluate a round."""
+    """Refit only primary B1/B2, export after saved agreement, never evaluate a round."""
     from argfallacy.aggregate import load_burden, routes
-    from argfallacy.aggregate.c1 import C_GRID, PRIMARY_CONFIG, c1_out_of_fold
-    from argfallacy.aggregate.c1_inputs import build_dataset
-    from argfallacy.aggregate.crossfit import C1CrossFitter
-    from argfallacy.aggregate.routing import C_GRID as C2_GRID
-    from argfallacy.aggregate.routing import c2_out_of_fold
+    from argfallacy.aggregate.b1 import C_GRID, PRIMARY_CONFIG, b1_out_of_fold
+    from argfallacy.aggregate.b1_inputs import build_dataset
+    from argfallacy.aggregate.crossfit import B1CrossFitter
+    from argfallacy.aggregate.routing import C_GRID as B2_GRID
+    from argfallacy.aggregate.routing import b2_out_of_fold
     from argfallacy.eval.analysis_conformal import export_conformal, selected_systems
     from argfallacy.eval.analysis_human import read_frozen_annotations
     from argfallacy.eval.analysis_routing import export_routing_records
-    from argfallacy.eval.c1 import cq_labels
+    from argfallacy.eval.b1 import cq_labels
     from argfallacy.eval.round2 import _side
     from argfallacy.schemes import load_all
 
@@ -51,7 +51,7 @@ def replay(config, evaluation_name, out, check_only):
     require(not out.exists(), "replay output must be a new directory")
     require(evaluation_name in config.evaluations, "explicit source evaluation is required")
     source = config.evaluations[evaluation_name]
-    require(source["round"] == 2, "primary C2 replay needs a round-two source")
+    require(source["round"] == 2, "primary B2 replay needs a round-two source")
     inputs = Inputs()
     inputs.add(config.path)
     items = read_items(config, inputs)
@@ -59,12 +59,12 @@ def replay(config, evaluation_name, out, check_only):
     evaluation = read_evaluation(evaluation_name, source, config, items, registry, inputs)
     metadata = evaluation.manifest
     require(
-        metadata.get("grids", {}).get("C1 stacking C") == list(C_GRID),
-        "replay C1 grid/settings differ from saved source",
+        metadata.get("grids", {}).get("B1 stacking C") == list(C_GRID),
+        "replay B1 grid/settings differ from saved source",
     )
     require(
-        metadata.get("grids", {}).get("C2 C") == list(C2_GRID),
-        "replay C2 grid/settings differ from saved source",
+        metadata.get("grids", {}).get("B2 C") == list(B2_GRID),
+        "replay B2 grid/settings differ from saved source",
     )
     reference = metadata["reference_model"]
     answers_id = metadata["runs"]["answers"]
@@ -110,8 +110,8 @@ def replay(config, evaluation_name, out, check_only):
         inputs=inputs.records(),
         folds=metadata["folds"],
         settings=metadata["grids"],
-        primary_C1=vars(PRIMARY_CONFIG),
-        scope="primary C2 and C1 conformal only; other C5 systems remain pending",
+        primary_B1=vars(PRIMARY_CONFIG),
+        scope="primary B2 and B1 conformal only; other B5 systems remain pending",
         resource_status="fitted replay not profiled until this separate command runs",
     )
     inputs.verify()
@@ -129,16 +129,16 @@ def replay(config, evaluation_name, out, check_only):
     data = build_dataset(schemes, frame, summary, answer_manifest, reference, routing)
     labels = cq_labels(notes, items, schemes)
     folds = metadata["folds"]["assignment"]
-    upstream = C1CrossFitter(data, labels, config.seed, PRIMARY_CONFIG)
+    upstream = B1CrossFitter(data, labels, config.seed, PRIMARY_CONFIG)
     side = _side(
         native_zero, "zeroshot:" + reference, reference, "zeroshot", items.item_id.tolist()
     )
-    print("Fitting isolated primary C2 with unchanged nested cross-fitting", flush=True)
-    result = c2_out_of_fold(upstream, side, folds)
+    print("Fitting isolated primary B2 with unchanged nested cross-fitting", flush=True)
+    result = b2_out_of_fold(upstream, side, folds)
     import numpy as np
 
     for item, aggregation in result.aggregations.items():
-        saved = evaluation.systems["C2"].rows.loc[item]
+        saved = evaluation.systems["B2"].rows.loc[item]
         require(
             aggregation.verdict == saved.verdict
             and (
@@ -148,23 +148,23 @@ def replay(config, evaluation_name, out, check_only):
                     and np.isclose(aggregation.confidence, saved.confidence, rtol=0, atol=1e-12)
                 )
             ),
-            f"primary C2 replay/saved prediction or confidence disagreement: {item}",
+            f"primary B2 replay/saved prediction or confidence disagreement: {item}",
         )
     inputs.verify()
     routing_file = export_routing_records(result, items, out / "routing", source["path"])
     audit["routing_records"] = str(routing_file)
     del result, upstream
     gc.collect()
-    selected_c5 = selected_systems(evaluation, inputs)
-    if selected_c5 is not None and "C1" in set(selected_c5.system):
-        print("Fitting primary C1 for a verified genuine C5 companion export", flush=True)
-        c1 = c1_out_of_fold(data, labels, folds, config.seed, PRIMARY_CONFIG)
+    selected_b5 = selected_systems(evaluation, inputs)
+    if selected_b5 is not None and "B1" in set(selected_b5.system):
+        print("Fitting primary B1 for a verified genuine B5 companion export", flush=True)
+        b1 = b1_out_of_fold(data, labels, folds, config.seed, PRIMARY_CONFIG)
         inputs.verify()
         export_conformal(
             evaluation,
             items,
             registry,
-            {"C1": c1.aggregations},
+            {"B1": b1.aggregations},
             out / "conformal",
             dependencies,
             dict(

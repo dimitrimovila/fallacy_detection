@@ -22,7 +22,7 @@ class Signal:
 
 
 @dataclass(frozen=True)
-class C1Dataset:
+class B1Dataset:
     """One row per item/CQ; entries and signals keep a stable entry/source order.
 
     Observation codes: 0 first arc, 1 second arc, 2 outside, -1 omitted.
@@ -71,7 +71,7 @@ class C1Dataset:
         index = {q: i for i, q in enumerate(self.questions)}
         return np.array([index[(scheme, cq)] for _, scheme, cq in self.pair_keys])
 
-    def with_features(self) -> C1Dataset:
+    def with_features(self) -> B1Dataset:
         present = np.isfinite(self.splits)
         logits = np.zeros_like(self.splits)
         logits[present] = logit(np.clip(self.splits[present], 0.005, 0.995))
@@ -117,14 +117,14 @@ def build_dataset(
     manifest: Mapping[str, Any],
     reference: str,
     routing: Mapping[str, Mapping[str, str]],
-) -> C1Dataset:
+) -> B1Dataset:
     """Read supplied frames only; no labels are consulted and no run is opened."""
     items = items.sort_values("item_id").reset_index(drop=True).copy()
     if items.item_id.duplicated().any():
-        raise SchemeError("duplicate C1 item ids")
+        raise SchemeError("duplicate B1 item ids")
     entries = tuple(sorted(manifest["models"]))
     if len(entries) != 5 or reference not in entries:
-        raise SchemeError("C1 requires five entries including its reference model")
+        raise SchemeError("B1 requires five entries including its reference model")
     sources = sources_of(manifest)
     signals = tuple(
         Signal(entry, source)
@@ -162,7 +162,7 @@ def build_dataset(
             raise SchemeError(f"{item.item_id}: unknown gold scheme {item.gold_scheme!r}")
         scheme = schemes[item.gold_scheme]
         if set(routing[scheme.scheme_id]) != set(scheme.cqs):
-            raise SchemeError(f"{scheme.scheme_id}: incomplete C1 routing")
+            raise SchemeError(f"{scheme.scheme_id}: incomplete B1 routing")
         pairs.extend(
             {"item_id": item.item_id, "scheme": scheme.scheme_id, "cq_id": cq}
             for cq in scheme.cq_order
@@ -197,7 +197,7 @@ def build_dataset(
                     )
         if kept_outside:
             outside[i] = np.mean(kept_outside)
-    return C1Dataset(
+    return B1Dataset(
         schemes,
         routing,
         items,

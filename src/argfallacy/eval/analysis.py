@@ -123,7 +123,7 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
         "metrics.py",
         "routing.py",
         "uncertainty.py",
-        "c1.py",
+        "b1.py",
         "cq.py",
     ):
         inputs.add(Path(__file__).with_name(name))
@@ -413,7 +413,7 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
     parts["conformal_sources"] = conformal_status
     parts.update(post_status)
     if tables["source_conformal.csv"].empty:
-        parts["source_conformal"].update(status="pending", reason="saved C5 aggregates unavailable")
+        parts["source_conformal"].update(status="pending", reason="saved B5 aggregates unavailable")
     for name in (*cq, *human, *selective, *new_human, *conformal, *imported_dq):
         frame = tables[name]
         part = parts[name.removesuffix(".csv")]
@@ -434,7 +434,7 @@ def analyze(config: AnalysisConfig, out_root=None, progress=None):
     if not stage_rows:
         parts["stage1"] = {"status": "pending", "reason": "no parsed stage-one rows"}
     if rare.empty:
-        parts["rare_classes"] = {"status": "pending", "reason": "no saved C1 system"}
+        parts["rare_classes"] = {"status": "pending", "reason": "no saved B1 system"}
     parts.update(
         {
             "direct_verdict": {

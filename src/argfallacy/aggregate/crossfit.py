@@ -10,8 +10,8 @@ import pandas as pd
 from sklearn.model_selection import KFold
 
 from ..schemes import SchemeError
-from .c1 import PRIMARY_CONFIG, C1Config, aggregate_combined, fit_c1
-from .c1_inputs import C1Dataset
+from .b1 import PRIMARY_CONFIG, B1Config, aggregate_combined, fit_b1
+from .b1_inputs import B1Dataset
 from .diagram import a0
 from .interface import Aggregation
 
@@ -29,7 +29,7 @@ def inner_partitions(ids: Sequence[str], seed: int):
 
 @dataclass(frozen=True)
 class CQInputs:
-    data: C1Dataset
+    data: B1Dataset
     p: np.ndarray
     aggregations: Mapping[str, Aggregation]
     hard_tree: bool = False
@@ -52,8 +52,8 @@ class CQInputs:
         )
 
 
-class C1CrossFitter:
-    """Cache by exact training items, including C1's own hyperparameter selection.
+class B1CrossFitter:
+    """Cache by exact training items, including B1's own hyperparameter selection.
 
     ``fit_data`` supplies original-scheme inputs for cross-version transfer. Only
     the caller's training items are labelled; predictions use the target signals.
@@ -61,21 +61,21 @@ class C1CrossFitter:
 
     def __init__(
         self,
-        data: C1Dataset,
+        data: B1Dataset,
         labels: pd.DataFrame,
         seed: int,
-        config: C1Config = PRIMARY_CONFIG,
+        config: B1Config = PRIMARY_CONFIG,
         *,
-        fit_data: C1Dataset | None = None,
+        fit_data: B1Dataset | None = None,
     ):
         if config.combiner != "stacking" or config.supervision != "cq":
-            raise SchemeError("C2/C3 learned inputs require CQ-supervised C1 stacking")
+            raise SchemeError("B2/B3 learned inputs require CQ-supervised B1 stacking")
         if config.exclude_schemes or config.unstable:
-            raise SchemeError("C2/C3 require the primary C1 label population")
+            raise SchemeError("B2/B3 require the primary B1 label population")
         self.data, self.labels, self.seed = data, labels, seed
         self.config, self.fit_data = config, data if fit_data is None else fit_data
         if not set(data.items.item_id) <= set(self.fit_data.items.item_id):
-            raise SchemeError("target items are missing from the original C1 inputs")
+            raise SchemeError("target items are missing from the original B1 inputs")
         self.models, self.choices, self._fitted, self._crossed = {}, [], {}, {}
 
     def _inputs(self, p, ids):
@@ -86,7 +86,7 @@ class C1CrossFitter:
     def fit(self, ids: Sequence[str]) -> CQInputs:
         key = tuple(sorted(set(ids)))
         if key not in self._fitted:
-            model, choice = fit_c1(self.fit_data, self.labels, key, self.seed, self.config)
+            model, choice = fit_b1(self.fit_data, self.labels, key, self.seed, self.config)
             self.models[key] = model
             self.choices.append({"training_items": key, **choice})
             self._fitted[key] = self._inputs(model.predict(self.data), self.data.items.item_id)
@@ -111,7 +111,7 @@ class C1CrossFitter:
 class ReferenceInputs:
     """Independent reference probabilities for routing, hard answers for its tree."""
 
-    def __init__(self, data: C1Dataset, seed: int, hard: bool = False):
+    def __init__(self, data: B1Dataset, seed: int, hard: bool = False):
         self.seed, self.hard = seed, hard
         e = data.entries.index(data.reference)
         self.data = replace(data, outside=1 - data.arc_mass[:, e])

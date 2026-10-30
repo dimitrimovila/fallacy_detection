@@ -175,17 +175,17 @@ def test_exact_four_pairs_origins_partial_denominators_and_reference_points(tmp_
     systems = {}
     names = sorted({s for pair in AUGRC_PAIRS for s in pair}) + [
         "A0:ref",
-        "C3",
-        "C3.pooled",
-        "C2.variant",
-        "C4.nohistory",
+        "B3",
+        "B3.pooled",
+        "B2.variant",
+        "B4.nohistory",
         "A3",
         "A4",
         "A5.answers_only",
         "zeroshot:other",
     ]
     for index, name in enumerate(names):
-        eligible = np.arange(n) < 8 if name == "C4" else np.ones(n, bool)
+        eligible = np.arange(n) < 8 if name == "B4" else np.ones(n, bool)
         rows = pd.DataFrame(
             {
                 "verdict": [GOOD if (k + index) % 3 else WEAK for k in range(n)],
@@ -195,7 +195,7 @@ def test_exact_four_pairs_origins_partial_denominators_and_reference_points(tmp_
             },
             index=items.item_id,
         )
-        if name == "C4":
+        if name == "B4":
             rows.loc[~eligible, :] = np.nan
         systems[name] = SavedSystem(name, "1.1", rows, eligible, True)
     evaluation = SavedEvaluation("second", 2, tmp_path, {}, systems)
@@ -210,10 +210,10 @@ def test_exact_four_pairs_origins_partial_denominators_and_reference_points(tmp_
     assert set(zip(differences.system, differences.reference, strict=True)) == set(AUGRC_PAIRS)
     assert len(differences) == 12
     assert set(differences.kind) == {"exploratory"}
-    partial = differences[differences.system == "C4"].set_index("origin")
+    partial = differences[differences.system == "B4"].set_index("origin")
     assert partial.n_items.to_dict() == {"total": 8, "fallacy corpora": 6, "scheme corpora": 2}
     draws = np.concatenate(list(Bootstrap(3, 37, 4).indices(n)))
-    left, right = systems["C4"], systems["A2.pruned"]
+    left, right = systems["B4"], systems["A2.pruned"]
     common = left.eligible & right.eligible
     deltas = []
     for draw in draws:
@@ -236,8 +236,8 @@ def test_exact_four_pairs_origins_partial_denominators_and_reference_points(tmp_
     assert "A0:ref" not in set(tables["abstention_curves.csv"].system)
     assert main[main.system != "A0:ref"].margin_status.str.startswith("pending").all()
     assert set(tables["difficulty.csv"].status) == {"pending"}
-    c4 = main[(main.system == "C4") & (main.origin == "total")].iloc[0]
-    assert c4.actual_cut_95 == 8 and c4.n_items == 8
+    b4 = main[(main.system == "B4") & (main.origin == "total")].iloc[0]
+    assert b4.actual_cut_95 == 8 and b4.n_items == 8
 
 
 def test_margin_requires_genuine_terminal_distribution():

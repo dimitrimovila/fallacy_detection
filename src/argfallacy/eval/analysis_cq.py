@@ -16,11 +16,11 @@ from .analysis_bootstrap import contribution_ratios
 from .analysis_inputs import probability, read_run, require, unique
 from .analysis_selective import origin_masks
 from .analysis_tables import metrics_record, table_frame
-from .c1 import cq_labels
+from .b1 import cq_labels
 from .cq import CBD, human_answers
 
 KEYS = ["item_id", "scheme", "cq_id"]
-C1_POPULATION = "C1 binary; gold_scheme_rows with positive scheme judgement"
+B1_POPULATION = "B1 binary; gold_scheme_rows with positive scheme judgement"
 P7_POPULATION = "P7 gold-scheme sheet; any scheme judgement and all human answer categories"
 NODE_POPULATION = "observed S-soft path occurrences; unvisited CQs excluded"
 
@@ -110,7 +110,7 @@ def _scores(rows, items, bootstrap, difference=False):
     return result
 
 
-def cq_scores(predictions, labels, items, bootstrap, population=C1_POPULATION):
+def cq_scores(predictions, labels, items, bootstrap, population=B1_POPULATION):
     """Pure frame adapter used by both saved inputs and synthetic checks."""
     keys = [*KEYS, *(["path"] if "path" in predictions else [])]
     unique(predictions, keys, "CQ system")
@@ -118,7 +118,7 @@ def cq_scores(predictions, labels, items, bootstrap, population=C1_POPULATION):
     rows = predictions.merge(
         labels,
         on=KEYS,
-        how="inner" if population == C1_POPULATION else "left",
+        how="inner" if population == B1_POPULATION else "left",
         validate="many_to_one",
     )
     output = []
@@ -155,7 +155,7 @@ def cq_differences(left, right, labels, items, bootstrap):
                 "origin": origin,
                 "scheme": scheme,
                 "cq_id": cq,
-                "population": C1_POPULATION,
+                "population": B1_POPULATION,
                 "level": 0.95,
                 "kind": "exploratory",
                 "status": "computed",
@@ -166,7 +166,7 @@ def cq_differences(left, right, labels, items, bootstrap):
 
 
 def entry_predictions(summary, items, schemes, model, settings, observed_nodes=False):
-    """C1's conditional split and hard fallback; P7 signals stay unconditional."""
+    """B1's conditional split and hard fallback; P7 signals stay unconditional."""
     frame = summary[
         (summary.model == model)
         & (summary.scheme_condition == "gold")
@@ -332,7 +332,7 @@ def dq_cq_tables(config, evaluation, items, registry, binary, broad, empty, boot
                 labels,
                 items,
                 bootstrap,
-                C1_POPULATION
+                B1_POPULATION
                 if version == "1.1"
                 else "D+Q 2.0 CQ vectors; compatible human targets pending",
             )
@@ -517,7 +517,7 @@ def cq_tables(config, evaluations, items, registry, annotations, bootstrap, inpu
                                 empty,
                                 items,
                                 bootstrap,
-                                "C1 2.0 full vectors; compatible human targets pending",
+                                "B1 2.0 full vectors; compatible human targets pending",
                             )
                         )
                 if version == "1.1" and not nodes:
@@ -603,7 +603,7 @@ def cq_tables(config, evaluations, items, registry, annotations, bootstrap, inpu
             "binary_cq_pairs": len(binary),
             "p7_annotated_items": broad.item_id.nunique(),
             "p7_annotated_cq_pairs": len(broad),
-            "binary_population": C1_POPULATION,
+            "binary_population": B1_POPULATION,
             "p7_population": P7_POPULATION,
             "annotation_version": "1.1",
             "rewritten_cq_targets": "pending: no compatible 2.0 annotations",

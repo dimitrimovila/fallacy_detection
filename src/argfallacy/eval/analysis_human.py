@@ -15,7 +15,7 @@ from .analysis_bootstrap import contribution_ratios, score_population
 from .analysis_inputs import require
 from .analysis_selective import origin_masks
 from .analysis_tables import metrics_record, table_frame
-from .c1 import gold_scheme_answers
+from .b1 import gold_scheme_answers
 from .cq import agreement
 from .evaluate import weights
 from .run_report import good_terminal

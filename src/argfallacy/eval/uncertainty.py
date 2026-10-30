@@ -1,4 +1,4 @@
-"""C5: abstention curves (spec 08, P11) and conformal prediction sets fitted by fold.
+"""B5: abstention curves (spec 08, P11) and conformal prediction sets fitted by fold.
 
 A curve sorts the items by decreasing confidence, ties by ``item_id``; items with a
 verdict but no confidence follow every item with one, and items without a verdict

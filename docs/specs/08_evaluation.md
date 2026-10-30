@@ -260,8 +260,8 @@ written, with outcome `missing` until its inputs exist), `dq_deciding_breakdowns
 `dq_abstention_curves.csv`, `dq_routing_curve.csv` and `dq_choices.csv`.
 The zero-shot replication split is found by rendering
 both prompts. `manifest.json` adds `dq`, and `summary.html` adds a final D+Q section
-from these saved tables, with abstention curves as a figure. The exploratory C2
-families of spec 10 section 7 use the same folds and resamples, with C1 cross-fitted
+from these saved tables, with abstention curves as a figure. The exploratory B2
+families of spec 10 section 7 use the same folds and resamples, with B1 cross-fitted
 inside each training partition. S-soft enters only the family of schemes 2.0.
 
 ### Remaining stage two work
@@ -309,12 +309,12 @@ ignored `configs/analyses*.local.yaml`. The processing batch defaults to 128,
 accepts integers from 1 to 4096, and does not change the draws. Source seed,
 resamples, frozen population and folds must match before scoring. A restricted
 population must be declared by item ids or excluded schemes; the existing
-`C1.annotation_exclusion` reads its recorded `cq_label_exclusion` declaration.
+`B1.annotation_exclusion` reads its recorded `cq_label_exclusion` declaration.
 Absent rows do not implicitly define eligibility.
 
 This component supplies the main and comparison breakdowns, per-class and rare-
 class diagnosis, parser integrity, stage-one recognition and their manifest.
-`rare_classes.csv` holds the fixed C1 diagnosis; `confidence.csv` preserves
+`rare_classes.csv` holds the fixed B1 diagnosis; `confidence.csv` preserves
 item-level confidence recovery and `p_label_lower_bound` provenance. CQ/historical
 human and selective-prediction outputs from frozen inputs are implemented.
 Explicit optional human inputs, saved spec-10 D+Q adapters and genuine conformal
@@ -324,7 +324,7 @@ item interfaces and saved-table HTML are implemented.
 Optional evaluation audit arguments remain evaluation-only. Missing optional
 tables require a pending reason; malformed computed tables fail. Report-only
 regeneration performs no source-data reads or statistical calculation.
-`source_conformal.csv` preserves selected saved C5 aggregates independently of
+`source_conformal.csv` preserves selected saved B5 aggregates independently of
 pending exact item exports; it supplies no reconstructed sets or human-group estimates.
 An optional saved `verdicts.csv` `distribution` column
 contains a JSON terminal-to-mass mapping; only genuine distributions validated
@@ -333,8 +333,8 @@ that check remains pending and no distribution is reconstructed from a label.
 Collapsed tables remain deferred at level 3: the existing canonical point scorer
 supports collapse, but the bootstrap scoring path is fine-only.
 
-Exact C2 routing input can be exported, opt in, from an already computed primary
-two-side `C2Result`, after verifying its verdicts against the source evaluation.
+Exact B2 routing input can be exported, opt in, from an already computed primary
+two-side `B2Result`, after verifying its verdicts against the source evaluation.
 The export contains full-precision held-out `p_d`, `p_z`, both side verdicts and
 folds, with source-manifest and record hashes. It goes to a separate analysis/
 replay directory, then enters `routing_records` for an analysis with a distinct
@@ -346,7 +346,7 @@ No real replay or analysis is part of implementation validation.
 ElecDebate) and scheme-corpus (NLAS, EthiX) results to the thesis tables only:
 main tables of both rounds; deciding and exploratory comparisons; CQ-level scores;
 abstention summaries (AUGRC, AURC and fixed-coverage accuracy); human path and human
-agreement; and the C2 routing curve. Existing rows by scheme or CQ retain that
+agreement; and the B2 routing curve. Existing rows by scheme or CQ retain that
 detail within each origin. Do not add origin to S-soft answer changes or other
 minor descriptive tables. Conformal summaries retain the origin and scheme views
 already required by spec 09. Report item counts, CQ-pair counts where applicable,
@@ -358,7 +358,7 @@ for a metric whose denominator is zero.
 Complete main-table breakdowns under P3 and the main table without NLAS for round
 two under P4. New verdict comparisons are also reported by scheme and without
 NLAS, on the common eligible items; preserve P3's small-group rules. Recompute
-subgroup metrics from predictions, not averages of saved metrics. For C2 retain
+subgroup metrics from predictions, not averages of saved metrics. For B2 retain
 the pooled out-of-fold threshold grid and thresholds selected for requested shares;
 report each origin's actual explained share and scores at those same thresholds,
 with intervals at the selected shares. Do not retune thresholds within an origin.
@@ -386,14 +386,14 @@ verdict counts and the maximum operational coverage. Do not imply that each orde
 point is attainable by a threshold. Fixed-coverage counts use half-up rounding.
 
 Cover the available confidence-bearing systems of both rounds, including A3,
-all five zero-shot entries, both judges, A2, A4, round-two soft variants, C2, C3,
+all five zero-shot entries, both judges, A2, A4, round-two soft variants, B2, B3,
 S-soft and its control. A partial system uses its declared eligible population;
 comparisons use the intersection. Systems without confidence are reference points,
 not artificial rankings. Compute ordered curves, effective-threshold curves and
 summary intervals for total and both origins. Retain the margin check where a true
 terminal distribution is available; a single chosen label is not such a distribution.
 Paired AUGRC differences, system minus reference, are restricted to:
-`C2` against `zeroshot:qwen3_8_27b`; `C4` against `A2.pruned`; `C1` against `A2`;
+`B2` against `zeroshot:qwen3_8_27b`; `B4` against `A2.pruned`; `B1` against `A2`;
 `A5` against `zeroshot:qwen3_8_27b`, in total and by origin. These comparisons do
 not decide success. Summary intervals and intervals at fixed coverage are required;
 pointwise confidence bands over the whole curve are not required.
@@ -471,7 +471,7 @@ without timestamp ordering. Planned and answered scheme/origin counts, complete
 and partial rounds and attainment of 200 answers are recorded. Global eligible
 rankings precede intersection with observed humans, also within bootstrap draws.
 
-Genuine C5 sources are saved distributions or an explicit `conformal_records`
+Genuine B5 sources are saved distributions or an explicit `conformal_records`
 companion directory, never labels converted to one-hot masses. The opt-in
 `analysis_conformal.export_conformal` API and the existing round-two calculation's
 `conformal_export_dir` argument export exact sets and distributions separately,
@@ -484,9 +484,9 @@ implementation validation.
 
 **Other thesis outputs.** Export per-class precision, recall, F1, gold support and
 prediction counts, including Good Argumentation and unsupported classes. For the
-C1 diagnosis identify rare classes by fewer than 20 gold items in the full frozen
+B1 diagnosis identify rare classes by fewer than 20 gold items in the full frozen
 test set, before subsetting; report the class list and mean recall over supported
-rare classes alongside C1 and its references. Export integrity counts for invalid,
+rare classes alongside B1 and its references. Export integrity counts for invalid,
 missing, cannot-be-determined and not-applicable answers, and absent verdicts,
 with explicit sample/CQ/item denominators. Reuse the existing stage-one scorer on
 test items only. A collapsed main table is optional only through existing scoring
@@ -517,7 +517,7 @@ origins and other subgroups filter those whole-test draws, and empty replicates
 are excluded metric by metric with their counts recorded. Retain the existing
 generator-2 protocol for the without-NLAS analysis. Shared indices may be retained
 once or replayed deterministically in batches. Sum CQ contributions per item
-before resampling, as in `eval/c1.py`; process systems and batches sequentially.
+before resampling, as in `eval/b1.py`; process systems and batches sequentially.
 Never allocate resamples-by-CQ-pairs arrays or a resamples-by-items-by-systems
 array, or retain per-system copies of full bootstrap workspaces. Chunking must not
 change draws, ties, estimates or intervals. Record batch size, elapsed time and

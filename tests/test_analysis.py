@@ -96,14 +96,14 @@ def saved(tmp_path):
             "m": 5 if round_number == 1 else 4,
             "primary_configurations": {"A2": "saved"}
             if round_number == 1
-            else {"C1": "saved", "C2": "saved"},
+            else {"B1": "saved", "B2": "saved"},
             "cq_label_exclusion": ["example"],
         }
         dump(d / "manifest.json", m)
         systems = (
             ["A0:ref", "A2", "zeroshot:ref"]
             if round_number == 1
-            else ["A0:ref", "A2", "zeroshot:ref", "C1", "C2", "partial"]
+            else ["A0:ref", "A2", "zeroshot:ref", "B1", "B2", "partial"]
         )
         rows, main = [], []
         for system in systems:
@@ -127,7 +127,7 @@ def saved(tmp_path):
             decide = [
                 {
                     "hypothesis": "H1.1",
-                    "system": "C1",
+                    "system": "B1",
                     "reference": "A0:ref",
                     "level": 0.9875,
                     "read_after": "",
@@ -137,7 +137,7 @@ def saved(tmp_path):
                 },
                 {
                     "hypothesis": "H1.2",
-                    "system": "C1",
+                    "system": "B1",
                     "reference": "zeroshot:ref",
                     "level": 0.9875,
                     "read_after": "H1.1",
@@ -256,7 +256,7 @@ def test_outputs_denominators_pairing_gates_provenance_and_no_optional_reads(sav
     assert main.loc[main.subset == "example", "small_scheme"].all()
     assert not main.loc[main.subset == "analogy", "small_scheme"].all()
     scheme = main[
-        (main.evaluation == "second") & (main.system == "C1") & (main.subset == "example")
+        (main.evaluation == "second") & (main.system == "B1") & (main.subset == "example")
     ].iloc[0]
     assert scheme.good_recall == 0 and scheme.good_recall_undefined
     assert GOOD in json.loads(scheme.excluded_classes)
@@ -271,7 +271,7 @@ def test_outputs_denominators_pairing_gates_provenance_and_no_optional_reads(sav
     per = table(out, "per_class")
     absent = per[
         (per.evaluation == "second")
-        & (per.system == "C1")
+        & (per.system == "B1")
         & (per.subset == "example")
         & (per["class"] == GOOD)
     ].iloc[0]
@@ -297,10 +297,10 @@ def test_outputs_denominators_pairing_gates_provenance_and_no_optional_reads(sav
     assert "replay" in manifest["parts"]["routing_curve"]["reason"]
     assert manifest["parts"]["collapsed"]["level"] == 3
     rare = table(out, "rare_classes")
-    assert set(rare.system) == {"C1", "A0:ref", "A2", "zeroshot:ref"}
+    assert set(rare.system) == {"B1", "A0:ref", "A2", "zeroshot:ref"}
     assert all(GOOD not in json.loads(value) for value in rare.rare_classes)
     example = rare[
-        (rare.system == "C1") & (rare.subset == "example") & (rare.origin == "total")
+        (rare.system == "B1") & (rare.subset == "example") & (rare.origin == "total")
     ].iloc[0]
     assert json.loads(example.supported_rare_classes) == [CHERRY]
     assert example.mean_recall == pytest.approx(0.5)
@@ -489,14 +489,14 @@ def test_exact_routing_reuses_pooled_thresholds_in_each_origin(saved):
     primary, _ = routed(records, 0)
     saved_file = path.parent / "second" / "verdicts.csv"
     frame = pd.read_csv(saved_file, keep_default_na=False)
-    frame.loc[frame.system == "C2", "verdict"] = primary
+    frame.loc[frame.system == "B2", "verdict"] = primary
     frame.to_csv(saved_file, index=False)
     exact = path.parent / "routing_records.csv"
     records.to_csv(exact, index=False)
     dump(
         exact.with_suffix(".manifest.json"),
         {
-            "system": "C2",
+            "system": "B2",
             "scheme_version": "1.1",
             "source_manifest_sha256": hashlib.sha256(
                 (path.parent / "second" / "manifest.json").read_bytes()
@@ -543,7 +543,7 @@ def test_opt_in_routing_export_verifies_saved_predictions_and_preserves_sources(
     import hashlib
 
     from argfallacy.aggregate.interface import Aggregation
-    from argfallacy.aggregate.routing import C2Result, Side
+    from argfallacy.aggregate.routing import B2Result, Side
     from argfallacy.eval.analysis_routing import export_routing_records
     from argfallacy.eval.routing import routing_curve
 
@@ -552,7 +552,7 @@ def test_opt_in_routing_export_verifies_saved_predictions_and_preserves_sources(
     folds = assign_folds(items, 17)
     upstream = {i: Aggregation(GOOD, 0.5, {}, 0, "diagram") for i in ids}
     zero = Side("zero-shot", {i: Aggregation(WEAK, 0.7, {}, 0, "zero") for i in ids})
-    result = C2Result(
+    result = B2Result(
         {},
         pd.DataFrame({"item_id": ids, "p_d": 0.2, "p_z": 0.723456789012345}),
         {},
@@ -560,11 +560,11 @@ def test_opt_in_routing_export_verifies_saved_predictions_and_preserves_sources(
         upstream,
         (zero,),
         folds,
-        "C2",
+        "B2",
     )
     csv = path.parent / "second" / "verdicts.csv"
     saved_rows = pd.read_csv(csv, keep_default_na=False)
-    saved_rows.loc[saved_rows.system == "C2", "verdict"] = WEAK
+    saved_rows.loc[saved_rows.system == "B2", "verdict"] = WEAK
     saved_rows.to_csv(csv, index=False)
     before = {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in csv.parent.iterdir()}
     plain = routing_curve(result, items, seed=17, resamples=13)
@@ -582,7 +582,7 @@ def test_opt_in_routing_export_verifies_saved_predictions_and_preserves_sources(
     )
     assert records.p_z.iloc[0] == 0.723456789012345
     assert all(hashlib.sha256(p.read_bytes()).hexdigest() == h for p, h in before.items())
-    saved_rows.loc[saved_rows.system == "C2", "verdict"] = GOOD
+    saved_rows.loc[saved_rows.system == "B2", "verdict"] = GOOD
     saved_rows.to_csv(csv, index=False)
     with pytest.raises(SchemeError, match="verdict"):
         export_routing_records(result, items, path.parent / "rejected", csv.parent)

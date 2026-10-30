@@ -11,7 +11,7 @@ import yaml
 from argfallacy.eval.analysis import AnalysisConfig, analyze
 from argfallacy.eval.analysis_bootstrap import Bootstrap, contribution_ratios
 from argfallacy.eval.analysis_cq import (
-    C1_POPULATION,
+    B1_POPULATION,
     P7_POPULATION,
     combined_predictions,
     cq_differences,
@@ -27,11 +27,11 @@ from argfallacy.eval.analysis_human import (
     reference_support,
 )
 from argfallacy.eval.analysis_inputs import Inputs, SavedEvaluation
-from argfallacy.eval.c1 import cq_evaluation, cq_labels, entry_answers
+from argfallacy.eval.b1 import cq_evaluation, cq_labels, entry_answers
 from argfallacy.eval.cq import agreement, human_answers
 from argfallacy.paths import REPO_ROOT
 from argfallacy.schemes import SchemeError, load_all
-from test_c1 import example_data
+from test_b1 import example_data
 
 pytest_plugins = ["test_analysis"]
 
@@ -82,7 +82,7 @@ def notes_for(items, schemes):
     return pd.DataFrame(notes)
 
 
-def test_item_clustering_is_identical_to_legacy_c1_and_individual_cqs_sum():
+def test_item_clustering_is_identical_to_legacy_b1_and_individual_cqs_sum():
     data, labels, summary, manifest = example_data(24, full_scheme=True)
     items = data.items.assign(source=["LOGIC"] * 20 + ["NLAS"] * 4)
     binary = labels.assign(human=np.where(labels.target == 1, "yes", "no"))
@@ -126,11 +126,11 @@ def test_population_difference_outside_answers_orientation_and_common_probabilit
     summary.loc[summary.model == "e0", "p_logprob_no"] = 0.3
     summary.loc[summary.model == "e0", "p_logprob_cannot_be_determined"] = 0.5
     frame = entry_predictions(summary, items, data.schemes, "e0", manifest["models"]["e0"])
-    assert np.allclose(frame.p_first, 0.4)  # C1 conditional split on arcs
+    assert np.allclose(frame.p_first, 0.4)  # B1 conditional split on arcs
     p7 = p7_predictions(frame, data.schemes, "p_logprob")
     assert np.allclose(p7.p_first, 0.2)  # P7's unconditional yes probability
     row = cq_scores(frame, binary, items, Bootstrap(1, 31, 7))[0]
-    assert row["population"] == C1_POPULATION and row["agreement"] == 0
+    assert row["population"] == B1_POPULATION and row["agreement"] == 0
     p7row = cq_scores(p7, broad, items, Bootstrap(1, 31, 7), P7_POPULATION)[0]
     assert p7row["annotated_items"] == 24
     verbal = p7_predictions(frame, data.schemes, "p_verbal")

@@ -20,7 +20,7 @@ The organization is thematic, following the research progression rather than the
 | F04–F06 | Did learned combinations, sequential questions or D+Q improve the verdict? |
 | F07–F11 | What do human answers, substitutions, collisions and initial learned mappings reveal about the bottleneck? |
 | F12–F15 | What changed with 2.0, and how do graph structure, gold provenance and individual cases affect interpretation? |
-| F16–F17 | Which analyses actually completed, what remains unreproduced, and what did C3@2.0 establish? |
+| F16–F17 | Which analyses actually completed, what remains unreproduced, and what did B3@2.0 establish? |
 | F18 and decision table | Which directions remain open, and which choices have actually been confirmed? |
 
 These identifiers are stable so later corrections can cite them. Evidence lists deliberately point to detailed local records rather than copy every secondary table. Recovered observations with an unresolved denominator or source convention remain explicitly qualified; they must not be silently promoted to frozen-benchmark results.
@@ -31,7 +31,7 @@ The objective is a fallacy verdict computed from Walton critical-question answer
 
 The reference task generally supplies the gold scheme. It is therefore conditional fallacy classification, not a demonstrated end-to-end system with predicted schemes. There are 601 frozen test arguments, eight schemes and 23 gold-supported fine verdict classes, including Good Argumentation. Class support is very uneven. The earlier 607 rows contain 606 distinct texts; five near-duplicate pairs reduce the reference to 601. The full frozen item table has 773 items. Canonical scoring and historical compatibility scoring must not be mixed.
 
-Completed work includes pilots; five-model isolated-CQ runs on 1.1 and 2.0; direct verdicts; judge variants; round-1/round-2 aggregators; Qwen S-soft and its no-history control; Qwen D+Q with matched direct controls; saved-result analyses; human-CQ and graph diagnostics; and C3@2.0. Existing output directories do not imply that every optional analysis has been executed.
+Completed work includes pilots; five-model isolated-CQ runs on 1.1 and 2.0; direct verdicts; judge variants; round-1/round-2 aggregators; Qwen S-soft and its no-history control; Qwen D+Q with matched direct controls; saved-result analyses; human-CQ and graph diagnostics; and B3@2.0. Existing output directories do not imply that every optional analysis has been executed.
 
 **Confirmed direction, 30 October:** prioritize trying structure-learning algorithms on existing CQ outputs. Another manual redesign or new annotation campaign is not a prerequisite. The existing 2.0 diagrams remain an important candidate representation, not a demonstrated universal improvement over 1.1. The next algorithm, encoding, runtime, search budget and protocol have not yet been agreed. GOSDT, DL8.5, constrained structures, rule lists, concept bottlenecks and CQ prediction remain alternatives, not an obligatory architecture.
 
@@ -71,13 +71,13 @@ Evidence: `evaluations/decision_v2/cq_report.md`; local thesis plan section 4; `
 
 ## F04 — Round 2: better CQ answers need not yield better verdicts
 
-**Measured, 25 October; 601 arguments.** The four original deciding comparisons use 98.75% intervals: C1 versus Qwen A0, Macro-F1 delta about -0.053 [-0.114, 0.023]; C2 versus direct verdict, -0.003 [-0.022, 0.015]; C3 versus C1.hard, about -0.100 [-0.175, 0.017]; S-soft versus A2.pruned, -0.065 [-0.122, -0.003]. Follow-on tests governed by the original hierarchy were not interpreted when their first comparison failed.
+**Measured, 25 October; 601 arguments.** The four original deciding comparisons use 98.75% intervals: B1 versus Qwen A0, Macro-F1 delta about -0.053 [-0.114, 0.023]; B2 versus direct verdict, -0.003 [-0.022, 0.015]; B3 versus B1.hard, about -0.100 [-0.175, 0.017]; S-soft versus A2.pruned, -0.065 [-0.122, -0.003]. Follow-on tests governed by the original hierarchy were not interpreted when their first comparison failed.
 
-C1 stacking improves selected binary CQ agreement to about 0.800; CQ-specific weighted combination reaches 0.809 versus Qwen 0.778. Yet C1's final Macro-F1 is 0.2975 versus A0 0.3503, at similar Accuracy 0.5008 versus 0.5042. Good predictions become more frequent and mean recall over classes with fewer than 20 gold items falls from about 0.41 to 0.30. **Interpretation:** local agreement gains and the downstream mapping can interact adversely. **Hypothesis:** imbalance, source differences, applicability and model calibration may contribute; no unique cause has been established.
+B1 stacking improves selected binary CQ agreement to about 0.800; CQ-specific weighted combination reaches 0.809 versus Qwen 0.778. Yet B1's final Macro-F1 is 0.2975 versus A0 0.3503, at similar Accuracy 0.5008 versus 0.5042. Good predictions become more frequent and mean recall over classes with fewer than 20 gold items falls from about 0.41 to 0.30. **Interpretation:** local agreement gains and the downstream mapping can interact adversely. **Hypothesis:** imbalance, source differences, applicability and model calibration may contribute; no unique cause has been established.
 
-C2's saved curve illustrates a predictive tradeoff: increasing the share of verdicts selected from the diagram to roughly 70%, 80%, 90% and 100% yields Macro-F1 about 0.444, 0.399, 0.344 and 0.298. Actual achieved shares are discrete. Routing selects which system decides; it does not make a direct model's internal reasoning a faithful CQ derivation.
+B2's saved curve illustrates a predictive tradeoff: increasing the share of verdicts selected from the diagram to roughly 70%, 80%, 90% and 100% yields Macro-F1 about 0.444, 0.399, 0.344 and 0.298. Actual achieved shares are discrete. Routing selects which system decides; it does not make a direct model's internal reasoning a faithful CQ derivation.
 
-Evidence: `evaluations/round2/{main_table.csv,deciding.csv,summary.html}`; `docs/specs/09_aggregators_round2.md`. These historical comparisons must not be substituted with C3@2.0 results.
+Evidence: `evaluations/round2/{main_table.csv,deciding.csv,summary.html}`; `docs/specs/09_aggregators_round2.md`. These historical comparisons must not be substituted with B3@2.0 results.
 
 ## F05 — S-soft control and a corrected interpretation
 
@@ -153,15 +153,15 @@ The 48-CQ information/ablation study finds complementarity as well as apparent r
 
 Evidence: human learning manifest, metrics, ablations and information tables in the same research_notes folder; report sections 5–6. Mutual-information estimates are descriptive; sparse conditioning and singleton groups limit them.
 
-## F11 — Historical C3 is one learner, not a test of all learned diagrams
+## F11 — Historical B3 is one learner, not a test of all learned diagrams
 
-**Measured, 1.1.** Historical C3 uses one balanced Gini CART per scheme, probability of the first answer plus outside-arc mass per CQ, depth {1,2,3}, minimum leaf {1,3,5}, inner Macro-F1 selection and nested C1 construction. On 601 items it reaches 0.4393 Accuracy / 0.2550 Macro-F1 versus C1.hard 0.5025/0.3555. The Macro-F1 difference is -0.1005, adjusted 98.75% CI [-0.1753, +0.0170].
+**Measured, 1.1.** Historical B3 uses one balanced Gini CART per scheme, probability of the first answer plus outside-arc mass per CQ, depth {1,2,3}, minimum leaf {1,3,5}, inner Macro-F1 selection and nested B1 construction. On 601 items it reaches 0.4393 Accuracy / 0.2550 Macro-F1 versus B1.hard 0.5025/0.3555. The Macro-F1 difference is -0.1005, adjusted 98.75% CI [-0.1753, +0.0170].
 
 Depth 3 is selected in 25/40 scheme/fold fits; 301/601 saved paths use outside mass and 167/601 repeat a CQ. The original export lacks complete fitted trees and inner/train scores. **Hypotheses:** search limits, representation, small samples or overfitting may contribute; none is proven by these counts. A repeated probability threshold can define an interval rather than literally ask the same question twice.
 
 A counterexample to blanket CQ insufficiency is the post-results A3.combined variant: majority-combined LLM inputs with balanced logistic regression give 0.5374/0.3915 versus 0.4309/0.2876 for hard traversal of those same inputs; paired Macro-F1 delta +0.1040, ordinary 95% CI [0.0373, 0.1766]. This is a post-results finding, not a newly confirmed advantage or proof that an optimal tree will recover it.
 
-Evidence: original round2, spec 09 section 14, and human diagnosis section 7. Do not substitute Qwen A0 for the same-input C1.hard comparator.
+Evidence: original round2, spec 09 section 14, and human diagnosis section 7. Do not substitute Qwen A0 for the same-input B1.hard comparator.
 
 ## F12 — Version 2.0 changes help unevenly
 
@@ -307,7 +307,7 @@ Evidence: recovered worksheet review and saved-output inspection; local audit `s
 
 Post-results class-weighting, prior-adjusted aggregators and frequent-class summaries were also retained, rather than becoming new primary successes. The frequent-class endpoint uses 12 classes with at least ten gold examples; the earlier rare-class recall diagnostic uses fewer than 20. These cutoffs answer different questions and are not interchangeable. The remaining eleven supported classes have one to eight examples. Bootstrap intervals over fixed OOF predictions do not include refitting uncertainty; per-scheme stratification does not guarantee rare-class representation in every training fold.
 
-Original round2 and the archived spec-10 recomputation have identical verdicts and main/deciding tables, but base confidence values differ beyond serialization precision (reported maximum absolute differences: C2 0.0014600673485322124; C1 0.000009284341750293024). Exact C2 routing/conformal item exports remain unaccepted because isolated replay did not match the selected saved outputs. Rounded curves cannot recover genuine item-level routing or conformal sets. Preserve original confidences and source hashes; do not substitute a convenient recomputation to obtain agreement.
+Original round2 and the archived spec-10 recomputation have identical verdicts and main/deciding tables, but base confidence values differ beyond serialization precision (reported maximum absolute differences: B2 0.0014600673485322124; B1 0.000009284341750293024). Exact B2 routing/conformal item exports remain unaccepted because isolated replay did not match the selected saved outputs. Rounded curves cannot recover genuine item-level routing or conformal sets. Preserve original confidences and source hashes; do not substitute a convenient recomputation to obtain agreement.
 
 Human sample sheets were prepared: 111 items for 2.0 CQ annotation and 375 for direct verdict, with recorded seed and disjoint allocation. Their existence does not demonstrate completed answers. Independent human adjudication, predicted-scheme verdict evaluation, and retraining stability remain open. Synthetic resource measurements do not establish the cost of real fitted replay.
 
@@ -315,34 +315,34 @@ Evidence: `evaluations/analyses_v1/execution_audit.json` and manifest; `evaluati
 
 Technical checks also delimit what can be reproduced. A Unicode line-splitting problem in raw JSONL reading required streaming by actual file lines; this is a parser lesson, not a new model result. Near ties can make the generated hard answer differ from the answer with the largest summed token mass, so those two signals must not be silently equated. The local full-v2 raw file is kept on the cluster; its local stage-two summary was reconstructed from saved answer tables. A fresh full parse still requires the raw source. Legacy agreement on 2,416 of 2,428 prior verdicts is a compatibility check on those cases, not proof of general correctness. These issues belong to the client/parser/serving provenance, separate from the reported classifier comparisons.
 
-## F17 — C3@2.0: completed controlled diagnostic
+## F17 — B3@2.0: completed controlled diagnostic
 
-**Confirmed protocol, 29 October.** Compare original C3 with C1.hard on identical transferred C1 features for 2.0; preserve CART/grid and the five historical argument folds with fully nested upstream fitting. Primary endpoint: canonical OOF Macro-F1 on all 601 arguments; Accuracy secondary; ordinary paired 95% intervals; +0.03 as practical-interest threshold. Retain abstentions and unreachable gold in primary scoring, with coverage/common-coverage and schema/class/origin/Good sensitivities. Qwen A0/A2 are context only. Export full fitted trees and inspect numerical and argumentative rules separately. The protocol was fixed before these fits but after substantial benchmark exploration, so this is not independent confirmation.
+**Confirmed protocol, 29 October.** Compare original B3 with B1.hard on identical transferred B1 features for 2.0; preserve CART/grid and the five historical argument folds with fully nested upstream fitting. Primary endpoint: canonical OOF Macro-F1 on all 601 arguments; Accuracy secondary; ordinary paired 95% intervals; +0.03 as practical-interest threshold. Retain abstentions and unreachable gold in primary scoring, with coverage/common-coverage and schema/class/origin/Good sensitivities. Qwen A0/A2 are context only. Export full fitted trees and inspect numerical and argumentative rules separately. The protocol was fixed before these fits but after substantial benchmark exploration, so this is not independent confirmation.
 
 **Measured, completed 29 October.**
 
 | System | Accuracy | Macro-F1 | Coverage |
 | --- | ---: | ---: | ---: |
-| C1.hard@2.0 | 0.4942 | 0.3893 | 0.9800 |
-| C3@2.0 | 0.4825 | 0.2853 | 1.0000 |
+| B1.hard@2.0 | 0.4942 | 0.3893 | 0.9800 |
+| B3@2.0 | 0.4825 | 0.2853 | 1.0000 |
 | Qwen A0@2.0, context | 0.5458 | 0.4028 | 0.9900 |
 | Qwen A2@2.0, context | 0.5591 | 0.4068 | 1.0000 |
 
 Primary Macro-F1 delta **-0.1040 [-0.1539, -0.0019]**; practical-interest threshold not reached. Common coverage (589): -0.1046 [-0.1600, -0.0023]. Removing Good only from the class average while retaining all texts: -0.1084 [-0.1598, -0.0024]. On 598 reachable-gold items: -0.1012 [-0.1511, +0.0013]. The three unavailable gold labels remain errors for both systems in the primary endpoint. Excluding NLAS yields -0.0534 [-0.1177, +0.0316]. These sensitivities are not independent confirmations or equivalent-effect proofs.
 
-C3 corrects 115 baseline errors and loses 122 successes: 290 versus 297 correct. Expert Opinion and Example show positive local Macro-F1 differences; Ad Hominem and Cause deteriorate strongly. Their inspection does not authorize a hybrid chosen from outer-test predictions. The decline is not confined to Good or to singleton classes.
+B3 corrects 115 baseline errors and loses 122 successes: 290 versus 297 correct. Expert Opinion and Example show positive local Macro-F1 differences; Ad Hominem and Cause deteriorate strongly. Their inspection does not authorize a hybrid chosen from outer-test predictions. The decline is not confined to Good or to singleton classes.
 
 All 40 outer trees are retained, giving 184 leaf rules; exact exported replay matches all 601 items. Of the rules, 95 use outside mass, 55 repeat a CQ, 57 have fewer than five training arguments, and 67 have no zero-outside Boolean-corner witness. The 172 rules omitting a manual-graph gate are routing-difference flags, not 172 demonstrated semantic violations. Lack of a Boolean-corner witness does not make a probabilistic region impossible.
 
 One actual Expert rule predicts Strawman from high CQ5.1 outside mass with support three, without a source-attribution test. This numerical rule does not by itself establish misrepresentation. Other rules use dependent CQ5.1 without establishing CQ5's prerequisite answer. Export fidelity is established; independent adjudication of every rule and repeat-fit stability are not.
 
-**Interpretation:** this transferred C1/CART pipeline fails to improve its matched baseline and has lower point scores than the saved Qwen contextual references. Those context rows were not additional primary paired tests. The result does not rule out all optimized trees, other encodings, direct model CQ inputs or other rule architectures. Thresholding, outside mass and coverage differ as well as topology. An earlier recommendation to require manual semantic screening before any further learner is superseded by the confirmed 30 October direction.
+**Interpretation:** this transferred B1/CART pipeline fails to improve its matched baseline and has lower point scores than the saved Qwen contextual references. Those context rows were not additional primary paired tests. The result does not rule out all optimized trees, other encodings, direct model CQ inputs or other rule architectures. Thresholding, outside mass and coverage differ as well as topology. An earlier recommendation to require manual semantic screening before any further learner is superseded by the confirmed 30 October direction.
 
-Evidence: `evaluations/c3_schemes2_diagnostic_20261029/{protocol.md,summary.md,review.md,manifest.json,metrics.csv,differences.csv,rules.json}`. Its separate failed-preflight sibling is not an experimental result. The C3 implementation and some analysis improvements may be local changes not yet included in the published code; publishing this account does not assert they are all committed.
+Evidence: `evaluations/b3_schemes2_diagnostic_20261029/{protocol.md,summary.md,review.md,manifest.json,metrics.csv,differences.csv,rules.json}`. Its separate failed-preflight sibling is not an experimental result. The B3 implementation and some analysis improvements may be local changes not yet included in the published code; publishing this account does not assert they are all committed.
 
 ## F18 — Alternatives, feasibility and unresolved choices
 
-**Proposed.** A controlled globally optimized tree experiment could compare GOSDT with a fresh CART on identical Boolean CQ predicates and comparable complexity, alongside the version-matched manual baseline. Old continuous C3 alone would not isolate the solver effect. Encoding thresholds, selection, class weighting, stopping/timeout policy, budgets and nested upstream isolation must be specified before fitting. Weighted classification loss plus leaf penalty is not a claimed native Macro-F1 training objective.
+**Proposed.** A controlled globally optimized tree experiment could compare GOSDT with a fresh CART on identical Boolean CQ predicates and comparable complexity, alongside the version-matched manual baseline. Old continuous B3 alone would not isolate the solver effect. Encoding thresholds, selection, class weighting, stopping/timeout policy, budgets and nested upstream isolation must be specified before fitting. Weighted classification loss plus leaf penalty is not a claimed native Macro-F1 training objective.
 
 The methodological review also distinguishes library capability from a demonstrated experiment: standard CORELS uses a binary target, so a reduction would change the fine multiclass question; GOSDT/DL8.5 capability does not itself impose Walton prerequisites. A timeout incumbent must not be called a certified optimum without the corresponding termination/gap evidence. Transforming probabilities into deterministic threshold tests does not propagate uncertainty down branches, and using the same CQ twice does not create independent evidence. These are design constraints from the prior methods review, not results of an installed solver comparison.
 
@@ -358,9 +358,10 @@ Evidence: `workspace:reports/Apprendere diagrammi dalle domande critiche.md`; `w
 | --- | --- | --- |
 | Pilot/full-run preparation | Preserve chosen model regimes and immutable versioned prompts/schemes per run | Pilot evidence and reproducibility; completed runs retain their original manifests. |
 | Original evaluation protocols | Keep canonical scoring, argument-level folds, prescribed references and multiplicity rules | Avoid selecting comparisons after outcomes; round-1/round-2 complete. |
+| 30 October | Use B1–B5 throughout for the second-round family; A0–A5 identify round 1 | Distinguish the two families consistently in code, configurations, saved artifacts and the manuscript; names do not change the methods or their results. |
 | After S-soft controls | Stop further S-soft experiments | Inferior matched result without established benefit; preserve existing work. |
 | Saved-analysis phase | Reuse saved outputs; preserve original round2 confidences | Replay discrepancy; 39-table analysis complete, exact exports pending. |
-| 29 October | Freeze and execute C3@2.0 versus C1.hard@2.0 with original algorithm/grid | Controlled first structure-learning diagnostic; completed, negative result (F17). |
+| 29 October | Freeze and execute B3@2.0 versus B1.hard@2.0 with original algorithm/grid | Controlled first structure-learning diagnostic; completed, negative result (F17). |
 | 30 October | Prioritize algorithms on existing CQ outputs; do not require another manual redesign/annotation campaign first | Current research direction; next solver/protocol remains open. |
 | 30 October | Consolidate and publish readable evidence; document future findings and only explicitly agreed decisions | This register and aligned local guidance implement that request; no new scientific method selected by documentation alone. |
 
@@ -376,7 +377,7 @@ For conclusions and choices, start with this file. For exact local outputs, sele
 | `evaluations/round2` | Original round 2, S-soft controls, D+Q, post-results additions |
 | `evaluations/exploratory_aggregators_v3` | Later saved aggregator comparisons on 2.0 |
 | `evaluations/analyses_v1` | Cross-round saved-result analysis and execution audit |
-| `evaluations/c3_schemes2_diagnostic_20261029` | Completed C3@2.0 protocol, trees, sensitivities and review |
+| `evaluations/b3_schemes2_diagnostic_20261029` | Completed B3@2.0 protocol, trees, sensitivities and review |
 | `evaluations/_archive` | Historical audits and preserved alternative snapshots; relocation manifest resolves old paths |
 
 The two local diagnostic reports and their `workspace:research_notes/` contain the detailed human/graph analyses consolidated in F07–F15. The roadmap organizes alternatives; it is not a substitute for this result/status record. Future updates must keep this map, the local evaluation catalog and strategic overview consistent without rewriting historical measured results.

@@ -1,4 +1,4 @@
-"""Isolated, audited C3 transfer experiment; historical evaluations are read-only."""
+"""Isolated, audited B3 transfer experiment; historical evaluations are read-only."""
 
 from __future__ import annotations
 
@@ -23,24 +23,24 @@ import yaml
 from threadpoolctl import threadpool_info, threadpool_limits
 
 from ..aggregate import good_terminal, load_burden, routes
-from ..aggregate.c1 import aggregate_combined
-from ..aggregate.c1_inputs import build_dataset
-from ..aggregate.crossfit import C1CrossFitter
+from ..aggregate.b1 import aggregate_combined
+from ..aggregate.b1_inputs import build_dataset
+from ..aggregate.crossfit import B1CrossFitter
 from ..aggregate.interface import decide
-from ..aggregate.tree import TREE_GRID, c3_out_of_fold
+from ..aggregate.tree import TREE_GRID, b3_out_of_fold
 from ..annotations import ANNOTATIONS_FILE, ITEMS_FILE, load_annotations
 from ..client.run import schemes_dir_of
 from ..paths import REPO_ROOT
 from ..schemes import SchemeError, enumerate_paths, load_all, traverse
-from .c1 import cq_labels
+from .b1 import cq_labels
 from .canonical import score_fallacies
 from .evaluate import Scorer, _read_run, interval, resample_indices, weights
 from .folds import assign_folds
 from .prior import load_test_set
 from .round2 import ORIGINS
 
-C3 = "C3@2.0"
-BASELINE = "C1.hard@2.0"
+B3 = "B3@2.0"
+BASELINE = "B1.hard@2.0"
 CONTEXT = ("A0:qwen3_8_27b", "A2")
 
 
@@ -194,7 +194,7 @@ def score_tables(items, predictions, seed, resamples):
            for _, g in predictions.groupby("system")):
         raise SchemeError("prediction population is incomplete or duplicated")
     common = np.array([a is not None and b is not None
-                       for a, b in zip(by_system[C3], by_system[BASELINE], strict=True)])
+                       for a, b in zip(by_system[B3], by_system[BASELINE], strict=True)])
     masks = {"all": np.ones(len(ids), bool), "common_coverage": common,
              "reachable_gold": items.reachable_gold.to_numpy(bool),
              "unreachable_gold": ~items.reachable_gold.to_numpy(bool),
@@ -240,8 +240,8 @@ def score_tables(items, predictions, seed, resamples):
             if subset == "all":
                 classes.extend({"system": system, **row}
                                for row in canonical.classes.to_dict("records"))
-        for metric in scores[C3][0]:
-            a, b = scores[C3], scores[BASELINE]
+        for metric in scores[B3][0]:
+            a, b = scores[B3], scores[BASELINE]
             deltas = a[1][metric] - b[1][metric]
             valid = deltas[np.isfinite(deltas)]
             low, high = interval(valid) if len(valid) else (None, None)
@@ -373,7 +373,7 @@ def _fit_and_report(config, runs_dir, out, manifest, progress):
     if any(int(old.loc[i, "fold"]) != folds[i] for i in items.item_id):
         raise SchemeError("historical fold assignment differs")
     json_write(out / "folds.json", folds)
-    source = C1CrossFitter(target, labels, config.seed, fit_data=fit_data)
+    source = B1CrossFitter(target, labels, config.seed, fit_data=fit_data)
     baseline, feature_frames = {}, []
     for fold in sorted(set(folds.values())):
         progress(f"Baseline: outer fold {fold + 1}/5", flush=True)
@@ -395,7 +395,7 @@ def _fit_and_report(config, runs_dir, out, manifest, progress):
         raise SchemeError(f"baseline verdict replay differs on {len(drift)} arguments")
     historical = pd.read_csv(REPO_ROOT / config.baseline_evaluation / "cq_combined.csv")
     # Historical CQ rows are written once for the shared soft/hard combination.
-    historical = historical[historical.system == "C1@2.0"]
+    historical = historical[historical.system == "B1@2.0"]
     paired = feature_frame.merge(historical, on=["item_id", "scheme", "cq_id"],
                                  suffixes=("_new", "_saved"), validate="one_to_one")
     if len(paired) != len(target.pairs):
@@ -410,11 +410,11 @@ def _fit_and_report(config, runs_dir, out, manifest, progress):
             audit_file.write(json.dumps(event) + "\n")
             audit_file.flush()
             if event["phase"] == "outer":
-                progress(f"C3: fold {event['fold'] + 1}/5, {event['scheme']}", flush=True)
+                progress(f"B3: fold {event['fold'] + 1}/5, {event['scheme']}", flush=True)
 
-        result = c3_out_of_fold(source, folds, name=C3, audit=audit)
+        result = b3_out_of_fold(source, folds, name=B3, audit=audit)
     with (out / "fitted_models.pkl").open("wb") as file:
-        pickle.dump({"trees": result.models, "c1": source.models}, file)
+        pickle.dump({"trees": result.models, "b1": source.models}, file)
     json_write(out / "upstream_choices.json", source.choices)
     json_write(out / "tree_choices.json", result.choices)
     exports, rules, paths = {}, [], []
@@ -441,7 +441,7 @@ def _fit_and_report(config, runs_dir, out, manifest, progress):
     json_write(out / "oof_paths.json", paths)
     manifest["export_replay_verified_items"] = len(paths)
     prediction_rows = []
-    for name, aggregations in ((C3, result.aggregations), (BASELINE, baseline)):
+    for name, aggregations in ((B3, result.aggregations), (BASELINE, baseline)):
         for item, aggregation in aggregations.items():
             prediction_rows.append({"system": name, "item_id": item, "fold": folds[item],
                                     "verdict": aggregation.verdict,
@@ -470,7 +470,7 @@ def _fit_and_report(config, runs_dir, out, manifest, progress):
     classes.to_csv(out / "per_class.csv", index=False)
     ledger = items[["item_id", "gold_scheme", "gold_fallacy", "source", "origin",
                     "reachable_gold"]].copy()
-    for name, aggregations in ((C3, result.aggregations), (BASELINE, baseline)):
+    for name, aggregations in ((B3, result.aggregations), (BASELINE, baseline)):
         ledger[name] = ledger.item_id.map({i: a.verdict for i, a in aggregations.items()})
         ledger[name + "_correct"] = ledger[name] == ledger.gold_fallacy
     ledger.to_csv(out / "paired_items.csv", index=False)
@@ -487,7 +487,7 @@ def _summary(out, manifest, estimates, rules):
         ["macro_f1", "accuracy", "coverage"])]
     table = rows.pivot(index="system", columns="metric", values="estimate")
     primary = manifest["primary_result"]
-    lines = ["# C3 on schemes 2.0: exploratory diagnostic", "",
+    lines = ["# B3 on schemes 2.0: exploratory diagnostic", "",
              "The protocol was frozen before these fits; the benchmark had already been explored.",
              "", "| System | Accuracy | Macro-F1 | Coverage |",
              "| --- | ---: | ---: | ---: |"]
@@ -509,7 +509,7 @@ def _summary(out, manifest, estimates, rules):
               "indeterminacy; numerical thresholds do not establish prerequisite answers. "
               "Independent semantic adjudication and repeat-fit stability were not performed.", "",
               "Bootstrap intervals condition on saved OOF predictions and omit retraining "
-              "variability. Sparse classes, shared benchmark adaptation, transferred C1 "
+              "variability. Sparse classes, shared benchmark adaptation, transferred B1 "
               "coefficients, and diagram-dependent gold limit interpretation.", ""]
     (out / "summary.md").write_text("\n".join(lines), encoding="utf-8")
 

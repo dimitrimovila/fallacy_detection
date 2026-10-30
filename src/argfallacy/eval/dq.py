@@ -20,7 +20,7 @@ from ..parse import INVALID
 from ..paths import SCHEMES_ROOT
 from ..prompts import DQ, ZEROSHOT, render_zeroshot
 from ..schemes import SchemeError, load_all, load_vocabulary
-from .c1 import cq_evaluation, cq_labels
+from .b1 import cq_evaluation, cq_labels
 from .dq_routing import routing_systems
 from .evaluate import METRICS, Scores, difference, weights
 from .round2 import ORIGINS, SMALL_SCHEME, Subset, System, _difference, _finite_interval
@@ -396,9 +396,9 @@ def _legacy_systems(out, reference, ids):
         f"A0:{reference}@2.0",
         f"zeroshot:{reference}",
         "A2.pruned",
-        "C4",
-        "C4.path",
-        "C4.nohistory",
+        "B4",
+        "B4.path",
+        "B4.nohistory",
     }
     frame = pd.read_csv(
         Path(out) / "verdicts.csv",
@@ -895,15 +895,15 @@ def evaluate_dq(
         ("3", f"DQ.path:{reference}@2.0", f"A0:{reference}@2.0", "hard CQ traversal, 2.0"),
         ("3", f"DQ.soft:{reference}@2.0", "A2.pruned", "soft CQ traversal, 2.0"),
         ("3", f"DQ.path:{reference}", f"A0:{reference}", "hard CQ traversal, 1.1"),
-        ("4", f"DQ.soft:{reference}@2.0", "C4", "D+Q against S-soft"),
-        ("4", f"DQ.path:{reference}@2.0", "C4.path", "D+Q against the S-soft path"),
-        ("5", f"DQ.soft:{reference}@2.0", "C4.nohistory", "one generation with verdicts in view"),
+        ("4", f"DQ.soft:{reference}@2.0", "B4", "D+Q against S-soft"),
+        ("4", f"DQ.path:{reference}@2.0", "B4.path", "D+Q against the S-soft path"),
+        ("5", f"DQ.soft:{reference}@2.0", "B4.nohistory", "one generation with verdicts in view"),
         ("8", f"zeroshot:{reference}@2.0", f"zeroshot:{reference}", "menus and server"),
-        ("C4", "C4", f"zeroshot:{reference}@2.0", "S-soft against the matched 2.0 menus"),
-        ("C2", "C2@2.0", f"zeroshot:{reference}@2.0", "two-side routing, 2.0"),
-        ("C2", "C2.dq", f"zeroshot:{reference}", "three-side routing, 1.1"),
-        ("C2", "C2.dq@2.0", f"zeroshot:{reference}@2.0", "four-side routing, 2.0"),
-        ("C2", "C2.dq@2.0", f"DQ:{reference}@2.0", "routing against the D+Q side, 2.0"),
+        ("B4", "B4", f"zeroshot:{reference}@2.0", "S-soft against the matched 2.0 menus"),
+        ("B2", "B2@2.0", f"zeroshot:{reference}@2.0", "two-side routing, 2.0"),
+        ("B2", "B2.dq", f"zeroshot:{reference}", "three-side routing, 1.1"),
+        ("B2", "B2.dq@2.0", f"zeroshot:{reference}@2.0", "four-side routing, 2.0"),
+        ("B2", "B2.dq@2.0", f"DQ:{reference}@2.0", "routing against the D+Q side, 2.0"),
     ]
     exploratory = []
     for comparison, a, b, question in pairs:
@@ -1026,7 +1026,7 @@ def evaluate_dq(
         before = {i: g.set_index("cq_id").to_dict("index") for i, g in frame.groupby("item_id")}
         changes += _cq_changes(
             f"DQ:{reference}@2.0",
-            "C4.nohistory",
+            "B4.nohistory",
             cq_rows[f"DQ:{reference}@2.0"],
             before,
             items,
@@ -1069,10 +1069,10 @@ def evaluate_dq(
         "bootstrap": "shared round-two item indices; independent without-NLAS indices",
     }
     pointers = {
-        "C2 with S-soft as another side": "C2.dq@2.0" in routed,
-        "C2 with D+Q as another side": any(n in routed for n in ("C2.dq", "C2.dq@2.0")),
-        "C2 on schemes 2.0": "C2@2.0" in routed,
-        "C4 against the zero-shot with the 2.0 menus": "C4" in available
+        "B2 with S-soft as another side": "B2.dq@2.0" in routed,
+        "B2 with D+Q as another side": any(n in routed for n in ("B2.dq", "B2.dq@2.0")),
+        "B2 on schemes 2.0": "B2@2.0" in routed,
+        "B4 against the zero-shot with the 2.0 menus": "B4" in available
         and f"zeroshot:{reference}@2.0" in systems,
     }
     for entry, computed in pointers.items():

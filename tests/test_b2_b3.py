@@ -6,15 +6,15 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from argfallacy.aggregate.c1 import c1_out_of_fold
+from argfallacy.aggregate.b1 import b1_out_of_fold
 from argfallacy.aggregate.interface import decide
 from argfallacy.paths import REPO_ROOT
 from argfallacy.schemes import load_all
-from test_c1 import example_data
+from test_b1 import example_data
 
 
 def two_schemes():
-    from argfallacy.aggregate.c1_inputs import build_dataset
+    from argfallacy.aggregate.b1_inputs import build_dataset
 
     data, _, summary, manifest = example_data(10)
     second = load_all(REPO_ROOT / "schemes/v1")["expert_opinion"]
@@ -76,13 +76,13 @@ def test_routing_agreement_missing_verdicts_extremes_and_monotone_share():
     assert np.diff(shares).min() >= 0
 
 
-def test_cross_fitted_inputs_exclude_their_labels_and_match_outer_c1():
-    from argfallacy.aggregate.crossfit import C1CrossFitter
+def test_cross_fitted_inputs_exclude_their_labels_and_match_outer_b1():
+    from argfallacy.aggregate.crossfit import B1CrossFitter
 
     data, labels, _, _ = example_data(10)
     folds = {i: j % 5 for j, i in enumerate(data.items.item_id)}
-    source = C1CrossFitter(data, labels, seed=23)
-    outer = c1_out_of_fold(data, labels, folds, 23)
+    source = B1CrossFitter(data, labels, seed=23)
+    outer = b1_out_of_fold(data, labels, folds, 23)
     train = [i for i in folds if folds[i] != 0]
     held = [i for i in folds if folds[i] == 0]
     training, testing = source.partition(train, held)
@@ -92,17 +92,17 @@ def test_cross_fitted_inputs_exclude_their_labels_and_match_outer_c1():
     mutated.loc[mutated.item_id == train[0], "target"] = (
         1 - mutated.loc[mutated.item_id == train[0], "target"]
     )
-    other_training = C1CrossFitter(data, mutated, 23).partition(train, held)[0]
+    other_training = B1CrossFitter(data, mutated, 23).partition(train, held)[0]
     row = data.pair_indices([train[0]])
     np.testing.assert_equal(training.p[row], other_training.p[row])
     with pytest.raises(ValueError, match="overlap"):
         source.partition(train, train[:1])
 
 
-def test_changed_own_gold_or_cq_label_changes_no_c1_c2_or_c3_verdict():
-    from argfallacy.aggregate.crossfit import C1CrossFitter
-    from argfallacy.aggregate.routing import c2_out_of_fold
-    from argfallacy.aggregate.tree import c3_out_of_fold
+def test_changed_own_gold_or_cq_label_changes_no_b1_b2_or_b3_verdict():
+    from argfallacy.aggregate.crossfit import B1CrossFitter
+    from argfallacy.aggregate.routing import b2_out_of_fold
+    from argfallacy.aggregate.tree import b3_out_of_fold
 
     data, labels, _, _ = example_data(10)
     folds = {i: j % 5 for j, i in enumerate(data.items.item_id)}
@@ -126,13 +126,13 @@ def test_changed_own_gold_or_cq_label_changes_no_c1_c2_or_c3_verdict():
         (mutated_items, mutated_labels),
     ]:
         dataset = replace(data, items=items)
-        source = C1CrossFitter(dataset, ratings, 23)
-        c1 = c1_out_of_fold(dataset, ratings, folds, 23)
-        c2 = c2_out_of_fold(source, fixed_zero, folds)
-        c3 = c3_out_of_fold(source, folds)
-        calibrated = c3_out_of_fold(source, folds, kind="pooled")
-        verdicts.append([r.aggregations[own] for r in (c1, c2, c3, calibrated)])
-        assert c2.upstream[own] == c1.aggregations[own] == c3.upstream[own]
+        source = B1CrossFitter(dataset, ratings, 23)
+        b1 = b1_out_of_fold(dataset, ratings, folds, 23)
+        b2 = b2_out_of_fold(source, fixed_zero, folds)
+        b3 = b3_out_of_fold(source, folds)
+        calibrated = b3_out_of_fold(source, folds, kind="pooled")
+        verdicts.append([r.aggregations[own] for r in (b1, b2, b3, calibrated)])
+        assert b2.upstream[own] == b1.aggregations[own] == b3.upstream[own]
     assert all(v == verdicts[0] for v in verdicts[1:])
 
 
@@ -160,13 +160,13 @@ def test_tree_separates_one_cq_has_bounded_depth_and_reports_raw_leaf_share():
 
 def test_tree_models_are_per_scheme_and_reference_inputs_are_independent_of_labels():
     from argfallacy.aggregate.crossfit import ReferenceInputs
-    from argfallacy.aggregate.tree import c3_out_of_fold
+    from argfallacy.aggregate.tree import b3_out_of_fold
 
     data = two_schemes()
     source = ReferenceInputs(data, seed=23)
     features = source.fit(data.items.item_id).tree_features(list(data.items.item_id)[:10])
     assert set(features[:, 0]) == {0.0, 1.0}
-    result = c3_out_of_fold(source, {i: j % 5 for j, i in enumerate(data.items.item_id)})
+    result = b3_out_of_fold(source, {i: j % 5 for j, i in enumerate(data.items.item_id)})
     assert all(set(models) == set(data.schemes) for models in result.models.values())
     assert all(
         model.model.get_depth() <= 3
@@ -217,11 +217,11 @@ def test_pooled_recalibration_has_shared_parameters_and_exact_gradient():
 
 def test_routing_curve_reuses_item_resamples_and_marks_unattainable_shares():
     from argfallacy.aggregate.crossfit import ReferenceInputs
-    from argfallacy.aggregate.routing import Side, c2_out_of_fold
+    from argfallacy.aggregate.routing import Side, b2_out_of_fold
     from argfallacy.eval.routing import routing_curve
 
     data, _, _, _ = example_data(10)
-    result = c2_out_of_fold(
+    result = b2_out_of_fold(
         ReferenceInputs(data, 23),
         zero_side(data),
         {i: j % 5 for j, i in enumerate(data.items.item_id)},
@@ -233,7 +233,7 @@ def test_routing_curve_reuses_item_resamples_and_marks_unattainable_shares():
     assert (targets.accuracy == targets.accuracy_low).all()
     assert (targets.macro_f1 == targets.macro_f1_high).all()
     predictions = {i: decide({}, 1.0, "missing") for i in data.items.item_id}
-    result = c2_out_of_fold(
+    result = b2_out_of_fold(
         ReferenceInputs(data, 23),
         Side("missing", predictions),
         {i: j % 5 for j, i in enumerate(data.items.item_id)},
@@ -243,7 +243,7 @@ def test_routing_curve_reuses_item_resamples_and_marks_unattainable_shares():
     hard = data.hard.copy()
     hard[:2, 0] = "cannot_be_determined"
     unavailable = replace(data, hard=hard)
-    result = c2_out_of_fold(
+    result = b2_out_of_fold(
         ReferenceInputs(unavailable, 23, hard=True),
         zero_side(data),
         {i: j % 5 for j, i in enumerate(data.items.item_id)},
@@ -256,7 +256,7 @@ def test_routing_curve_reuses_item_resamples_and_marks_unattainable_shares():
 
 def test_additional_sides_and_summary_reader_are_supported():
     from argfallacy.aggregate.crossfit import ReferenceInputs
-    from argfallacy.aggregate.routing import Side, c2_out_of_fold
+    from argfallacy.aggregate.routing import Side, b2_out_of_fold
 
     data, _, _, _ = example_data(10)
     side = zero_side(data)
@@ -278,7 +278,7 @@ def test_additional_sides_and_summary_reader_are_supported():
     assert parsed.p_label["i000"] == 0.7
     folds = {i: j % 5 for j, i in enumerate(data.items.item_id)}
     extra = Side("ssoft", side.aggregations)
-    result = c2_out_of_fold(
+    result = b2_out_of_fold(
         ReferenceInputs(data, 23, hard=True), parsed, folds, extra_sides=(extra,)
     )
     assert all(len(model.models) == 3 for model in result.models.values())
@@ -291,7 +291,7 @@ def test_additional_sides_and_summary_reader_are_supported():
 
 def test_extra_side_with_the_highest_estimate_is_selected():
     from argfallacy.aggregate.crossfit import ReferenceInputs
-    from argfallacy.aggregate.routing import Side, c2_out_of_fold
+    from argfallacy.aggregate.routing import Side, b2_out_of_fold
 
     data, _, _, _ = example_data(10)
     scheme = next(iter(data.schemes.values()))
@@ -313,7 +313,7 @@ def test_extra_side_with_the_highest_estimate_is_selected():
             for row in data.items.itertuples(index=False)
         },
     )
-    result = c2_out_of_fold(
+    result = b2_out_of_fold(
         ReferenceInputs(data, 23, hard=True),
         fixed,
         {i: j % 5 for j, i in enumerate(data.items.item_id)},
@@ -324,7 +324,7 @@ def test_extra_side_with_the_highest_estimate_is_selected():
 
 def test_agreement_items_do_not_fit_the_correctness_models():
     from argfallacy.aggregate.crossfit import ReferenceInputs
-    from argfallacy.aggregate.routing import Side, c2_out_of_fold
+    from argfallacy.aggregate.routing import Side, b2_out_of_fold
 
     data, _, _, _ = example_data(10)
     source = ReferenceInputs(data, 23)
@@ -337,19 +337,19 @@ def test_agreement_items_do_not_fit_the_correctness_models():
         predictions[item] = decide({label: 1.0}, 0.0, "fixed")
     fixed = Side("zero", predictions)
     folds = {i: j % 5 for j, i in enumerate(data.items.item_id)}
-    before = c2_out_of_fold(source, fixed, folds)
+    before = b2_out_of_fold(source, fixed, folds)
     items = data.items.copy()
     items.loc[items.item_id == "i000", "gold_fallacy"] = next(
         t for t in terminals if t != predictions["i000"].verdict
     )
-    after = c2_out_of_fold(ReferenceInputs(replace(data, items=items), 23), fixed, folds)
+    after = b2_out_of_fold(ReferenceInputs(replace(data, items=items), 23), fixed, folds)
     pd.testing.assert_frame_equal(before.records, after.records)
 
 
 def test_cross_version_inputs_fit_original_labels_and_predict_target_signals():
     from argfallacy.aggregate import load_burden, routes
-    from argfallacy.aggregate.c1_inputs import build_dataset
-    from argfallacy.aggregate.crossfit import C1CrossFitter
+    from argfallacy.aggregate.b1_inputs import build_dataset
+    from argfallacy.aggregate.crossfit import B1CrossFitter
 
     data, labels, summary, manifest = example_data(10)
     schemes = load_all(REPO_ROOT / "schemes/v2")
@@ -363,7 +363,7 @@ def test_cross_version_inputs_fit_original_labels_and_predict_target_signals():
         "e0",
         {scheme.scheme_id: routes(scheme, load_burden("v2", schemes)[scheme.scheme_id])},
     )
-    source = C1CrossFitter(target, labels, 23, fit_data=data)
+    source = B1CrossFitter(target, labels, 23, fit_data=data)
     ids = sorted(data.items.item_id)[:8]
     fitted = source.fit(ids)
     np.testing.assert_equal(fitted.p, source.models[tuple(ids)].predict(target))

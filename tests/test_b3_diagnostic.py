@@ -5,14 +5,14 @@ from dataclasses import replace
 import numpy as np
 import pandas as pd
 import pytest
-from tests.test_c1 import example_data
+from tests.test_b1 import example_data
 
-from argfallacy.aggregate.c1_inputs import build_dataset
-from argfallacy.aggregate.crossfit import C1CrossFitter
-from argfallacy.aggregate.tree import CQTree, c3_out_of_fold
-from argfallacy.eval.c3_diagnostic import (
+from argfallacy.aggregate.b1_inputs import build_dataset
+from argfallacy.aggregate.crossfit import B1CrossFitter
+from argfallacy.aggregate.tree import CQTree, b3_out_of_fold
+from argfallacy.eval.b3_diagnostic import (
+    B3,
     BASELINE,
-    C3,
     _peak_memory,
     export_tree,
     replay_tree,
@@ -52,22 +52,22 @@ def test_canonical_scoring_keeps_abstentions_and_good_false_positives():
     })
     predictions = pd.DataFrame([
         {"system": s, "item_id": i, "verdict": p}
-        for s, labels in ((C3, ["weak_analogy", "weak_analogy", "weak_analogy", "weak_analogy"]),
+        for s, labels in ((B3, ["weak_analogy", "weak_analogy", "weak_analogy", "weak_analogy"]),
                           (BASELINE, ["good_argumentation", "weak_analogy", None, None]))
         for i, p in zip(items.item_id, labels, strict=True)
     ])
     metrics, differences, _ = score_tables(items, predictions, 23, 50)
-    c3 = metrics[(metrics.system == C3) & (metrics.subset == "all")].set_index("metric")
-    assert c3.loc["accuracy", "estimate"] == 0.5
+    b3 = metrics[(metrics.system == B3) & (metrics.subset == "all")].set_index("metric")
+    assert b3.loc["accuracy", "estimate"] == 0.5
     # Weak analogy: TP=2, FP=2, FN=0. Non sequitur: F1=0.
-    assert c3.loc["macro_f1_without_good_class", "estimate"] == pytest.approx(1 / 3)
+    assert b3.loc["macro_f1_without_good_class", "estimate"] == pytest.approx(1 / 3)
     assert set(metrics[metrics.subset == "common_coverage"].n_items) == {2}
     assert set(metrics[metrics.subset == "all"].n_items) == {4}
     assert set(metrics[metrics.subset == "unreachable_gold"].n_items) == {1}
     assert len(differences[differences.role == "primary"]) == 1
 
 
-def test_cross_version_c3_capture_preserves_predictions_and_heldout_isolation():
+def test_cross_version_b3_capture_preserves_predictions_and_heldout_isolation():
     from argfallacy.aggregate import load_burden, routes
     from argfallacy.paths import REPO_ROOT
 
@@ -80,8 +80,8 @@ def test_cross_version_c3_capture_preserves_predictions_and_heldout_isolation():
         {scheme.scheme_id: routes(scheme, load_burden("v2", schemes)[scheme.scheme_id])})
     folds = {i: n % 2 for n, i in enumerate(data.items.item_id)}
     events = []
-    original = c3_out_of_fold(C1CrossFitter(target, labels, 23, fit_data=data), folds)
-    captured = c3_out_of_fold(C1CrossFitter(target, labels, 23, fit_data=data), folds,
+    original = b3_out_of_fold(B1CrossFitter(target, labels, 23, fit_data=data), folds)
+    captured = b3_out_of_fold(B1CrossFitter(target, labels, 23, fit_data=data), folds,
                               audit=events.append)
     assert captured.aggregations == original.aggregations
     own = data.items.item_id.iloc[0]
@@ -90,7 +90,7 @@ def test_cross_version_c3_capture_preserves_predictions_and_heldout_isolation():
         changed.item_id == own, "target"]
     item_table = data.items.copy()
     item_table.loc[item_table.item_id == own, "gold_fallacy"] = sorted(scheme.terminals)[-1]
-    mutated = c3_out_of_fold(C1CrossFitter(
+    mutated = b3_out_of_fold(B1CrossFitter(
         replace(target, items=item_table), changed, 23, fit_data=replace(data, items=item_table)),
         folds)
     assert mutated.aggregations[own] == original.aggregations[own]

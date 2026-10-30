@@ -1,4 +1,4 @@
-"""Genuine C5 item sets from saved distributions or an explicit companion export."""
+"""Genuine B5 item sets from saved distributions or an explicit companion export."""
 
 from __future__ import annotations
 
@@ -54,16 +54,16 @@ def selected_systems(evaluation, inputs):
         require(
             name in evaluation.systems
             and (
-                name in ("A2", "A4", "C3.pooled", "C4", "C1", "C1@2.0")
+                name in ("A2", "A4", "B3.pooled", "B4", "B1", "B1@2.0")
                 or (
-                    name.startswith("C1.")
+                    name.startswith("B1.")
                     and (name.endswith(".soft") or name.endswith(".soft@2.0"))
                 )
             ),
-            f"{name}: not a genuine C5 distribution system",
+            f"{name}: not a genuine B5 distribution system",
         )
         require(
-            evaluation.systems[name].eligible.all(), f"{name}: C5 requires original full population"
+            evaluation.systems[name].eligible.all(), f"{name}: B5 requires original full population"
         )
     return summary
 
@@ -173,7 +173,7 @@ def saved_distributions(system):
 def export_conformal(
     evaluation, items, registry, aggregations, out, dependencies=(), calculation_resources=None
 ):
-    """Opt-in export of already calculated genuine C5 aggregations; no fitting or replay.
+    """Opt-in export of already calculated genuine B5 aggregations; no fitting or replay.
 
     A fitted-system caller must profile its separate deterministic calculation and
     provide its dependency files here. This function never initiates that calculation.
@@ -366,8 +366,8 @@ def conformal_tables(config, evaluations, items, registry, human, inputs):
         export = config.evaluations[evaluation.name].get("conformal_records")
         source = selected_systems(evaluation, inputs)
         if source is None:
-            require(export is None, "configured conformal export has no compatible C5 source")
-            status[evaluation.name] = {"status": "pending", "reason": "no saved C5 aggregates"}
+            require(export is None, "configured conformal export has no compatible B5 source")
+            status[evaluation.name] = {"status": "pending", "reason": "no saved B5 aggregates"}
             continue
         exported, exported_items = (
             read_export(export, evaluation, inputs) if export is not None else (None, None)

@@ -1,4 +1,4 @@
-"""C3: small scheme-specific trees and a pooled recalibration of terminal masses."""
+"""B3: small scheme-specific trees and a pooled recalibration of terminal masses."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 from ..eval.folds import assign_folds
 from ..schemes import SchemeError
-from .c1 import C_GRID
+from .b1 import C_GRID
 from .combiners import balanced_weights
 from .crossfit import CQInputs, inner_partitions
 from .interface import TIE, Aggregation, decide, macro_f1
@@ -265,7 +265,7 @@ def _calibration_choice(source, train, balanced=False):
 
 
 @dataclass(frozen=True)
-class C3Result:
+class B3Result:
     aggregations: Mapping[str, Aggregation]
     choices: list[dict]
     models: Mapping[int, object]
@@ -275,14 +275,14 @@ class C3Result:
     name: str
 
 
-def c3_out_of_fold(source, folds=None, *, kind="tree", name=None,
-                   balanced=False, audit=None) -> C3Result:
-    """C3 on every item; ``balanced`` weighs the classes of the pooled recalibration."""
+def b3_out_of_fold(source, folds=None, *, kind="tree", name=None,
+                   balanced=False, audit=None) -> B3Result:
+    """B3 on every item; ``balanced`` weighs the classes of the pooled recalibration."""
     if kind not in {"tree", "pooled"}:
-        raise ValueError(f"unknown C3 model family {kind!r}")
+        raise ValueError(f"unknown B3 model family {kind!r}")
     data, seed = source.data, source.seed
     if name is None:
-        name = "C3.pooled" if kind == "pooled" else "C3"
+        name = "B3.pooled" if kind == "pooled" else "B3"
     folds = dict(folds) if folds is not None else assign_folds(data.items, seed)
     metadata = data.items.set_index("item_id")
     predictions, models, upstream, choices = {}, {}, {}, []
@@ -349,4 +349,4 @@ def c3_out_of_fold(source, folds=None, *, kind="tree", name=None,
                     for i, row in zip(own_test, testing.tree_features(own_test), strict=True)
                 }
             )
-    return C3Result(predictions, choices, models, upstream, folds, kind, name)
+    return B3Result(predictions, choices, models, upstream, folds, kind, name)

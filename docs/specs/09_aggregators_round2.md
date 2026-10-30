@@ -17,29 +17,29 @@ Round 2 has five components. Four have a primary configuration, so m = 4; the fi
 
 | | component | primary configuration | question |
 |---|---|---|---|
-| C1 | combination of the five entries at the level of each CQ | stacking supervised by Dumitru's CQ answers, soft traversal of the diagram 1.1 | does a combination learned at the level of the CQs give better verdicts through the diagram? |
-| C2 | routing between the diagram and the zero-shot | C1 against the zero-shot of the reference model, threshold 0 | how much does staying explainable cost, and does the combination beat the zero-shot? |
-| C3 | learned model that stays explainable | a tree of depth at most 3 per scheme on the combined answers of C1 | does a tree learned from the gold beat the diagram drawn by hand on the same answers? |
-| C4 | S-soft | `qwen3_8_27b` on schemes 2.0 | do answers conditioned on the earlier answers of the path beat answers given in isolation? |
-| C5 | uncertainty | none | is the uncertainty of the systems higher on their errors and where humans disagree? |
+| B1 | combination of the five entries at the level of each CQ | stacking supervised by Dumitru's CQ answers, soft traversal of the diagram 1.1 | does a combination learned at the level of the CQs give better verdicts through the diagram? |
+| B2 | routing between the diagram and the zero-shot | B1 against the zero-shot of the reference model, threshold 0 | how much does staying explainable cost, and does the combination beat the zero-shot? |
+| B3 | learned model that stays explainable | a tree of depth at most 3 per scheme on the combined answers of B1 | does a tree learned from the gold beat the diagram drawn by hand on the same answers? |
+| B4 | S-soft | `qwen3_8_27b` on schemes 2.0 | do answers conditioned on the earlier answers of the path beat answers given in isolation? |
+| B5 | uncertainty | none | is the uncertainty of the systems higher on their errors and where humans disagree? |
 
 The reference model is that of spec 08, P10, `qwen3_8_27b`.
 
 ## 1. Common rules
 
 * Condition and metrics: the 601 items of the test set, gold scheme condition, fine space (spec 08, requirement 1, P1, P2). The deciding metric is macro F1.
-* Runs: full run v2 (`20261005T193017Z_full_v2`, schemes 1.1) for C1, C2 and C3; full run v3 (`20261019T151336Z_full_v3`, schemes 2.0) for C4 and for the exploratory configurations on schemes 2.0; zero-shot v1 (`20261009T221950Z_zeroshot_v1`) for the zero-shot of the reference model; the S-soft run of section 6 and the run of its control without history (section 6.5).
+* Runs: full run v2 (`20261005T193017Z_full_v2`, schemes 1.1) for B1, B2 and B3; full run v3 (`20261019T151336Z_full_v3`, schemes 2.0) for B4 and for the exploratory configurations on schemes 2.0; zero-shot v1 (`20261009T221950Z_zeroshot_v1`) for the zero-shot of the reference model; the S-soft run of section 6 and the run of its control without history (section 6.5).
 * The distribution of an entry at a CQ: as A4 builds it (spec 07, sections 4.1 and 6): `p_logprob_<answer>` for `qwen3_8_27b` and `gemma4_31b`, `p_sample_<answer>` for the two gpt oss, the stated confidence for `k2_horizon_32b_high`. Its mass outside the arcs is the mass of `cannot_be_determined` and `na`. An entry whose answer is `invalid` and has no masses is left out at that CQ, as in A4 (spec 07, section 6): it takes no part in the mass outside the arcs or in any combiner.
 * The signals of an entry at a CQ: each probability column of `summary.csv` (spec 05, section 4) that the entry has, read as the split between the two arcs, the mass of the first admitted answer over the mass of the two arcs: `p_logprob` for every entry, `p_sample` for the two gpt oss, `p_verbal` for every entry. Twelve signals in all; a signal without a value is missing, and so are all the signals of an entry left out.
 * The combined answer at a CQ: the mass outside the arcs is the mean, with equal weights, of the masses outside the arcs of the entries not left out, as in A4, and the whole mass when every entry is left out; a combiner decides only how the rest of the mass is split between the two arcs, as the probability `p_first` of the first admitted answer.
 * CQ labels: Dumitru's answers in `annotations.csv`, from the sheet of the gold scheme of the item and a row whose scheme judgement also matches the gold, binary only (`yes` and `no`; `positive` and `negative` for ad hominem CQ1). `idk`, `na` and empty cells are not labels. On full run v2 there are 2,656 labelled pairs of item and CQ.
 * Folds: those of spec 08, P13. Every parameter estimated from a label of a test item, a gold verdict or a CQ label, is estimated on the other four folds. Hyperparameters are chosen by a 4-fold cross validation within the four training folds (`KFold`, shuffled with the seed of spec 08, P12, as A3), on the grids written in each section; ties go to the stronger shrinkage, then to the first value of the grid.
-* Cross-fitting. When a component learns from the output of another learned component (C2 and C3 from C1), the inputs of its training items come from the first component fitted by an inner 4-fold cross-fitting within the four training folds, and the inputs of the held-out fold from the first component fitted on all four training folds. No verdict depends on the labels of its own item.
+* Cross-fitting. When a component learns from the output of another learned component (B2 and B3 from B1), the inputs of its training items come from the first component fitted by an inner 4-fold cross-fitting within the four training folds, and the inputs of the held-out fold from the first component fitted on all four training folds. No verdict depends on the labels of its own item.
 * Estimates without labels (Dawid and Skene, section 2.1) use all 601 items and no folds.
 * Interface: that of spec 07, section 1: a distribution over the terminals of the scheme with an abstention mass, a verdict or none, a confidence, an explanation.
 * Optimisation: the models that scikit-learn does not provide (stacking with a centre of shrinkage, section 2.1; the pooled recalibration, section 4) are fitted with L-BFGS of `scipy.optimize`. scipy is already installed with scikit-learn and becomes a declared dependency.
 
-## 2. C1, combination at the level of each CQ
+## 2. B1, combination at the level of each CQ
 
 ### 2.1 Combiners
 
@@ -64,38 +64,38 @@ The source of supervision is a factor of the experiment, as in concept bottlenec
 
 ### 2.4 Primary configuration and exploratory configurations
 
-Primary configuration C1: stacking, supervision (b), soft traversal, full run v2.
+Primary configuration B1: stacking, supervision (b), soft traversal, full run v2.
 
 Exploratory, named here:
-* every other combination of section 2.1 to 2.3 on full run v2: majority (a), Dawid and Skene (a) and A4 with weights per CQ (b), each soft and hard; stacking (b) hard, named `C1.hard`; stacking (c), soft and hard;
+* every other combination of section 2.1 to 2.3 on full run v2: majority (a), Dawid and Skene (a) and A4 with weights per CQ (b), each soft and hard; stacking (b) hard, named `B1.hard`; stacking (c), soft and hard;
 * on full run v3 with the burden table of schemes 2.0: majority, Dawid and Skene, stacking (b) with the coefficients fitted on full run v2 with the CQ labels of schemes 1.1 (the signals keep their meaning across runs; the 2.0 annotation, when it exists, checks the transfer), and stacking (c);
 * stacking (b) without the labels of example, cause to effect and correlation to cause, whose sheets went through a different checking procedure, scored on the other five schemes;
 * stacking (b) without the CQs whose labels prove unstable in the re-annotation of schemes 1.1 (agreement below 0.6 with at least 10 paired answers), if the re-annotation exists before the results are frozen;
-* C1 against A4 of spec 07, which isolates the gain of a learned combination over equal weights;
-* C1 against A2 of spec 07, `qwen3_8_27b` alone with the same soft traversal and the burden table of schemes 1.1, which isolates the gain of combining the five entries; H1.1 measures that gain and the soft traversal together.
+* B1 against A4 of spec 07, which isolates the gain of a learned combination over equal weights;
+* B1 against A2 of spec 07, `qwen3_8_27b` alone with the same soft traversal and the burden table of schemes 1.1, which isolates the gain of combining the five entries; H1.1 measures that gain and the soft traversal together.
 
 ### 2.5 Evaluation at the level of each CQ
 
 On the 2,656 labelled pairs, for each combiner of full run v2 and for each entry with the signal named in section 1: the agreement of the hard answer with the label, an answer outside the arcs counting as a disagreement, and the Brier score of `p_first`. Paired differences against the reference model and among the three supervisions, with the resamples of spec 08, P12 (all the pairs of an item move together), and 95 per cent intervals. Reported in total and by scheme; exploratory, as every comparison not named in section 8. The path of Dumitru's answers through the diagram 1.1 (438 items) is reported as a reference line, declared as such.
 
-## 3. C2, routing between the diagram and the zero-shot
+## 3. B2, routing between the diagram and the zero-shot
 
-* Two sides: the diagram, C1, and the zero-shot of the reference model (`zeroshot:qwen3_8_27b`).
+* Two sides: the diagram, B1, and the zero-shot of the reference model (`zeroshot:qwen3_8_27b`).
 * When the two verdicts agree, the verdict is theirs, and it counts as explained by the diagram. When one side has no verdict, the verdict of the other; with none on both sides, no verdict.
-* Where they disagree, two logistic regressions (scikit-learn, L2, C in 0.01, 0.1, 1 and 10, inner criterion the log loss) estimate the probability that each side is right, P_d for the diagram and P_z for the zero-shot. Features: the confidence of C1, the margin between its two most probable terminals, its abstention mass, the mean binary entropy of the combined answers on its most probable path, the `p_label` of the zero-shot (missing: the mean of the training items, with an indicator), and the scheme. They are fitted on the training items where the two sides disagree, with the inputs of C1 cross-fitted (section 1).
-* Rule: the diagram when P_d ≥ P_z − τ, the zero-shot otherwise. The primary configuration C2 uses τ = 0. Confidence: the estimated probability of the side chosen.
+* Where they disagree, two logistic regressions (scikit-learn, L2, C in 0.01, 0.1, 1 and 10, inner criterion the log loss) estimate the probability that each side is right, P_d for the diagram and P_z for the zero-shot. Features: the confidence of B1, the margin between its two most probable terminals, its abstention mass, the mean binary entropy of the combined answers on its most probable path, the `p_label` of the zero-shot (missing: the mean of the training items, with an indicator), and the scheme. They are fitted on the training items where the two sides disagree, with the inputs of B1 cross-fitted (section 1).
+* Rule: the diagram when P_d ≥ P_z − τ, the zero-shot otherwise. The primary configuration B2 uses τ = 0. Confidence: the estimated probability of the side chosen.
 * Curve: τ from −1 to 1 moves the share of the verdicts explained by the diagram from the share of agreement to 1. Reported: macro F1 and accuracy against that share, with 95 per cent intervals at the shares of 60, 70, 80, 90 and 100 per cent, as a description; the value of τ for each share is read on the pooled out-of-fold estimates. The precedent is the hybrid model, in which an interpretable model covers part of the inputs and a black box the rest (Wang 2019; Wang and Lin 2021).
 * Explanation: the side chosen, its explanation, and P_d and P_z.
 * Exploratory: A0 of the reference model as the diagram side; on schemes 2.0, stacking (b) of full run v3 against the zero-shot with the 2.0 menus (spec 10), when it exists; more sides, D+Q (spec 10) and S-soft, when their runs exist, with one regression per side and the side with the highest estimate chosen.
 
-The C2 families with D+Q and S-soft are defined in spec 10, section 7.
+The B2 families with D+Q and S-soft are defined in spec 10, section 7.
 
-## 4. C3, a learned model that stays explainable
+## 4. B3, a learned model that stays explainable
 
-* One decision tree per scheme (scikit-learn `DecisionTreeClassifier`, criterion gini, `class_weight="balanced"`, fixed `random_state`), on the training items of the scheme. Features: for each CQ of the scheme, in the order of the YAML, the combined `p_first` and the mass outside the arcs of C1, cross-fitted (section 1). Target: the gold verdict; the items whose gold is not a terminal of their scheme stay out of training, as in A3. Grid: `max_depth` in 1, 2 and 3; `min_samples_leaf` in 1, 3 and 5; inner criterion the macro F1 of the pooled inner verdicts. With one class among the training items, that class.
+* One decision tree per scheme (scikit-learn `DecisionTreeClassifier`, criterion gini, `class_weight="balanced"`, fixed `random_state`), on the training items of the scheme. Features: for each CQ of the scheme, in the order of the YAML, the combined `p_first` and the mass outside the arcs of B1, cross-fitted (section 1). Target: the gold verdict; the items whose gold is not a terminal of their scheme stay out of training, as in A3. Grid: `max_depth` in 1, 2 and 3; `min_samples_leaf` in 1, 3 and 5; inner criterion the macro F1 of the pooled inner verdicts. With one class among the training items, that class.
 * Confidence: the share of the verdict among the training items of the leaf. Explanation: the path of the tree, each split with its CQ and its threshold.
-* Primary configuration C3: the tree above.
-* Exploratory: a pooled recalibration of the terminal masses of C1, one model for every scheme in place of the eight small models of A3: for an item with masses m_t over the terminals of its scheme, P(t) ∝ exp(a · log(m_t + 1e-6) + b_ℓ(t)), with one slope a and one bias per label ℓ shared by every scheme; L2 toward a = 1 and b = 0, C in 0.01, 0.1, 1 and 10, inner criterion the log loss of the gold; and the tree on the answers of the reference model alone, named in spec 07, section 8.
+* Primary configuration B3: the tree above.
+* Exploratory: a pooled recalibration of the terminal masses of B1, one model for every scheme in place of the eight small models of A3: for an item with masses m_t over the terminals of its scheme, P(t) ∝ exp(a · log(m_t + 1e-6) + b_ℓ(t)), with one slope a and one bias per label ℓ shared by every scheme; L2 toward a = 1 and b = 0, C in 0.01, 0.1, 1 and 10, inner criterion the log loss of the gold; and the tree on the answers of the reference model alone, named in spec 07, section 8.
 
 ## 5. The burden table of schemes 2.0
 
@@ -128,7 +128,7 @@ Eight types are a judgement, recorded with their reason:
 
 The file sits outside `schemes/v2/`, so the hash of the schemes in the manifests does not change.
 
-## 6. C4, S-soft
+## 6. B4, S-soft
 
 S-soft asks the CQs along the diagram, with the earlier answers of the path in view, and keeps every branch whose mass is large enough. It is the probabilistic form of a single path that follows the answers of the model: that path comes out of the same calls. A decision tree whose nodes are calls to a language model has a precedent in Tree Prompting (Singh et al. 2023); sequential sub-questions answered with the earlier answers in view help in other tasks (Zhou et al. 2023).
 
@@ -161,7 +161,7 @@ For each item, under its gold scheme, on schemes 2.0:
 3. The mass outside the arcs is routed by the type of the CQ (section 5 and spec 07, section 4.2): P leaves the diagram as abstention, E goes to the arc of its route, G to the arc toward the follow-up questions, D is split in two.
 4. Each arc carries the path mass times its routed mass. An arc to a terminal adds its mass to the terminal. An arc to a node is expanded, with the history extended by the CQ and the answer of the arc, when its mass is at least 0.02; below, its mass goes to a pruned bucket.
 5. Terminals, abstention and pruned bucket sum to 1. The verdict is the terminal with the highest mass (ties: the first terminal id in alphabetical order), none when no terminal has mass; the confidence is its mass. Explanation: the most probable path, with the probability of each arc, and the three terminals with the highest mass.
-6. The single path, `C4.path`, follows at each node the arc with the larger routed mass.
+6. The single path, `B4.path`, follows at each node the arc with the larger routed mass.
 
 Two paths that reach the same node with different histories are two calls. On full run v2, the logprobs of the reference model under the assumption of independence give about 5 expanded nodes per item, about 3,000 calls for one entry.
 
@@ -177,36 +177,36 @@ Two paths that reach the same node with different histories are two calls. On fu
 
 ### 6.4 Primary configuration and exploratory configurations
 
-Primary configuration C4: `qwen3_8_27b`, schemes 2.0, `p_logprob` as they are, the burden table of schemes 2.0, threshold 0.02. Its comparison system, `A2.pruned`, is A2 on the answers of `qwen3_8_27b` in full run v3, with the same burden table and the same pruning rule. Calibration enters neither side. The prompt of S-soft differs from that of full run v3 in two ways, the list of all the CQs of the scheme and the history of the path, so H4 measures the two together: the context of the diagram against answers given in isolation. The control `C4.nohistory` (section 6.5) separates them.
+Primary configuration B4: `qwen3_8_27b`, schemes 2.0, `p_logprob` as they are, the burden table of schemes 2.0, threshold 0.02. Its comparison system, `A2.pruned`, is A2 on the answers of `qwen3_8_27b` in full run v3, with the same burden table and the same pruning rule. Calibration enters neither side. The prompt of S-soft differs from that of full run v3 in two ways, the list of all the CQs of the scheme and the history of the path, so H4 measures the two together: the context of the diagram against answers given in isolation. The control `B4.nohistory` (section 6.5) separates them.
 
 Exploratory, named here:
 * S-soft with the logprobs of `qwen3_8_27b` scaled by a temperature (Guo et al. 2017), fitted out of fold on full run v2 against the CQ labels of schemes 1.1;
-* `C4.path` against the diagram 2.0, A0 of `qwen3_8_27b` on full run v3; and, on the nodes of the most probable path, the answers that change between full run v3 and S-soft;
+* `B4.path` against the diagram 2.0, A0 of `qwen3_8_27b` on full run v3; and, on the nodes of the most probable path, the answers that change between full run v3 and S-soft;
 * S-soft against the zero-shot with the 2.0 menus (spec 10) and against A0 on full run v3. The questions of schemes 2.0 were written while looking at the errors of full run v2 on the test set: a comparison with a system that does not use them favours S-soft, and is reported with that note;
 * S-soft for the other four entries, with configurations `configs/ssoft_full_v3_<entry>.yaml`: `gemma4_31b` through its logprobs, the two gpt oss and K2 Horizon through their stated confidence, each scaled by a temperature fitted as above.
 
 ### 6.5 The control without history
 
-`C4.nohistory` asks every CQ of the scheme of the item with the prompt of S-soft, the list of all the CQs included, and without the section on the earlier questions and its sentence in "What to do" (section 6.1). Each CQ is asked once per item, with no expansion during the run, so the calls do not depend on the earlier answers: one call per CQ, 3,162 calls for `qwen3_8_27b` on the 601 items. The answers go through the traversal of `A2.pruned`, with the burden table of schemes 2.0 and threshold 0.02.
+`B4.nohistory` asks every CQ of the scheme of the item with the prompt of S-soft, the list of all the CQs included, and without the section on the earlier questions and its sentence in "What to do" (section 6.1). Each CQ is asked once per item, with no expansion during the run, so the calls do not depend on the earlier answers: one call per CQ, 3,162 calls for `qwen3_8_27b` on the 601 items. The answers go through the traversal of `A2.pruned`, with the burden table of schemes 2.0 and threshold 0.02.
 
 Configuration `configs/ssoft_nohistory_full_v3.yaml`: as `configs/ssoft_full_v3.yaml`, with `history: false`. With `history: false` the stage `ssoft` plans every call at the start, and `argfallacy run plan` counts all of them. The lines of `raw.jsonl` have `stage` `ssoft` and an empty `path`, and the parser writes them to `ssoft.csv` with `depth` empty.
 
-Exploratory comparisons, named here: C4 against `C4.nohistory`, the effect of the history alone; `C4.nohistory` against `A2.pruned`, the effect of the list of the CQs alone. Both paired, macro F1, 95 per cent intervals.
+Exploratory comparisons, named here: B4 against `B4.nohistory`, the effect of the history alone; `B4.nohistory` against `A2.pruned`, the effect of the list of the CQs alone. Both paired, macro F1, 95 per cent intervals.
 
-## 7. C5, uncertainty
+## 7. B5, uncertainty
 
-* Abstention curves of spec 08, P11, for every system of round 2 that has a confidence (C1 and its soft variants, C2, C3, C4), beside A2, A4, the zero-shot and A5.
-* Conformal prediction sets, for the systems with a distribution over the terminals (the soft forms of C1, the recalibration of C3, C4, A2, A4). The score of item i and terminal t is 1 − P_i(t), with P_i renormalised over the terminals of the scheme of the item, abstention and pruned mass removed; with no mass on any terminal, the set is every terminal. For the items of fold f, the threshold q is the ⌈(n + 1)(1 − α)⌉-th smallest score of the gold verdicts of the n items of the other four folds, and the set holds the terminals with a score at most q. α = 0.10 (Angelopoulos and Bates 2023). For a system estimated without labels the coverage is guaranteed on average over the items; for a learned system, whose scores are out of fold, approximately.
+* Abstention curves of spec 08, P11, for every system of round 2 that has a confidence (B1 and its soft variants, B2, B3, B4), beside A2, A4, the zero-shot and A5.
+* Conformal prediction sets, for the systems with a distribution over the terminals (the soft forms of B1, the recalibration of B3, B4, A2, A4). The score of item i and terminal t is 1 − P_i(t), with P_i renormalised over the terminals of the scheme of the item, abstention and pruned mass removed; with no mass on any terminal, the set is every terminal. For the items of fold f, the threshold q is the ⌈(n + 1)(1 − α)⌉-th smallest score of the gold verdicts of the n items of the other four folds, and the set holds the terminals with a score at most q. α = 0.10 (Angelopoulos and Bates 2023). For a system estimated without labels the coverage is guaranteed on average over the items; for a learned system, whose scores are out of fold, approximately.
 * Reported: the coverage, the mean size of the sets and the share of sets with one verdict, in total, by gold origin and by scheme; on the items of the direct-verdict annotation, the mean size where the human direct verdict differs from the gold against where it equals it. All exploratory.
 
 ## 8. Deciding comparisons
 
 * Deciding metric: macro F1, fine space, gold scheme condition; paired bootstrap on the resamples of spec 08, P12.
 * m = 4, one family per component, Bonferroni across components: each interval at level 1 − 0.05/4, the 0.625 and 99.375 percentiles.
-* H1.1: C1 against A0 of `qwen3_8_27b` on full run v2. H1.2, read only if H1.1 shows an improvement: C1 against `zeroshot:qwen3_8_27b`.
-* H2: C2 against `zeroshot:qwen3_8_27b`.
-* H3.1: C3 against `C1.hard`, the diagram on the same combined answers. H3.2, read only if H3.1 shows an improvement: C3 against `zeroshot:qwen3_8_27b`.
-* H4: C4 against `A2.pruned`.
+* H1.1: B1 against A0 of `qwen3_8_27b` on full run v2. H1.2, read only if H1.1 shows an improvement: B1 against `zeroshot:qwen3_8_27b`.
+* H2: B2 against `zeroshot:qwen3_8_27b`.
+* H3.1: B3 against `B1.hard`, the diagram on the same combined answers. H3.2, read only if H3.1 shows an improvement: B3 against `zeroshot:qwen3_8_27b`.
+* H4: B4 against `A2.pruned`.
 * Within a component the second comparison is read only after the first passes, so the chance of any false claim over the six comparisons stays at most 0.05.
 * An improvement is claimed only if the interval excludes zero. Against the zero-shot, an interval below zero is reported as the cost of the diagram, and an interval that contains zero as no measurable difference, not as equivalence.
 * Reported beside, without deciding: the same differences in accuracy and in balanced accuracy; each comparison by gold origin (LOGIC, Reddit and ElecDebate against NLAS and EthiX), by scheme, and without NLAS (spec 08, P4), with 95 per cent intervals. When the predicted scheme condition exists (spec 08, P1), the same comparisons serve as confirmation.
@@ -216,14 +216,14 @@ Exploratory comparisons, named here: C4 against `C4.nohistory`, the effect of th
 
 `argfallacy evaluate configs/evaluation_round2.yaml` writes into `evaluations/round2/`:
 * `manifest.json`: the runs, the seed, the resamples, the folds, m, the primary configurations, the grids, the commit of the code, the date;
-* `verdicts.csv` (spec 07, section 9), with the systems `C1`, `C2`, `C3`, `C4`, `C1.hard`, `C4.path`, `C4.nohistory`, `A2.pruned`, and the exploratory systems named `C1.<combiner>.<supervision>.<traversal>`, with `@2.0` for those on schemes 2.0;
+* `verdicts.csv` (spec 07, section 9), with the systems `B1`, `B2`, `B3`, `B4`, `B1.hard`, `B4.path`, `B4.nohistory`, `A2.pruned`, and the exploratory systems named `B1.<combiner>.<supervision>.<traversal>`, with `@2.0` for those on schemes 2.0;
 * `cq_combined.csv`: one row per item, CQ, combiner and supervision, with the fold, `p_first` and the mass outside the arcs;
 * `round2_choices.csv`: the hyperparameters chosen in each fold, component and scheme;
 * `frequent_classes.csv`, `frequent_classes_differences.csv`, `substitution.csv` and `substitution_curve.csv` (section 14), and the systems of section 14 in `verdicts.csv`, `main_table.csv` and `exploratory.csv`, each with "(added after the results)" at the end of its description;
 * `cq_level.csv`, `cq_level_differences.csv` and `human_path.csv` (section 2.5), `routing_curve.csv` (section 3), `ssoft_changes.csv` (the answers that change, section 6.4), `abstention.csv`, `abstention_curves.csv`, `abstention_composition.csv` and `conformal.csv` (section 7), `main_table.csv` with every system, and one CSV per table of section 8: `deciding.csv`, `deciding_breakdowns.csv`, `exploratory.csv`;
 * the sections of round 2 in `summary.html`: deciding comparisons, the level of each CQ, the supervision factor, the routing curve as a figure, S-soft, abstention curves as a figure, conformal sets, the additions of section 14, and what was not computed.
 
-A configuration is read as one of round 2 when its `runs` name `answers_schemes_2`, `ssoft` or `ssoft_nohistory`. The schemes left out by the exploratory C1 of section 2.4 are written in the configuration, since no scheme name is written in the code.
+A configuration is read as one of round 2 when its `runs` name `answers_schemes_2`, `ssoft` or `ssoft_nohistory`. The schemes left out by the exploratory B1 of section 2.4 are written in the configuration, since no scheme name is written in the code.
 
 An incomplete S-soft history or control run excludes its systems and comparisons without lowering m, records "incomplete S-soft run" and the affected item ids as missing, stores their count and ids separately in `manifest.json` as `ssoft_pending_items` and `ssoft_nohistory_pending_items`, and identifies the incomplete run and count in `summary.html`, while `A2.pruned` and the rest of the evaluation remain computed.
 
@@ -255,7 +255,7 @@ cq_label_exclusion: [example, cause_to_effect, correlation_to_cause]
 On the diagrams of `schemes/v1/` and `schemes/v2/`, on answers written by hand and on the fake backend; no run and no network:
 1. Burden table 2.0: every CQ of `schemes/v2/` has one type and the file names no other CQ; G holds exactly where both arcs reach `good_argumentation`; D only where both arcs end on a fallacy other than the generic one; the routes of section 5.
 2. Combined answers: the mass outside the arcs is the mean of the entries not left out, and an `invalid` entry without masses changes no combined answer. With five identical, coherent entries, the hard combined answer is that answer for majority and A4 with weights per CQ for any weights and shrinkage, for stacking at its centre with intercept 0, and for Dawid and Skene with every confusion matrix better than chance and a non-extreme prior. Fitted stacking and Dawid and Skene need not preserve unanimity; no override is applied. A4 with λ = 0, with the signal of the distribution of each entry, gives the split of A4 within 1e-12, also when the entries put different masses outside the arcs and when one entry is left out. Stacking with the coefficients at β⁰ gives the logarithmic pool with equal weights. On data where one entry equals the label and the others are noise, stacking (b) puts the largest weight on that entry. On a scheme where the verdict depends on one CQ, stacking (c) gives the gold verdicts a larger mean log mass than β⁰.
-3. Out of fold: changing the label of an item, gold or CQ, changes no verdict of that item, in C1, C2 and C3.
+3. Out of fold: changing the label of an item, gold or CQ, changes no verdict of that item, in B1, B2 and B3.
 4. Dawid and Skene: the same input gives the same output; on data drawn from known confusion matrices, the estimates come close to them.
 5. Routing: equal verdicts give the diagram; τ = −2 gives the zero-shot on every item where the two disagree, τ = 2 the diagram; the share explained by the diagram does not decrease with τ.
 6. Tree: depth at most 3; one tree per scheme; on data where one CQ separates the classes, the tree splits on it.
@@ -291,7 +291,7 @@ On the diagrams of `schemes/v1/` and `schemes/v2/`, on answers written by hand a
 
 ## 13. Definition of done
 
-Lint and tests green, with the commands of the README. `schemes/burden/v2.yaml` in place. C1, C2, C3 and C5 computed on full run v2 by `argfallacy evaluate configs/evaluation_round2.yaml`, with the exploratory configurations on full run v3. S-soft ready: `argfallacy run plan configs/ssoft_full_v3.yaml` counts 601 first calls, and `argfallacy run plan configs/ssoft_nohistory_full_v3.yaml` counts 3,162 calls; C4 and its control are computed once their runs exist. Summary in Italian.
+Lint and tests green, with the commands of the README. `schemes/burden/v2.yaml` in place. B1, B2, B3 and B5 computed on full run v2 by `argfallacy evaluate configs/evaluation_round2.yaml`, with the exploratory configurations on full run v3. S-soft ready: `argfallacy run plan configs/ssoft_full_v3.yaml` counts 601 first calls, and `argfallacy run plan configs/ssoft_nohistory_full_v3.yaml` counts 3,162 calls; B4 and its control are computed once their runs exist. Summary in Italian.
 
 ## 14. Additions after the results
 
@@ -299,7 +299,7 @@ Written on 26 October 2026, after the results of sections 2 to 7 were read. Ever
 
 ### 14.1 Why
 
-Three readings of the results motivate it. The macro F1 over the 23 classes with support moves with single items: of the difference between C1 and A0 of `qwen3_8_27b`, almost all comes from the 11 classes with fewer than 10 gold verdicts. The models fitted on the gold verdicts without class weights (stacking (c) and the pooled recalibration of C3) give up the rare classes, while the deciding metric weighs every class the same; the terminal with the highest mass maximises the expected accuracy, not the F1 (Lipton, Elkan and Narayanaswamy 2014). The literature on the strength of arguments from schemes weighs the answers to all the critical questions together, rather than letting the first failed question decide (Hahn and Hornikx 2016); in rounds 1 and 2 that weighing (A3) was fitted only on the answers of one entry, and the combined answers went only to trees.
+Three readings of the results motivate it. The macro F1 over the 23 classes with support moves with single items: of the difference between B1 and A0 of `qwen3_8_27b`, almost all comes from the 11 classes with fewer than 10 gold verdicts. The models fitted on the gold verdicts without class weights (stacking (c) and the pooled recalibration of B3) give up the rare classes, while the deciding metric weighs every class the same; the terminal with the highest mass maximises the expected accuracy, not the F1 (Lipton, Elkan and Narayanaswamy 2014). The literature on the strength of arguments from schemes weighs the answers to all the critical questions together, rather than letting the first failed question decide (Hahn and Hornikx 2016); in rounds 1 and 2 that weighing (A3) was fitted only on the answers of one entry, and the combined answers went only to trees.
 
 ### 14.2 Macro F1 over the frequent classes
 
@@ -315,12 +315,12 @@ Three readings of the results motivate it. The macro F1 over the 23 classes with
 
 ### 14.4 Balanced class weights
 
-* `C1.stacking.gold_balanced.soft` and `C1.stacking.gold_balanced.hard`: stacking with supervision (c) (section 2.2), full run v2, where the log mass of the gold verdict of each training item weighs n / (K n_ℓ): n items, K gold verdicts among them, n_ℓ items with the gold verdict ℓ of the item, computed on the items of each fit. The weights have mean 1, so the penalty keeps its scale. Grid, centre, folds and inner criterion (the macro F1 of the pooled inner verdicts) as in section 2.2; the hard form traverses the same fit.
-* `C3.pooled.balanced`: the pooled recalibration of section 4 with the same weights in its log loss, computed on the gold verdicts of the items of each loss (the fitted items, and the inner validation items for the inner criterion). Grid and inputs as `C3.pooled`.
+* `B1.stacking.gold_balanced.soft` and `B1.stacking.gold_balanced.hard`: stacking with supervision (c) (section 2.2), full run v2, where the log mass of the gold verdict of each training item weighs n / (K n_ℓ): n items, K gold verdicts among them, n_ℓ items with the gold verdict ℓ of the item, computed on the items of each fit. The weights have mean 1, so the penalty keeps its scale. Grid, centre, folds and inner criterion (the macro F1 of the pooled inner verdicts) as in section 2.2; the hard form traverses the same fit.
+* `B3.pooled.balanced`: the pooled recalibration of section 4 with the same weights in its log loss, computed on the gold verdicts of the items of each loss (the fitted items, and the inner validation items for the inner criterion). Grid and inputs as `B3.pooled`.
 
 ### 14.5 The mass divided by the class frequency
 
-`A2.prior` and `C1.prior`: the distributions of A2 and C1, each terminal mass divided by π_t = (c_t + 1) / (n + K), where c_t counts the gold verdicts t among the items of the same gold scheme in the other four folds, n is their sum and K the number of terminals of the scheme; a gold verdict that is not a terminal of its scheme is not counted. The divided masses are rescaled to their former sum, so the abstention does not change; the verdict is the terminal with the highest divided mass, ties as in spec 07, section 1. With calibrated posteriors this rule maximises the expected balanced accuracy, which weighs the classes as macro F1 does; the masses of the diagram are not posteriors, so here it measures how much of the loss on the rare classes comes from the choice of the verdict rather than from the masses.
+`A2.prior` and `B1.prior`: the distributions of A2 and B1, each terminal mass divided by π_t = (c_t + 1) / (n + K), where c_t counts the gold verdicts t among the items of the same gold scheme in the other four folds, n is their sum and K the number of terminals of the scheme; a gold verdict that is not a terminal of its scheme is not counted. The divided masses are rescaled to their former sum, so the abstention does not change; the verdict is the terminal with the highest divided mass, ties as in spec 07, section 1. With calibrated posteriors this rule maximises the expected balanced accuracy, which weighs the classes as macro F1 does; the masses of the diagram are not posteriors, so here it measures how much of the loss on the rare classes comes from the choice of the verdict rather than from the masses.
 
 ### 14.6 A3 on the combined answers
 
@@ -330,11 +330,11 @@ Three readings of the results motivate it. The macro F1 over the 23 classes with
 ### 14.7 Comparisons
 
 Exploratory, macro F1, 95 per cent, in `exploratory.csv`, and on the frequent classes in `frequent_classes_differences.csv`:
-* `A3.combined` against `C1.majority.none.hard`: a weighting learned from the gold against the diagram, on the same combined answers;
+* `A3.combined` against `B1.majority.none.hard`: a weighting learned from the gold against the diagram, on the same combined answers;
 * `A3.combined` against `A3`: the combined answers against those of the reference model, with the same weighting;
 * `A3.combined` against A0 of `qwen3_8_27b` and against `zeroshot:qwen3_8_27b`;
-* `C1.stacking.gold_balanced.soft` and `.hard` against `C1.stacking.gold.soft` and `.hard`; `C3.pooled.balanced` against `C3.pooled`;
-* `A2.prior` against `A2`, and `C1.prior` against `C1`.
+* `B1.stacking.gold_balanced.soft` and `.hard` against `B1.stacking.gold.soft` and `.hard`; `B3.pooled.balanced` against `B3.pooled`;
+* `A2.prior` against `A2`, and `B1.prior` against `B1`.
 
 ## References
 

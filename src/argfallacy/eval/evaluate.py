@@ -80,7 +80,7 @@ class EvaluationConfig:
     folds: int = FOLDS
     m: int = 5
     cq_label_exclusion: list[str] = field(default_factory=list)
-    """Round 2 only: the schemes whose CQ labels an exploratory C1 leaves out."""
+    """Round 2 only: the schemes whose CQ labels an exploratory B1 leaves out."""
 
     @classmethod
     def load(cls, path: str | Path) -> EvaluationConfig:

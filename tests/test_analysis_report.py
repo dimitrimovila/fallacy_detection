@@ -146,9 +146,9 @@ def test_offline_end_to_end(saved, dq_saved, mode, monkeypatch):
     again = analyze(AnalysisConfig.load(path), path.parent / "repeat")
     assert all((again / name).read_bytes() == content for name, content in stats.items())
     assert manifest["parameters"]["exploratory_augrc_pairs"] == [
-        ["C2", "zeroshot:qwen3_8_27b"],
-        ["C4", "A2.pruned"],
-        ["C1", "A2"],
+        ["B2", "zeroshot:qwen3_8_27b"],
+        ["B4", "A2.pruned"],
+        ["B1", "A2"],
         ["A5", "zeroshot:qwen3_8_27b"],
     ]
     # No reader can reopen source runs, data, code, or external humans while rendering.
@@ -276,7 +276,7 @@ def test_saved_conformal_summaries_remain_available_without_exact_sets(saved):
 def test_replay_rejects_saved_confidence_disagreement_before_export(saved, monkeypatch):
     from types import SimpleNamespace
 
-    from argfallacy.aggregate.c1 import C_GRID
+    from argfallacy.aggregate.b1 import C_GRID
 
     for name in (
         "CUDA_VISIBLE_DEVICES",
@@ -291,14 +291,14 @@ def test_replay_rejects_saved_confidence_disagreement_before_export(saved, monke
     invented_optional(path, raw, items)
     file = path.parent / "second" / "manifest.json"
     source = json.loads(file.read_text())
-    source["grids"] = {"C1 stacking C": list(C_GRID), "C2 C": list(C_GRID)}
+    source["grids"] = {"B1 stacking C": list(C_GRID), "B2 C": list(C_GRID)}
     file.write_text(json.dumps(source), encoding="utf-8")
-    monkeypatch.setattr("argfallacy.aggregate.c1_inputs.build_dataset", lambda *a: object())
-    monkeypatch.setattr("argfallacy.aggregate.crossfit.C1CrossFitter", lambda *a: object())
+    monkeypatch.setattr("argfallacy.aggregate.b1_inputs.build_dataset", lambda *a: object())
+    monkeypatch.setattr("argfallacy.aggregate.crossfit.B1CrossFitter", lambda *a: object())
     result = SimpleNamespace(
         aggregations={i: SimpleNamespace(verdict=None, confidence=0.999) for i in items.item_id}
     )
-    monkeypatch.setattr("argfallacy.aggregate.routing.c2_out_of_fold", lambda *a: result)
+    monkeypatch.setattr("argfallacy.aggregate.routing.b2_out_of_fold", lambda *a: result)
     monkeypatch.setattr(
         "argfallacy.eval.analysis_routing.export_routing_records",
         lambda *a: pytest.fail("unverified replay must not export"),
@@ -349,9 +349,9 @@ def test_fitted_replay_preserves_missing_numeric_signals_without_editing_csv(tmp
     import numpy as np
     from serving.postprocess import fitting_summary
 
-    from argfallacy.aggregate.c1_inputs import build_dataset
+    from argfallacy.aggregate.b1_inputs import build_dataset
     from argfallacy.eval.analysis_inputs import Inputs
-    from test_c1 import example_data
+    from test_b1 import example_data
 
     original, _, summary, manifest = example_data(4, full_scheme=True)
     summary.loc[summary.model.eq("e1"), [c for c in summary if c.startswith("p_")]] = np.nan

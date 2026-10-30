@@ -1,8 +1,8 @@
-"""``argfallacy evaluate`` on a round 2 configuration: C1 to C5 and their comparisons.
+"""``argfallacy evaluate`` on a round 2 configuration: B1 to B5 and their comparisons.
 
-C1, C2 and C3 on full run v2, their exploratory configurations on full run v2 and
-full run v3, C4 and its control on the S-soft runs when they exist, the uncertainty
-of C5, the four deciding comparisons at level 1 - 0.05/m and what is reported
+B1, B2 and B3 on full run v2, their exploratory configurations on full run v2 and
+full run v3, B4 and its control on the S-soft runs when they exist, the uncertainty
+of B5, the four deciding comparisons at level 1 - 0.05/m and what is reported
 beside them at 95 per cent.  The command reads ``summary.csv``, ``ssoft.csv`` and
 ``manifest.json`` of each run, never ``raw.jsonl``.  Folds and resamples come from
 the seed as in the first stage, so the folds are those of round 1 and every
@@ -36,32 +36,32 @@ from ..aggregate import (
     sources_of,
     ssoft,
 )
-from ..aggregate.c1 import (
+from ..aggregate.b1 import (
     BALANCED_CONFIGS,
     C_GRID,
     LAMBDA_GRID,
     PRIMARY_CONFIG,
-    C1Result,
-    c1_out_of_fold,
+    B1Result,
+    b1_out_of_fold,
     combined_rows,
     configurations,
     retraverse,
-    transfer_c1,
+    transfer_b1,
 )
-from ..aggregate.c1_inputs import build_dataset
+from ..aggregate.b1_inputs import build_dataset
 from ..aggregate.checklist import C_GRID as A3_GRID
 from ..aggregate.checklist import a3_out_of_fold
-from ..aggregate.crossfit import C1CrossFitter, ReferenceInputs
+from ..aggregate.crossfit import B1CrossFitter, ReferenceInputs
 from ..aggregate.decision import prior_corrected
 from ..aggregate.interface import decide
-from ..aggregate.routing import Side, c2_out_of_fold
-from ..aggregate.tree import TREE_GRID, c3_out_of_fold
+from ..aggregate.routing import Side, b2_out_of_fold
+from ..aggregate.tree import TREE_GRID, b3_out_of_fold
 from ..annotations import ANNOTATIONS_FILE, ITEMS_FILE, load_annotations
 from ..client.run import GOLD, read_manifest, schemes_dir_of
 from ..prompts import JUDGE
 from ..schemes import SchemeError, load_all
+from .b1 import cq_evaluation, cq_labels, entry_answers, human_path_reference
 from .baselines import majority_by
-from .c1 import cq_evaluation, cq_labels, entry_answers, human_path_reference
 from .evaluate import ALPHA as FAMILY_ALPHA
 from .evaluate import (
     EVALUATIONS_DIR,
@@ -135,12 +135,12 @@ def hypotheses(reference: str) -> tuple[Hypothesis, ...]:
     """The six comparisons of the four components, in the order they are read."""
     zero, diagram = f"zeroshot:{reference}", f"A0:{reference}"
     return (
-        Hypothesis("H1.1", "C1", "C1", diagram),
-        Hypothesis("H1.2", "C1", "C1", zero, "H1.1"),
-        Hypothesis("H2", "C2", "C2", zero),
-        Hypothesis("H3.1", "C3", "C3", "C1.hard"),
-        Hypothesis("H3.2", "C3", "C3", zero, "H3.1"),
-        Hypothesis("H4", "C4", "C4", "A2.pruned"),
+        Hypothesis("H1.1", "B1", "B1", diagram),
+        Hypothesis("H1.2", "B1", "B1", zero, "H1.1"),
+        Hypothesis("H2", "B2", "B2", zero),
+        Hypothesis("H3.1", "B3", "B3", "B1.hard"),
+        Hypothesis("H3.2", "B3", "B3", zero, "H3.1"),
+        Hypothesis("H4", "B4", "B4", "A2.pruned"),
     )
 
 
@@ -294,8 +294,8 @@ def _path(history) -> str:
 def ssoft_systems(schemes, routing, ids, gold_scheme, v3_rows, history_rows, control_rows,
                   source=LOGPROB, threshold=PRUNING
                   ) -> tuple[dict[str, dict], pd.DataFrame, dict[str, list[str]]]:
-    """A2.pruned on the answers of full run v3 and, when their rows exist, C4, C4.path
-    and C4.nohistory; with the answers that change on the most probable path of C4,
+    """A2.pruned on the answers of full run v3 and, when their rows exist, B4, B4.path
+    and B4.nohistory; with the answers that change on the most probable path of B4,
     and the items with pending mass in each run; incomplete systems are left out."""
     out: dict[str, dict] = {"A2.pruned": {
         i: a2_pruned(schemes[gold_scheme[i]], v3_rows[i], routing[gold_scheme[i]], source,
@@ -303,15 +303,15 @@ def ssoft_systems(schemes, routing, ids, gold_scheme, v3_rows, history_rows, con
     changes, pending = [], {"ssoft": [], "ssoft_nohistory": []}
     if len(history_rows):
         by_item = {i: g.to_dict("records") for i, g in history_rows.groupby("item_id")}
-        out["C4"], out["C4.path"] = {}, {}
+        out["B4"], out["B4.path"] = {}, {}
         for i in ids:
             scheme = schemes[gold_scheme[i]]
             rows = by_item.get(i, [])
             result = ssoft(scheme, rows, routing[scheme.scheme_id], source, threshold)
             if result.pending > 0:
                 pending["ssoft"].append(i)
-            out["C4"][i] = result
-            out["C4.path"][i] = _single(result.path_verdict,
+            out["B4"][i] = result
+            out["B4.path"][i] = _single(result.path_verdict,
                                         f"single path: {_path(result.single_path) or 'none'}")
             indexed = {(r["cq_id"], r["path"]): r for r in rows}
             for depth, (cq, _) in enumerate(result.best_path):
@@ -321,16 +321,16 @@ def ssoft_systems(schemes, routing, ids, gold_scheme, v3_rows, history_rows, con
                 changes.append({"scheme": scheme.scheme_id, "cq_id": cq,
                                 "changed": given != before})
         if pending["ssoft"]:
-            del out["C4"], out["C4.path"]
+            del out["B4"], out["B4.path"]
             changes = []
     if len(control_rows):
         by_item = {i: g.to_dict("records") for i, g in control_rows.groupby("item_id")}
-        out["C4.nohistory"] = {
+        out["B4.nohistory"] = {
             i: ssoft(schemes[gold_scheme[i]], by_item.get(i, []), routing[gold_scheme[i]],
                      source, threshold, history=False) for i in ids}
-        pending["ssoft_nohistory"] = [i for i in ids if out["C4.nohistory"][i].pending > 0]
+        pending["ssoft_nohistory"] = [i for i in ids if out["B4.nohistory"][i].pending > 0]
         if pending["ssoft_nohistory"]:
-            del out["C4.nohistory"]
+            del out["B4.nohistory"]
     table = pd.DataFrame(changes, columns=["scheme", "cq_id", "changed"])
     if len(table):
         per_cq = table.groupby(["scheme", "cq_id"]).changed.agg(["size", "sum"]).reset_index()
@@ -345,7 +345,7 @@ def ssoft_systems(schemes, routing, ids, gold_scheme, v3_rows, history_rows, con
 # ----------------------------------------------------------------- systems
 
 
-def _c1_family(data, labels, folds, seed, configs) -> dict[str, C1Result]:
+def _b1_family(data, labels, folds, seed, configs) -> dict[str, B1Result]:
     """Each combination fitted once; its other traversal reuses the fit."""
     results, fitted = {}, {}
     for config in configs:
@@ -354,7 +354,7 @@ def _c1_family(data, labels, folds, seed, configs) -> dict[str, C1Result]:
         if key in fitted:
             results[config.name] = retraverse(data, fitted[key], config)
         else:
-            results[config.name] = fitted[key] = c1_out_of_fold(data, labels, folds, seed,
+            results[config.name] = fitted[key] = b1_out_of_fold(data, labels, folds, seed,
                                                                 config)
     return results
 
@@ -364,7 +364,7 @@ def _choices(component: str, choices: Sequence[Mapping[str, Any]]) -> list[dict]
     rows = []
     for choice in choices:
         if "parameter" in choice:
-            # C1 names its hyperparameter by its combiner: lambda of the weights, or C
+            # B1 names its hyperparameter by its combiner: lambda of the weights, or C
             choice = {**choice}
             choice["lambda" if choice.get("signals") else "C"] = choice.pop("parameter")
         base = {"fold": choice.get("fold"), "component": choice.get("component", component),
@@ -390,38 +390,38 @@ def _pairs(reference: str, systems: Mapping[str, System]) -> list[tuple[str, str
     zero, diagram, revised = (f"zeroshot:{reference}", f"A0:{reference}",
                               f"A0:{reference}@2.0")
     named = [
-        ("C1", "A4", "learned combination against equal weights"),
-        ("C1", "A2", "the five entries combined against the reference model alone"),
-        ("C1.weighted.cq.soft", "A4", "weights per CQ against equal weights"),
-        ("C1", "C1.majority.none.soft", "supervision (b) against (a), majority"),
-        ("C1", "C1.dawid_skene.none.soft", "supervision (b) against (a), Dawid and Skene"),
-        ("C1.stacking.gold.soft", "C1", "supervision (c) against (b), soft traversal"),
-        ("C1.stacking.gold.hard", "C1.hard", "supervision (c) against (b), hard traversal"),
-        ("C1.annotation_exclusion", "C1",
+        ("B1", "A4", "learned combination against equal weights"),
+        ("B1", "A2", "the five entries combined against the reference model alone"),
+        ("B1.weighted.cq.soft", "A4", "weights per CQ against equal weights"),
+        ("B1", "B1.majority.none.soft", "supervision (b) against (a), majority"),
+        ("B1", "B1.dawid_skene.none.soft", "supervision (b) against (a), Dawid and Skene"),
+        ("B1.stacking.gold.soft", "B1", "supervision (c) against (b), soft traversal"),
+        ("B1.stacking.gold.hard", "B1.hard", "supervision (c) against (b), hard traversal"),
+        ("B1.annotation_exclusion", "B1",
          "without the CQ labels of the excluded schemes, on the other schemes"),
-        ("C1.stable_cqs", "C1", "without the unstable CQs"),
-        ("C2.A0", zero, "routing with A0 of the reference model as the diagram side"),
-        ("C3.pooled", "C1", "pooled recalibration of the terminal masses of C1"),
+        ("B1.stable_cqs", "B1", "without the unstable CQs"),
+        ("B2.A0", zero, "routing with A0 of the reference model as the diagram side"),
+        ("B3.pooled", "B1", "pooled recalibration of the terminal masses of B1"),
         ("A3.tree", diagram, "a tree on the hard answers of the reference model"),
-        ("C3", "A3.tree", "a tree on the combined answers against one on the reference model"),
-        ("C4", "C4.nohistory", "the history alone"),
-        ("C4.nohistory", "A2.pruned", "the list of the CQs alone"),
-        ("C4.path", revised, "the single path of S-soft against the diagram 2.0"),
-        ("C4", revised, "S-soft against the diagram 2.0 on full run v3"),
+        ("B3", "A3.tree", "a tree on the combined answers against one on the reference model"),
+        ("B4", "B4.nohistory", "the history alone"),
+        ("B4.nohistory", "A2.pruned", "the list of the CQs alone"),
+        ("B4.path", revised, "the single path of S-soft against the diagram 2.0"),
+        ("B4", revised, "S-soft against the diagram 2.0 on full run v3"),
         # added after the results of round 2
-        ("A3.combined", "C1.majority.none.hard",
+        ("A3.combined", "B1.majority.none.hard",
          "a weighting learned from the gold against the diagram, on the same combined answers"),
         ("A3.combined", "A3", "the combined answers against those of the reference model, "
                               "with the weighting of A3"),
         ("A3.combined", diagram, "a weighting learned from the gold against the diagram"),
         ("A3.combined", zero, "a weighting learned from the gold against the zero-shot"),
-        ("C1.stacking.gold_balanced.soft", "C1.stacking.gold.soft",
+        ("B1.stacking.gold_balanced.soft", "B1.stacking.gold.soft",
          "balanced class weights in supervision (c), soft traversal"),
-        ("C1.stacking.gold_balanced.hard", "C1.stacking.gold.hard",
+        ("B1.stacking.gold_balanced.hard", "B1.stacking.gold.hard",
          "balanced class weights in supervision (c), hard traversal"),
-        ("C3.pooled.balanced", "C3.pooled", "balanced class weights in the pooled recalibration"),
+        ("B3.pooled.balanced", "B3.pooled", "balanced class weights in the pooled recalibration"),
         ("A2.prior", "A2", "the mass divided by the class frequency, against the highest mass"),
-        ("C1.prior", "C1", "the mass divided by the class frequency, against the highest mass"),
+        ("B1.prior", "B1", "the mass divided by the class frequency, against the highest mass"),
     ]
     pairs = [p for p in named if p[0] in systems and p[1] in systems]
     paired = {p[0] for p in named}
@@ -537,14 +537,14 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
         if "p_label" not in zeroshot_summary.columns:
             raise SchemeError(
                 f"the summary.csv of {zeroshot_sources[reference]} has no p_label, a feature "
-                f"of C2 and the confidence of the zero-shot: parse the run again where its "
+                f"of B2 and the confidence of the zero-shot: parse the run again where its "
                 f"raw.jsonl is (argfallacy parse {zeroshot_sources[reference]})")
         zero = _side(zeroshot_summary, f"zeroshot:{reference}", reference, "zeroshot", ids)
         add(zero.name, zero.aggregations, "reference", "1.1",
             f"the zero-shot of {reference} ({zeroshot_sources[reference]})")
     else:
         missing[f"zeroshot:{reference}"] = "no zero-shot run of the reference model"
-        missing["C2"] = "no zero-shot run of the reference model"
+        missing["B2"] = "no zero-shot run of the reference model"
 
     for run_id in config.runs.get("judge") or []:
         judge_manifest, judge_summary = _read_run(runs_dir, run_id)
@@ -570,16 +570,16 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
                      for i, v in zip(ids, majority, strict=True)}, "oracle", "1.1",
         "the most frequent gold of each scheme, in sample")
 
-    # C1 on full run v2
-    say("C1 on full run v2")
+    # B1 on full run v2
+    say("B1 on full run v2")
     data = build_dataset(schemes, frame, summary, manifest, reference, routing)
     annotations = load_annotations(annotations_path)
     labels = cq_labels(annotations, items, schemes)
-    v2 = _c1_family(data, labels, folds, config.seed, configurations(
+    v2 = _b1_family(data, labels, folds, config.seed, configurations(
         excluded_label_schemes=tuple(config.cq_label_exclusion)))
-    missing["C1.stable_cqs"] = "the re-annotation of schemes 1.1 does not exist"
+    missing["B1.stable_cqs"] = "the re-annotation of schemes 1.1 does not exist"
     for name, result in v2.items():
-        role = ("primary" if name == "C1" else "comparison" if name == "C1.hard"
+        role = ("primary" if name == "B1" else "comparison" if name == "B1.hard"
                 else "exploratory")
         c = result.config
         add(name, result.aggregations, role, "1.1",
@@ -588,9 +588,9 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
                if c.exclude_schemes else ""))
 
     # full run v3: the schemes 2.0
-    say("C1 on full run v3")
+    say("B1 on full run v3")
     revised_run = config.runs.get("answers_schemes_2")
-    v3: dict[str, C1Result] = {}
+    v3: dict[str, B1Result] = {}
     if revised_run:
         manifest3, summary3 = _read_run(runs_dir, revised_run)
         rows3, _ = _answer_rows(summary3, manifest3, revised_run, ids)
@@ -604,51 +604,51 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
                                     for i in ids}, "comparison", "2.0",
             f"the diagram 2.0 with the hard answers of {reference}, full run v3")
         data3 = build_dataset(schemes3, frame, summary3, manifest3, reference, routing3)
-        v3 = _c1_family(data3, None, folds, config.seed,
+        v3 = _b1_family(data3, None, folds, config.seed,
                         configurations(schemes_version="2.0"))
-        v3["C1@2.0"] = transfer_c1(v2["C1"], data3)
-        v3["C1.hard@2.0"] = transfer_c1(v2["C1.hard"], data3)
+        v3["B1@2.0"] = transfer_b1(v2["B1"], data3)
+        v3["B1.hard@2.0"] = transfer_b1(v2["B1.hard"], data3)
         for name, result in v3.items():
             c = result.config
             add(name, result.aggregations, "exploratory", "2.0",
                 f"{c.combiner}, supervision {c.supervision}, {c.traversal} traversal, "
                 f"full run v3" + (", coefficients fitted on full run v2" if name.startswith(
-                    ("C1@", "C1.hard@")) else ""))
+                    ("B1@", "B1.hard@")) else ""))
     else:
         missing[f"A0:{reference}@2.0"] = missing["A2.pruned"] = "no answers_schemes_2 run"
 
-    # C2 and C3, with C1 cross-fitted inside each training partition
-    source = C1CrossFitter(data, labels, config.seed, PRIMARY_CONFIG)
-    # the transferred C1 keeps the choices of full run v2, written once
+    # B2 and B3, with B1 cross-fitted inside each training partition
+    source = B1CrossFitter(data, labels, config.seed, PRIMARY_CONFIG)
+    # the transferred B1 keeps the choices of full run v2, written once
     choices = [row for name, result in [*v2.items(), *v3.items()]
-               if result.config.traversal == "soft" and name != "C1@2.0"
+               if result.config.traversal == "soft" and name != "B1@2.0"
                for row in _choices(result.config.name, result.choices)]
     curve = None
     if zero is not None:
-        say("C2")
-        c2 = c2_out_of_fold(source, zero, folds)
-        add("C2", c2.aggregations, "primary", "1.1",
-            f"routing between C1 and zeroshot:{reference}, threshold 0")
-        curve = routing_curve(c2, items, indices)
-        c2_a0 = c2_out_of_fold(ReferenceInputs(data, config.seed, hard=True), zero, folds,
-                               name="C2.A0")
-        add("C2.A0", c2_a0.aggregations, "exploratory", "1.1",
+        say("B2")
+        b2 = b2_out_of_fold(source, zero, folds)
+        add("B2", b2.aggregations, "primary", "1.1",
+            f"routing between B1 and zeroshot:{reference}, threshold 0")
+        curve = routing_curve(b2, items, indices)
+        b2_a0 = b2_out_of_fold(ReferenceInputs(data, config.seed, hard=True), zero, folds,
+                               name="B2.A0")
+        add("B2.A0", b2_a0.aggregations, "exploratory", "1.1",
             f"routing between A0 of {reference} and its zero-shot")
-        choices += _choices("C2", c2.choices) + _choices("C2.A0", c2_a0.choices)
-    say("C3")
-    c3 = c3_out_of_fold(source, folds)
-    pooled = c3_out_of_fold(source, folds, kind="pooled")
-    tree = c3_out_of_fold(ReferenceInputs(data, config.seed), folds, name="A3.tree")
-    add("C3", c3.aggregations, "primary", "1.1",
-        "a tree of depth at most 3 per scheme on the combined answers of C1, cross-fitted")
-    add("C3.pooled", pooled.aggregations, "exploratory", "1.1",
-        "a pooled recalibration of the terminal masses of C1")
+        choices += _choices("B2", b2.choices) + _choices("B2.A0", b2_a0.choices)
+    say("B3")
+    b3 = b3_out_of_fold(source, folds)
+    pooled = b3_out_of_fold(source, folds, kind="pooled")
+    tree = b3_out_of_fold(ReferenceInputs(data, config.seed), folds, name="A3.tree")
+    add("B3", b3.aggregations, "primary", "1.1",
+        "a tree of depth at most 3 per scheme on the combined answers of B1, cross-fitted")
+    add("B3.pooled", pooled.aggregations, "exploratory", "1.1",
+        "a pooled recalibration of the terminal masses of B1")
     add("A3.tree", tree.aggregations, "exploratory", "1.1",
         f"a tree of depth at most 3 per scheme on the hard answers of {reference}")
-    choices += sum((_choices(r.name, r.choices) for r in (c3, pooled, tree)), [])
+    choices += sum((_choices(r.name, r.choices) for r in (b3, pooled, tree)), [])
 
-    # C4: S-soft and its control, against A2.pruned on full run v3
-    say("C4")
+    # B4: S-soft and its control, against A2.pruned on full run v3
+    say("B4")
     changes, pending = pd.DataFrame(), {"ssoft": [], "ssoft_nohistory": []}
     if revised_run:
         history_rows, source_name = _ssoft_rows(runs_dir, config.runs.get("ssoft") or [], True,
@@ -664,20 +664,20 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
         described = {
             "A2.pruned": ("comparison", f"A2 on the answers of {reference} in full run v3, "
                                         f"burden 2.0, pruning {PRUNING}"),
-            "C4": ("primary", f"S-soft, {reference}, schemes 2.0, burden 2.0, pruning "
+            "B4": ("primary", f"S-soft, {reference}, schemes 2.0, burden 2.0, pruning "
                               f"{PRUNING}"),
-            "C4.path": ("comparison", "the single path of S-soft"),
-            "C4.nohistory": ("comparison", "S-soft without the history of the path"),
+            "B4.path": ("comparison", "the single path of S-soft"),
+            "B4.nohistory": ("comparison", "S-soft without the history of the path"),
         }
         for name, aggregations in found.items():
             add(name, aggregations, described[name][0], "2.0", described[name][1])
-    for name, key in (("C4", "ssoft"), ("C4.path", "ssoft"), ("C4.nohistory", "ssoft_nohistory")):
+    for name, key in (("B4", "ssoft"), ("B4.path", "ssoft"), ("B4.nohistory", "ssoft_nohistory")):
         if name not in systems:
             missing[name] = ("incomplete S-soft run: pending mass for items "
                              + ", ".join(pending[key]) if pending[key]
                              else f"no S-soft run (runs.{key} is empty)")
-    if "C4" not in systems:
-        missing["the answers that change on the path of C4"] = missing["C4"]
+    if "B4" not in systems:
+        missing["the answers that change on the path of B4"] = missing["B4"]
 
     # Added after the results of round 2, all exploratory: class-balanced losses for the
     # two models fitted on the gold verdicts without them, the mass divided by the class
@@ -689,16 +689,16 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
         add(name, aggregations, "exploratory", "1.1", f"{description} ({POST_HOC})")
         post_hoc.append(name)
 
-    balanced = _c1_family(data, None, folds, config.seed, BALANCED_CONFIGS)
+    balanced = _b1_family(data, None, folds, config.seed, BALANCED_CONFIGS)
     for name, result in balanced.items():
         add_post_hoc(name, result.aggregations,
                      f"stacking, supervision gold with balanced class weights, "
                      f"{result.config.traversal} traversal, full run v2")
-    pooled_balanced = c3_out_of_fold(source, folds, kind="pooled", name="C3.pooled.balanced",
+    pooled_balanced = b3_out_of_fold(source, folds, kind="pooled", name="B3.pooled.balanced",
                                      balanced=True)
-    add_post_hoc("C3.pooled.balanced", pooled_balanced.aggregations,
-                 "the pooled recalibration of the terminal masses of C1, balanced class weights")
-    for name in ("A2", "C1"):
+    add_post_hoc("B3.pooled.balanced", pooled_balanced.aggregations,
+                 "the pooled recalibration of the terminal masses of B1, balanced class weights")
+    for name in ("A2", "B1"):
         add_post_hoc(f"{name}.prior", prior_corrected(systems[name].aggregations, schemes,
                                                       scheme_of, gold_of, folds),
                      f"{name} with each terminal mass divided by the frequency of its class "
@@ -706,21 +706,21 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
     a3, a3_choices = a3_out_of_fold(schemes, frame, reference_rows, folds, config.seed, LOGPROB)
     add("A3", a3, "reference", "1.1",
         f"A3 of round 1: logistic regression per scheme on the p_logprob of {reference}")
-    majority_p = v2["C1.majority.none.soft"].combined.p_first.to_numpy(dtype=float)
+    majority_p = v2["B1.majority.none.soft"].combined.p_first.to_numpy(dtype=float)
     a3_combined, a3_combined_choices = a3_out_of_fold(
         schemes, frame, combined_rows(data, majority_p), folds, config.seed, LOGPROB)
     add_post_hoc("A3.combined", a3_combined,
                  "A3 on the combined answers of the majority of the five entries")
-    choices += (_choices("C1.stacking.gold_balanced.soft",
-                         balanced["C1.stacking.gold_balanced.soft"].choices)
+    choices += (_choices("B1.stacking.gold_balanced.soft",
+                         balanced["B1.stacking.gold_balanced.soft"].choices)
                 + _choices(pooled_balanced.name, pooled_balanced.choices)
                 + _choices("A3", a3_choices) + _choices("A3.combined", a3_combined_choices))
     missing.update({
-        "C2 with S-soft as another side": "the diagram 2.0 of example has a terminal that the "
-                                          "diagram 1.1 of C1 does not have",
-        "C2 with D+Q as another side": "no D+Q run (spec 10)",
-        "C2 on schemes 2.0": "no zero-shot run with the 2.0 menus (spec 10)",
-        "C4 against the zero-shot with the 2.0 menus": "no such run (spec 10)",
+        "B2 with S-soft as another side": "the diagram 2.0 of example has a terminal that the "
+                                          "diagram 1.1 of B1 does not have",
+        "B2 with D+Q as another side": "no D+Q run (spec 10)",
+        "B2 on schemes 2.0": "no zero-shot run with the 2.0 menus (spec 10)",
+        "B4 against the zero-shot with the 2.0 menus": "no such run (spec 10)",
         "S-soft with a temperature": "the out-of-fold temperature is not implemented",
         "S-soft of the other four entries": "no runs",
         "the predicted scheme condition": "not available (spec 08, P1)",
@@ -810,8 +810,8 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
                             "macro_f1_difference": d["difference"], "macro_f1_low": d["low"],
                             "macro_f1_high": d["high"]})
     done = {(a, b) for a, b, _ in named_pairs}
-    for a, b in [("C4", "C4.nohistory"), ("C4.nohistory", "A2.pruned"),
-                 ("C4.path", f"A0:{reference}@2.0"), ("C4", f"A0:{reference}@2.0")]:
+    for a, b in [("B4", "B4.nohistory"), ("B4.nohistory", "A2.pruned"),
+                 ("B4.path", f"A0:{reference}@2.0"), ("B4", f"A0:{reference}@2.0")]:
         if (a, b) not in done:
             missing[f"{a} against {b}"] = missing.get(a) or missing.get(b) or "no result"
     exploratory = pd.DataFrame(exploratory, columns=[
@@ -872,7 +872,7 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
     for result in v2.values():
         c = result.config
         if c.traversal == "soft" and not c.exclude_schemes:
-            predictions.append(result.combined.assign(system=f"C1.{c.combiner}.{c.supervision}"))
+            predictions.append(result.combined.assign(system=f"B1.{c.combiner}.{c.supervision}"))
     cq = cq_evaluation(data, labels, pd.concat(predictions, ignore_index=True), indices=indices)
     human = human_path_reference(annotations, items, schemes)
     score = human.pop("score")
@@ -886,15 +886,15 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
         ignore_index=True)[["system", "schemes", "combiner", "supervision", "item_id", "scheme",
                             "cq_id", "fold", "p_first", "outside"]]
 
-    # C5: abstention curves and conformal sets
-    say("C5")
+    # B5: abstention curves and conformal sets
+    say("B5")
     by_item = {"good argumentation": {i: "yes" if gold_of[i] == good_terminal() else "no"
                                       for i in ids},
                "scheme": scheme_of, "corpus": dict(zip(ids, items.source, strict=True)),
                "gold origin": origin}
-    soft_c1 = [n for n, r in {**v2, **v3}.items()
+    soft_b1 = [n for n, r in {**v2, **v3}.items()
                if r.config.traversal == "soft" and len(items_of(n)) == len(ids)]
-    distributions = [n for n in [*soft_c1, "C3.pooled", "C4", "A2", "A4"] if n in systems]
+    distributions = [n for n in [*soft_b1, "B3.pooled", "B4", "A2", "A4"] if n in systems]
     abstaining = [n for n, s in systems.items() if len(items_of(n)) == len(ids)
                   and s.role != "oracle" and not n.startswith("A0:") and n != "A5.answers_only"
                   and any(a.confidence is not None for a in s.aggregations.values())]
@@ -963,13 +963,13 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
         "seed": config.seed, "resamples": config.resamples,
         "folds": {"k": config.folds, "assignment": folds},
         "m": config.m, "deciding_level": 1 - FAMILY_ALPHA / config.m,
-        "primary_configurations": {n: systems[n].description for n in ("C1", "C2", "C3", "C4")
+        "primary_configurations": {n: systems[n].description for n in ("B1", "B2", "B3", "B4")
                                    if n in systems},
         "hypotheses": [{"name": h.name, "system": h.system, "reference": h.reference,
                         "after": h.after} for h in family],
-        "grids": {"C1 stacking C": list(C_GRID), "C1 weighted lambda": list(LAMBDA_GRID),
-                  "C2 C": list(C_GRID), "C3 max_depth, min_samples_leaf": list(TREE_GRID),
-                  "C3.pooled C": list(C_GRID), "A3 C": list(A3_GRID)},
+        "grids": {"B1 stacking C": list(C_GRID), "B1 weighted lambda": list(LAMBDA_GRID),
+                  "B2 C": list(C_GRID), "B3 max_depth, min_samples_leaf": list(TREE_GRID),
+                  "B3.pooled C": list(C_GRID), "A3 C": list(A3_GRID)},
         "added_after_the_results": post_hoc,
         "frequent_classes": {"minimum_gold_items": FREQUENT,
                              "classes": [bench.observed.classes[k] for k in frequent]},

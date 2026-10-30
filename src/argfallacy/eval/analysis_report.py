@@ -111,7 +111,7 @@ SECTIONS = [
     ),
     (
         "classes",
-        "Per-class scores and C1 rare-class diagnosis",
+        "Per-class scores and B1 rare-class diagnosis",
         ["rare_classes", "per_class"],
         "Rare classes have gold support <20 in the full frozen test before subsetting. "
         "Mean rare recall uses supported classes on the common population. This differs from "
@@ -123,7 +123,7 @@ SECTIONS = [
         "CQ correctness and historical human references",
         ["cq_level", "cq_level_differences", "human_agreement", "human_path"],
         "CQ correctness, verdict quality and explanation consistency are separate measures. "
-        "C1 binary supervision requires positive gold-scheme judgement; P7 uses the broader "
+        "B1 binary supervision requires positive gold-scheme judgement; P7 uses the broader "
         "gold-sheet population. Hard human agreement is withheld below 20 annotated items. "
         "All CQs of an item move together. Version 1.1 labels do not supervise rewritten 2.0 CQs. "
         "Observed S-soft paths exclude unvisited nodes. Historical cross-sheet verdict agreement "
@@ -133,7 +133,7 @@ SECTIONS = [
     ),
     (
         "routing",
-        "C2 routing by origin",
+        "B2 routing by origin",
         ["routing_curve"],
         "Exact side records are required. Every origin retains the pooled threshold grid and "
         "pooled thresholds selected at requested shares; there is no origin retuning. Ties can "
@@ -151,7 +151,7 @@ SECTIONS = [
         "Missing confidence is not zero. Maximum operational coverage and missing counts "
         "are recorded. Fixed cuts use half-up rounding and rerank within paired item draws. "
         "Systems without confidence are reference points. Exactly four exploratory AUGRC "
-        "pairs are permitted: C2 versus zero-shot Qwen; C4 versus A2.pruned; C1 versus A2; "
+        "pairs are permitted: B2 versus zero-shot Qwen; B4 versus A2.pruned; B1 versus A2; "
         "A5 versus zero-shot Qwen. None decides success.",
     ),
     (
@@ -179,7 +179,7 @@ SECTIONS = [
         "conformal",
         "Conformal sets and summaries",
         ["source_conformal", "conformal", "conformal_items"],
-        "C5 uses genuine terminal distributions or verified companion exports, alpha=0.10, "
+        "B5 uses genuine terminal distributions or verified companion exports, alpha=0.10, "
         "calibration on the other folds, with the original terminal and empty-mass rules. "
         "Learned out-of-fold scores give approximate coverage. Aggregate summaries cannot "
         "reconstruct sets. Missing exact inputs remain pending independently of lighter analyses.",
@@ -215,7 +215,7 @@ DQ_NOTE = (
     "CQ correctness, verdict quality and explanation consistency are separate; consistency "
     "is necessary but insufficient for faithful explanations. The 2.0 questions were revised "
     "with earlier test errors in view. CQ/departure/change/replication diagnostics, imported "
-    "abstention and exploratory C2 extensions retain that limitation. Imported summaries "
+    "abstention and exploratory B2 extensions retain that limitation. Imported summaries "
     "are separate from new analysis curves and cannot supply exact routing exports."
 )
 
