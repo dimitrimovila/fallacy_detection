@@ -26,6 +26,10 @@ times, from the frequency over the samples. Six aggregators, from the fixed diag
 uncertain answers into a fallacy verdict, or an abstention, together with an
 explanation: the path through the diagram, or the weights of the model that decided.
 
+## Research results and decisions
+
+Read [the research findings register](docs/research_findings.md) for completed results, limitations, annotation/provenance lessons and confirmed methodological choices. It includes the negative C3@2.0 diagnostic and distinguishes proposals from decisions. The narrative is versioned; raw runs, full evaluation tables and local audit ledgers are not included.
+
 ## Repository structure
 
 ```
