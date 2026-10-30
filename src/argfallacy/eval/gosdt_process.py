@@ -5,6 +5,7 @@ from __future__ import annotations
 import ctypes
 import json
 import os
+import signal
 import subprocess
 import time
 from pathlib import Path
@@ -38,7 +39,16 @@ def available_memory():
         return memory.available
     import psutil
 
-    return psutil.virtual_memory().available
+    physical = psutil.virtual_memory().available
+    from .gosdt_linux import headroom
+
+    try:
+        remaining = headroom()
+    except (OSError, RuntimeError):
+        if os.environ.get("SLURM_JOB_ID"):
+            raise
+        remaining = None
+    return min(physical, remaining) if remaining is not None else physical
 
 
 def require_memory(minimum=3 * 1024**3):
@@ -52,6 +62,25 @@ def require_memory(minimum=3 * 1024**3):
 
 
 def process_memory(pid):
+    if os.name != "nt":
+        import psutil
+
+        try:
+            process = psutil.Process(pid)
+            rss = process.memory_info().rss
+            private = process.memory_full_info().uss
+            status = Path(f"/proc/{pid}/status").read_text()
+            peak = next(
+                (
+                    int(line.split()[1]) * 1024
+                    for line in status.splitlines()
+                    if line.startswith("VmHWM:")
+                ),
+                rss,
+            )
+            return {"rss": rss, "private": private, "peak_rss": peak}
+        except (psutil.NoSuchProcess, psutil.AccessDenied, FileNotFoundError):
+            return None
     from ctypes import wintypes as w
 
     class Counters(ctypes.Structure):
@@ -148,7 +177,16 @@ def windows_job(pid, budget):
 
 
 class SolverProcess:
-    def __init__(self, python, vendor, folder, *, seconds=60, memory=4_000_000_000, grace=5):
+    def __init__(
+        self,
+        python,
+        vendor,
+        folder,
+        *,
+        seconds=60,
+        memory=4_000_000_000,
+        grace=5,
+    ):
         self.python, self.vendor, self.folder = Path(python), Path(vendor), Path(folder)
         self.seconds, self.memory, self.grace = seconds, memory, grace
 
@@ -165,6 +203,9 @@ class SolverProcess:
             "worker_sha256": digest(Path(__file__).with_name("gosdt_worker.py")),
             "adapter_sha256": digest(Path(__file__).parents[1] / "aggregate/sparse_tree.py"),
         }
+        if os.name != "nt":
+            request["backend"] = "slurm_cgroup_v2"
+            request["supervisor_sha256"] = digest(Path(__file__).with_name("gosdt_linux.py"))
         if arrays.exists():
             stored_hash = json.loads((folder / "input_hash.json").read_text(encoding="utf-8"))
             if stored_hash["sha256"] != digest(arrays):
@@ -197,31 +238,66 @@ class SolverProcess:
         environment = os.environ.copy()
         for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
             environment[name] = "1"
+        command = [
+            str(self.python),
+            str(worker),
+            str(folder / "request.json"),
+            "--vendor",
+            str(self.vendor),
+        ]
+        if os.name != "nt":
+            from .gosdt_linux import step_command
+
+            command = step_command(
+                self.python, worker, folder / "request.json", self.vendor, self.memory
+            )
+        identity = None
+
+        def terminate():
+            # Cancel only the worker's numbered step, never the enclosing allocation.
+            if os.name != "nt" and identity:
+                subprocess.run(
+                    ["scancel", "--signal=KILL", f"{identity['job']}.{identity['step']}"],
+                    check=False,
+                    timeout=5,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            if child.poll() is None:
+                if os.name != "nt":
+                    os.killpg(child.pid, signal.SIGTERM)
+                else:
+                    child.kill()
+
         with (folder / "worker.log").open("w", encoding="utf-8") as log:
             child = subprocess.Popen(
-                [
-                    str(self.python),
-                    str(worker),
-                    str(folder / "request.json"),
-                    "--vendor",
-                    str(self.vendor),
-                ],
+                command,
                 stdout=log,
                 stderr=subprocess.STDOUT,
                 env=environment,
+                start_new_session=os.name != "nt",
             )
             try:
-                if os.name != "nt":
-                    raise RuntimeError("this checked local supervisor requires Windows")
-                release = windows_job(child.pid, self.memory)
+                if os.name == "nt":
+                    release = windows_job(child.pid, self.memory)
                 while child.poll() is None:
-                    usage = process_memory(child.pid)
+                    if identity is None and (folder / "started.json").exists():
+                        candidate = json.loads(
+                            (folder / "started.json").read_text(encoding="utf-8")
+                        )
+                        if (
+                            candidate["job"] != environment.get("SLURM_JOB_ID")
+                            or not candidate["step"].isdigit()
+                        ):
+                            raise RuntimeError("worker step identity differs from the allocation")
+                        identity = candidate
+                    usage = process_memory(identity["pid"] if identity else child.pid)
                     if usage:
                         peak_rss = max(peak_rss, usage["peak_rss"])
                         peak_private = max(peak_private, usage["private"])
                         if usage["rss"] > self.memory:
                             reason = "worker_rss_limit"
-                            child.kill()
+                            terminate()
                     if ready_at is None and (folder / "ready.json").exists():
                         ready_at = time.monotonic()
                     elapsed = time.monotonic() - (ready_at or start)
@@ -229,19 +305,38 @@ class SolverProcess:
                         ready_at is not None and elapsed > self.seconds + self.grace
                     ):
                         reason = "worker_wall_timeout"
-                        child.kill()
+                        terminate()
                     if available_memory() < 1024**3:
                         reason = "system_low_memory"
-                        child.kill()
+                        terminate()
+                    if reason:
+                        try:
+                            child.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            child.kill()
                     time.sleep(0.05)
                 code = child.wait()
             except BaseException:
-                child.kill()
-                child.wait()
+                try:
+                    terminate()
+                finally:
+                    try:
+                        child.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        child.kill()
+                        child.wait()
                 raise
             finally:
                 if release:
                     release()
+        if identity is None and (folder / "started.json").exists():
+            candidate = json.loads((folder / "started.json").read_text(encoding="utf-8"))
+            if (
+                candidate["job"] != environment.get("SLURM_JOB_ID")
+                or not candidate["step"].isdigit()
+            ):
+                raise RuntimeError("worker step identity differs from the allocation")
+            identity = candidate
         if not (folder / "result.json").exists():
             json_write(
                 folder / "result.json",
@@ -263,7 +358,9 @@ class SolverProcess:
                 "exit_code": code,
                 "reason": reason,
                 "elapsed_seconds": time.monotonic() - start,
-                "private_memory_hard_cap": self.memory,
+                "private_memory_hard_cap": self.memory if os.name == "nt" else None,
+                "backend": "windows_job" if os.name == "nt" else "slurm_cgroup_v2",
+                "worker_step": identity,
                 "system_free_reserve": 1024**3,
                 "result_sha256": digest(folder / "result.json"),
                 "observed_peak_rss_bytes": peak_rss,

@@ -860,7 +860,8 @@ argumentative validity. Run artifacts contain no new LLM calls or annotations.
 The fixed protocol is in [spec 12](docs/specs/12_gosdt_structure_learning.md).
 The optional native GOSDT dependency is loaded by a separate worker from an
 explicitly supplied interpreter and vendor directory; the command never installs
-packages or submits cluster jobs. The checked local supervisor requires Windows.
+packages or creates cluster allocations. Supervision supports Windows Job Objects
+and numbered Linux Slurm steps with verified cgroup-v2 memory enforcement.
 
 ```powershell
 argfallacy evaluate-gosdt configs/gosdt_schemes2_diagnostic.yaml --worker-python <python-path> --worker-vendor <vendor-directory> --check-only
@@ -873,5 +874,7 @@ recorded hashes before reusing completed checkpoints. The run retains all 601
 arguments in canonical scoring and saves full trees, held-out library/replay
 comparisons, candidate scores, selected configurations, native status/bounds and
 resource records. Missing required solver fits make the scientific comparison
-incomplete. Linux runtime and resource supervision must be checked separately
-before using a CPU cluster.
+incomplete. The [CPU deployment runbook](docs/gosdt_cluster_runbook.md) describes
+private runtime setup, verified input transfer and the synthetic preflight that
+gates cluster execution. Native cluster enforcement remains a deployment check,
+not a claim established by local tests.

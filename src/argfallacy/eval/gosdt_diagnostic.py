@@ -6,6 +6,7 @@ import gc
 import hashlib
 import importlib.metadata
 import json
+import os
 import pickle
 import platform
 import time
@@ -85,13 +86,20 @@ def runtime_probe(python, vendor, folder):
     x = np.array([[0, 0]] * 8 + [[0, 1]] * 4 + [[1, 0]] * 2, bool)
     y = np.array(["a"] * 8 + ["b"] * 4 + ["c"] * 2)
     process = SolverProcess(python, vendor, folder)
-    result = process("runtime_probe", x, y, 2, 2, evaluation_x=x[::-1])
+    key = "runtime_probe" + (
+        f"_{os.environ.get('SLURM_JOB_ID', 'no_allocation')}" if os.name != "nt" else ""
+    )
+    result = process(key, x, y, 2, 2, evaluation_x=x[::-1])
     if (
         not result.get("valid")
         or not result.get("evaluation_replay_verified")
         or result.get("runtime", {}).get("packages", {}).get("gosdt") != "1.0.4"
     ):
         raise SchemeError(f"GOSDT runtime probe failed: {result}")
+    if os.name != "nt" and not (
+        0 < result.get("linux_cgroup", {}).get("hard_limit_bytes", 0) <= 4_000_000_000
+    ):
+        raise SchemeError("native worker did not verify a cgroup memory limit")
     return result
 
 
@@ -108,7 +116,7 @@ def preflight(config, python, vendor, folder):
         require_memory(config["minimum_free_bytes"])
         report["runtime"] = runtime_probe(python, vendor, folder)
         report["ready"] = True
-    except (MemoryError, OSError, ValueError, SchemeError) as error:
+    except (MemoryError, OSError, ValueError, RuntimeError, SchemeError) as error:
         report["reason"] = str(error)
     json_write(folder / "preflight.json", report)
     return report
@@ -166,8 +174,30 @@ def _snapshot(config_path, config, python, vendor):
         str(p.relative_to(REPO_ROOT)): digest(p)
         for p in (REPO_ROOT / "src/argfallacy").rglob("*.py")
     }
+    for name in (
+        "gosdt_cluster.py",
+        "gosdt_cluster_setup.sh",
+        "gosdt_cluster_submit.sh",
+        "gosdt_driver_requirements.txt",
+        "gosdt_worker_requirements.txt",
+        "gosdt_input_checksums.sha256",
+        "slurm/gosdt_cpu.sbatch",
+    ):
+        file = REPO_ROOT / "serving" / name
+        code[str(file.relative_to(REPO_ROOT))] = digest(file)
     vendor = Path(vendor)
-    runtime_files = [p for pattern in ("gosdt/*.py", "gosdt/*.pyd") for p in vendor.glob(pattern)]
+    runtime_files = [
+        p
+        for pattern in (
+            "gosdt/*.py",
+            "gosdt/*.pyd",
+            "gosdt/*.so",
+            "gosdt.libs/*",
+            "*.dist-info/METADATA",
+            "*.dist-info/RECORD",
+        )
+        for p in vendor.glob(pattern)
+    ]
     if not runtime_files:
         raise SchemeError("GOSDT vendor package is unavailable")
     return {
@@ -569,6 +599,17 @@ def run(config_path, python, vendor, *, resume=False, progress=print):
                 "elapsed_seconds": manifest["last_segment_seconds"],
                 "driver_peak_working_set_bytes": _peak_memory(),
                 "status": manifest["status"],
+                "allocation": {
+                    key: os.environ.get(key)
+                    for key in (
+                        "SLURM_JOB_ID",
+                        "SLURM_JOB_PARTITION",
+                        "SLURM_JOB_NODELIST",
+                        "SLURM_JOB_CPUS_PER_NODE",
+                        "SLURM_MEM_PER_NODE",
+                        "SLURM_JOB_QOS",
+                    )
+                },
             }
         )
         _checkpoint(out, manifest)

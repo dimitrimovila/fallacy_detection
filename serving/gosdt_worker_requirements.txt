@@ -1,0 +1,9 @@
+# Native worker versions used in the synthetic API/cost/depth verification.
+gosdt==1.0.4
+numpy==2.3.5
+scipy==1.16.3
+scikit-learn==1.6.1
+joblib==1.4.2
+threadpoolctl==3.5.0
+psutil==7.2.2
+pandas==3.0.2

@@ -1,15 +1,17 @@
 # GOSDT@2.0 versus matched CART: controlled diagnostic protocol
 
-Updated 30 October 2026. The scientific direction, input source, fixed thresholds,
+Updated 31 October 2026; scientific design confirmed 30 October. The scientific direction, input source, fixed thresholds,
 six-candidate grid and evaluation conventions below are explicitly confirmed.
 **Scientific design and technical policies accepted after synthetic checks.**
 The exact-root guard, conservative incomplete-tuning treatment and per-fit limits
 are accepted. Implementation and a resource-qualified local start were subsequently
 authorized. A local runner has now been implemented; no fit on the 601 arguments
 has started. After observing insufficient free PC memory, the execution preference
-changed to evaluating the CPU cluster. That is not authorization to submit a job.
-The checked supervisor currently requires Windows; Linux supervision, runtime
-availability and scheduler resources must be verified before a cluster start.
+changed to evaluating the CPU cluster. Submission is explicit through the manual
+commands; local preparation has not submitted a job.
+The supervisor now includes guarded Linux Slurm/cgroup-v2 support. Actual native
+cluster enforcement and runtime feasibility must pass a synthetic batch check
+before the conditional experiment can start.
 B1–B5 are the current round-two names; C1–C5 are their historical aliases.
 
 ## 1. Question, scope and references
@@ -435,6 +437,50 @@ but noninteractive authentication was refused. No remote environment, partition
 or allocation was verified and no job was submitted. Verify connectivity and Linux
 resource enforcement before transferring or starting the experiment. No fit on
 any of the 601 arguments has been performed.
+
+## 12. CPU deployment prepared after cluster inspection (31 October)
+
+Supplied terminal output confirms allgroups includes CPU nodes, account dm_warm_up
+with normal QoS, cgroup v2 and task/cgroup. The remote checkout is 8d23e33 and lacks
+the reference verdict files. Existing CQ summaries are not accepted by size alone;
+a verified eight-file archive transfers the exact local inputs to a fresh detached
+checkout. The embedded checksums must match the frozen versioned reference.
+
+No compatible older interpreter was found on PATH. Setup therefore installs a
+private Python 3.12 runtime on the cluster, with pinned scientific driver packages
+and the separately pinned worker dependencies already used in technical checks.
+System Python is preserved. This is operational setup, not a new CQ source or method.
+
+The prepared request is one node, two CPUs, 8 GiB and no GPUs, on allgroups with
+normal QoS. The scheduler validates admission before submission. The synthetic
+job ceiling is one hour; the dependent experiment ceiling is 48 hours, not a
+forecast or an increase of any per-fit budget. User execution of the submission
+script submits both jobs; no job was submitted during local preparation.
+
+Each GOSDT worker is a numbered srun step. Slurm memory requests are in MiB, so
+the four-billion-byte cap is rounded downward to 3,814 MiB (3,999,268,864 bytes,
+below 0.02% difference). Before numerical imports or fitting, the worker requires
+that exact effective memory.max. Missing enforcement or a different cap aborts;
+there is no automatic uncapped run or silent budget reduction. Linux accounting
+charges RAM including page cache and differs from Windows private commit. Save
+actual limits, cgroup counters, peak RSS and sampled RSS/USS. Driver gates also use
+cgroup headroom, retaining the one-GiB reserve. The native 60-second limit, five-second
+grace and original grid remain unchanged. A kernel alarm supplements the watchdog.
+
+The deployment preflight verifies effective kernel memory limits, measured native
+usage and 18 valid fits (six candidates, three partitions) on invented data with
+exact held-out replay. A separate one-second native control records status and
+incumbent handling; it never changes the real 60-second budget. No deliberate OOM
+is required for approval, and actual memory failures remain visible. The check is
+not a guarantee of worst-case combined B1/solver resources. A current-allocation
+runtime probe is always repeated. The dependent experiment requires scheduler
+afterok and a matching approval snapshot for inputs, source/deployment scripts,
+runtime and scientific configuration. No failed check can start the experiment;
+no benchmark fit selects deployment budgets or grid.
+
+The [cluster runbook](../gosdt_cluster_runbook.md) gives the workflow and primary
+technical references. Local pure resource tests and script syntax checks do not
+establish actual cluster enforcement; the synthetic Slurm check remains mandatory.
 
 ## Sources and local evidence
 
