@@ -1,0 +1,16 @@
+# Exploratory transfer of the round-one aggregators to schemes 2.0.
+# Added after the round-two results; the generated comparison intervals do not
+# constitute a new pre-registered deciding family. Existing outputs stay separate.
+name: exploratory_aggregators_v3
+runs:
+  answers: 20261019T151336Z_full_v3
+  zeroshot:
+    - 20261026T101601Z_zeroshot_schemes_v2
+  judge:
+    - 20261021T130019Z_judge_full_v3
+    - 20261021T130019Z_judge_full_v3_answers_only
+reference_model: qwen3_8_27b
+seed: 20261019
+resamples: 10000
+folds: 5
+m: 5

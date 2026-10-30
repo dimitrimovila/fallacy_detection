@@ -13,6 +13,7 @@ from pathlib import Path
 from ..schemes import SchemeError
 
 FORMAT = "thesis_analyses_v1"
+PREVIEW_ROWS = 25
 # Minimum public columns, including pending tables. The manifest records full schemas.
 SCHEMAS = {
     "main_table": (
@@ -376,6 +377,8 @@ def _table(folder, name, manifest, fingerprints):
     if not rows:
         content = '<p class="pending">' + escape(part.get("reason", str(state))) + "</p>"
     else:
+        total_rows = len(rows)
+        rows = rows[:PREVIEW_ROWS]
         headers = "".join(f'<th scope="col">{escape(label(c))}</th>' for c in columns)
         first = "".join(
             "<tr>" + "".join(f"<td>{escape(v)}</td>" for v in r) + "</tr>" for r in rows[:25]
@@ -387,6 +390,9 @@ def _table(folder, name, manifest, fingerprints):
             .replace("&", "\\u0026")
         )
         content = (
+            f'<p class="note">Preview: {len(rows)} of {total_rows} rows. '
+            'Search covers this preview only. Use the complete CSV for filtering '
+            'and analysis; no saved rows were removed.</p>'
             '<div class="tools"><label>Search rows <input type="search" aria-label="Search '
             + name
             + '"></label>'
@@ -397,7 +403,7 @@ def _table(folder, name, manifest, fingerprints):
             f'<script type="application/json">{payload}</script>'
         )
     return (
-        f'<article id="table-{name}" data-file="{name}" data-rows="{len(rows)}">'
+        f'<article id="table-{name}" data-file="{name}" data-rows="{contract["rows"]}">'
         f"{heading}{source}{status}{content}</article>"
     )
 

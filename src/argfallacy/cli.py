@@ -168,6 +168,18 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_evaluate_c3(args: argparse.Namespace) -> int:
+    from .eval.c3_diagnostic import run
+    from .schemes import SchemeError
+
+    try:
+        out = run(args.config, out_root=args.out)
+    except (SchemeError, FileNotFoundError, FileExistsError) as error:
+        raise SystemExit(str(error)) from None
+    print(f"  {out / 'summary.md'}")
+    return 0
+
+
 def _cmd_report_cqs(args: argparse.Namespace) -> int:
     from .client.run import default_runs_dir
     from .eval.cq import write_cq_report
@@ -322,6 +334,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     evaluate_cmd.add_argument("config", help="a YAML evaluation configuration")
     evaluate_cmd.set_defaults(func=_cmd_evaluate)
+    c3_cmd = sub.add_parser("evaluate-c3", help="the isolated schemes 2.0 C3 diagnostic")
+    c3_cmd.add_argument("config", help="a frozen C3 diagnostic configuration")
+    c3_cmd.add_argument("--out", help="alternate output root; refuses to overwrite results")
+    c3_cmd.set_defaults(func=_cmd_evaluate_c3)
     analyze_cmd = sub.add_parser(
         "analyze", help="thesis breakdowns of saved out-of-fold predictions")
     analyze_cmd.add_argument("config", help="a versioned analysis configuration")

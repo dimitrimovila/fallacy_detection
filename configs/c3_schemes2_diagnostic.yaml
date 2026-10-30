@@ -1,0 +1,10 @@
+name: c3_schemes2_diagnostic_20261029
+fit_run: 20261005T193017Z_full_v2
+target_run: 20261019T151336Z_full_v3
+reference_model: qwen3_8_27b
+seed: 20261019
+resamples: 10000
+practical_delta: 0.03
+protocol: docs/specs/11_c3_schemes2_diagnostic.md
+baseline_evaluation: evaluations/round2
+context_evaluation: evaluations/exploratory_aggregators_v3

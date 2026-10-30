@@ -297,7 +297,7 @@ the aggregators:
 
 ```bash
 argfallacy report cqs 20261005T193017Z_full_v2 --out evaluations/decision_v2
-argfallacy report cqs 20261019T151336Z_full_v3 --out evaluations/cq_full_v3
+argfallacy report cqs 20261019T151336Z_full_v3 --out scratch/cq_full_v3
 ```
 
 The evaluation also writes a self-contained `summary.html` with coloured tables,
@@ -306,7 +306,7 @@ To include the four-judge audit and revised questions in the same page, refresh 
 from existing tables (no inference or metric recomputation):
 
 ```bash
-argfallacy report summary evaluations/decision_v2 --judge-audit evaluations/judge_audit_20261021 --revised-cqs evaluations/cq_full_v3
+argfallacy report summary evaluations/decision_v2 --judge-audit evaluations/_archive/judge_audit_20261021 --revised-cqs evaluations/_archive/cq_full_v3
 ```
 
 The page can be copied on its own and opened offline. `evaluate` regenerates the
@@ -820,3 +820,37 @@ to level 3; stage-one scheme recognition is reported separately.
 
 The code is released under the MIT License (see `LICENSE`). The files in `data/`
 are not covered by it: the texts come from existing corpora, each under its own terms.
+
+
+### Reading saved evaluations
+
+Start with [evaluations/README.md](evaluations/README.md) or the browser entry
+[evaluations/index.html](evaluations/index.html). They contain a question-to-table
+map and selected saved point estimates. Five active collections remain at the
+top level: `decision_v2`, `round2`, `exploratory_aggregators_v3`, `analyses_v1`,
+and `c3_schemes2_diagnostic_20261029`.
+Historical audits, standalone CQ 2.0 diagnostics and the alternative round-2
+recomputation are preserved in `evaluations/_archive/`, with a relocation map.
+Recorded historical provenance paths are unchanged.
+
+`python serving/evaluation_catalog.py` refreshes the entry points and collection
+guides using saved aggregate tables only. It does not fit or score systems.
+The analysis HTML now embeds labelled previews of up to 25 rows per table; search
+covers only the preview. Complete CSVs remain authoritative, and report validation
+still checks every row and table hash. The previous complete embedded HTML is
+preserved in `evaluations/_archive/reports/analyses_v1_complete_html_20261029.zip`.
+For targeted reading, filter the CSV by system, version and population rather
+than opening all detailed reports or importing all item-level records.
+
+### Isolated C3 diagnostic on schemes 2.0
+
+`argfallacy evaluate-c3 configs/c3_schemes2_diagnostic.yaml` runs only the
+approved exploratory C3@2.0 versus transferred C1.hard@2.0 experiment. The
+original CART grid and nested C1 isolation are retained; Qwen A0/A2 are saved
+contextual references. The protocol is in
+[spec 11](docs/specs/11_c3_schemes2_diagnostic.md). Results go to a new directory
+under evaluations/; the command refuses to overwrite existing outputs.
+It saves full trees, C1 fits, inner scores, exact OOF paths, paired IC95%,
+common-coverage and origin/class sensitivities, and protected-input hashes.
+The +0.03 practical-interest flag is separate from the interval and from
+argumentative validity. Run artifacts contain no new LLM calls or annotations.

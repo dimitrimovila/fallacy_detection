@@ -20,6 +20,7 @@ dependencies = [
     "numpy>=1.23",           # the folds, the resamples and the metrics of the evaluation
     "scipy>=1.11",           # centred stacking and the gold-verdict optimisation
     "matplotlib>=3.8",       # the reliability diagrams of the CQ evaluation
+    "threadpoolctl>=3.5",    # bounded CPU threads for the nested diagnostic fits
 ]
 
 [project.optional-dependencies]

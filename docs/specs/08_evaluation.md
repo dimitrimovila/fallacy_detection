@@ -507,6 +507,11 @@ four decimals; item confidences, thresholds and probabilities retain enough
 precision to reproduce ordering and ties. The report reads saved tables and shows
 definitions, denominators, intervals, and pending/deferred parts.
 
+Presentation update (29 October 2026): the HTML embeds at most 25 preview rows per
+table, explicitly labels the total saved row count and preview-only search, and
+links the complete CSV. Validation still covers every saved row and hash before
+rendering. No metric, population or output CSV contract changes.
+
 Reuse the recorded item ordering, folds, seed and 10,000 paired draws of P12;
 origins and other subgroups filter those whole-test draws, and empty replicates
 are excluded metric by metric with their counts recorded. Retain the existing

@@ -11,6 +11,7 @@ import yaml
 
 from argfallacy.cli import main
 from argfallacy.eval.analysis import AnalysisConfig, analyze
+from argfallacy.eval.analysis_report import PREVIEW_ROWS, _table
 from argfallacy.eval.html_report import write_summary
 from argfallacy.schemes import SchemeError
 from test_analysis import saved as saved_fixture
@@ -19,6 +20,30 @@ from test_analysis_dq_conformal import dq_saved as dq_fixture
 
 saved = saved_fixture
 dq_saved = dq_fixture
+
+
+def test_report_preview_preserves_full_csv_and_validates_hidden_rows(tmp_path):
+    file = tmp_path / "example.csv"
+    content = "value\n" + "\n".join(str(i) for i in range(PREVIEW_ROWS + 5)) + "\n"
+    file.write_text(content, encoding="utf-8")
+    contract = dict(
+        columns=["value"],
+        rows=PREVIEW_ROWS + 5,
+        numeric_columns=["value"],
+        sha256=hashlib.sha256(file.read_bytes()).hexdigest(),
+    )
+    manifest = dict(tables={file.name: contract}, parts={"example": {"status": "computed"}})
+    html = _table(tmp_path, file.name, manifest, {})
+    payload = html.split('<script type="application/json">')[1].split("</script>")[0]
+    assert len(json.loads(payload)["rows"]) == PREVIEW_ROWS
+    assert f'data-rows="{PREVIEW_ROWS + 5}"' in html
+    assert "Search covers this preview only" in html
+    assert 'href="example.csv"' in html
+    assert file.read_text(encoding="utf-8") == content
+    file.write_text(content.rsplit("\n", 2)[0] + "\ninvalid\n", encoding="utf-8")
+    contract["sha256"] = hashlib.sha256(file.read_bytes()).hexdigest()
+    with pytest.raises(SchemeError, match="invalid numeric"):
+        _table(tmp_path, file.name, manifest, {})
 
 
 def digests(folder):

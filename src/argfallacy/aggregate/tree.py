@@ -200,7 +200,7 @@ class PooledCalibration:
         return result
 
 
-def _tree_choice(source, outer_train, eligible, scheme):
+def _tree_choice(source, outer_train, eligible, scheme, audit=None, fold=None):
     if len(eligible) < 4:
         return TREE_GRID[0]
     gold = source.data.items.set_index("item_id").gold_fallacy
@@ -219,11 +219,25 @@ def _tree_choice(source, outer_train, eligible, scheme):
     chosen, best = TREE_GRID[0], -np.inf
     for depth, leaf in TREE_GRID:
         truth, predicted = [], []
-        for x, y, v, target in splits:
+        for inner, (x, y, v, target) in enumerate(splits):
             model = CQTree.fit(scheme, x, y, depth, leaf, source.seed)
             truth.extend(target)
-            predicted.extend(model.predict(row).verdict for row in v)
+            validation_predictions = [model.predict(row).verdict for row in v]
+            predicted.extend(validation_predictions)
+            if audit is not None:
+                train_ids, validation_ids = inner_partitions(eligible, source.seed)[inner]
+                audit({
+                    "phase": "inner", "fold": fold, "scheme": scheme.scheme_id,
+                    "inner_fold": inner, "max_depth": depth, "min_samples_leaf": leaf,
+                    "training_items": train_ids, "validation_items": validation_ids,
+                    "context_items": sorted(set(outer_train) - set(validation_ids)),
+                    "train_macro_f1": macro_f1(y, [model.predict(row).verdict for row in x]),
+                    "validation_macro_f1": macro_f1(target, validation_predictions),
+                })
         score = macro_f1(truth, predicted)
+        if audit is not None:
+            audit({"phase": "inner_pooled", "fold": fold, "scheme": scheme.scheme_id,
+                   "max_depth": depth, "min_samples_leaf": leaf, "macro_f1": score})
         if score > best + TIE:
             chosen, best = (depth, leaf), score
     return chosen
@@ -262,7 +276,7 @@ class C3Result:
 
 
 def c3_out_of_fold(source, folds=None, *, kind="tree", name=None,
-                   balanced=False) -> C3Result:
+                   balanced=False, audit=None) -> C3Result:
     """C3 on every item; ``balanced`` weighs the classes of the pooled recalibration."""
     if kind not in {"tree", "pooled"}:
         raise ValueError(f"unknown C3 model family {kind!r}")
@@ -292,7 +306,8 @@ def c3_out_of_fold(source, folds=None, *, kind="tree", name=None,
             fitting = _eligible(data, [i for i in train if metadata.loc[i, "gold_scheme"] == sid])
             classes = {metadata.loc[i, "gold_fallacy"] for i in fitting}
             depth, leaf = (
-                _tree_choice(source, train, fitting, scheme) if len(classes) > 1 else TREE_GRID[0]
+                _tree_choice(source, train, fitting, scheme, audit, fold)
+                if len(classes) > 1 else TREE_GRID[0]
             )
             model = CQTree.fit(
                 scheme,
@@ -303,6 +318,22 @@ def c3_out_of_fold(source, folds=None, *, kind="tree", name=None,
                 seed,
             )
             models[fold][sid] = model
+            if audit is not None:
+                audit({
+                    "phase": "outer", "fold": fold, "scheme": sid,
+                    "max_depth": depth, "min_samples_leaf": leaf,
+                    "training_items": fitting, "validation_items": own_test,
+                    "excluded_training_items": sorted(
+                        i for i in train
+                        if metadata.loc[i, "gold_scheme"] == sid and i not in set(fitting)
+                    ),
+                    "training_classes": sorted(classes),
+                    "missing_training_terminals": sorted(set(scheme.terminals) - classes),
+                    "train_macro_f1": macro_f1(
+                        [metadata.loc[i, "gold_fallacy"] for i in fitting],
+                        [model.predict(row).verdict for row in training.tree_features(fitting)],
+                    ) if fitting else None,
+                })
             choices.append(
                 {
                     "fold": fold,
