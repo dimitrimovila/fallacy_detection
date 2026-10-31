@@ -253,7 +253,6 @@ def test_configuration_rejects_unagreed_grid(tmp_path):
 
 
 def test_solver_checkpoint_cannot_reuse_different_inputs_or_code(tmp_path):
-    import os
     from pathlib import Path
 
     from argfallacy.eval.b3_diagnostic import digest, json_write
@@ -277,10 +276,6 @@ def test_solver_checkpoint_cannot_reuse_different_inputs_or_code(tmp_path):
         "worker_sha256": digest(package / "gosdt_worker.py"),
         "adapter_sha256": digest(package.parent / "aggregate/sparse_tree.py"),
     }
-    if os.name != "nt":
-        request.update(
-            backend="slurm_cgroup_v2", supervisor_sha256=digest(package / "gosdt_linux.py")
-        )
     json_write(folder / "request.json", request)
     json_write(folder / "result.json", {"valid": True, "status": "invented_saved"})
     json_write(folder / "supervision.json", {"result_sha256": digest(folder / "result.json")})

@@ -13,19 +13,6 @@ import traceback
 from pathlib import Path
 
 
-def write(path, value):
-    temp = path.with_suffix(".tmp")
-    temp.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
-    temp.replace(path)
-
-
-def load_module(name, path):
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("request")
@@ -34,30 +21,21 @@ def main():
     for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
         os.environ[name] = "1"
     sys.path.insert(0, args.vendor)
+    # Load the pure adapter without importing the project's main runtime dependencies.
+    path = Path(__file__).resolve().parents[1] / "aggregate" / "sparse_tree.py"
+    spec = importlib.util.spec_from_file_location("sparse_adapter", path)
+    adapter = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(adapter)
+    import numpy as np
+    import psutil
+
     request_path = Path(args.request)
     request = json.loads(request_path.read_text(encoding="utf-8"))
     output = request_path.parent / "result.json"
     start = time.perf_counter()
-    cgroup, linux = None, None
+    (request_path.parent / "ready.json").write_text(json.dumps({"ready": True}), encoding="utf-8")
     try:
-        if os.name != "nt":
-            linux = load_module("linux_resources", Path(__file__).with_name("gosdt_linux.py"))
-            if request.get("backend") != "slurm_cgroup_v2":
-                raise RuntimeError("Linux workers require verified Slurm cgroup supervision")
-            cgroup = linux.enforcement(request["memory_bytes"])
-            write(request_path.parent / "started.json", cgroup)
-        # Load the pure adapter without importing the project's main runtime dependencies.
-        path = Path(__file__).resolve().parents[1] / "aggregate" / "sparse_tree.py"
-        adapter = load_module("sparse_adapter", path)
-        import numpy as np
-
         arrays = np.load(request_path.parent / "input.npz", allow_pickle=False)
-        if os.name != "nt":
-            import signal
-
-            signal.signal(signal.SIGALRM, signal.SIG_DFL)
-            signal.setitimer(signal.ITIMER_REAL, request["seconds"] + request["grace_seconds"])
-        write(request_path.parent / "ready.json", {"ready": True})
         result = adapter.fit_gosdt(
             arrays["x"],
             arrays["y"],
@@ -82,27 +60,15 @@ def main():
             "error": f"{type(error).__name__}: {error}",
             "traceback": traceback.format_exc(),
         }
-    if os.name != "nt":
-        import resource
-        import signal
-
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
-        private = None
-        if cgroup:
-            result["linux_cgroup"] = linux.memory_report(cgroup)
-    else:
-        import psutil
-
-        memory = psutil.Process().memory_info()
-        peak = getattr(memory, "peak_wset", memory.rss)
-        private = getattr(memory, "peak_pagefile", None)
+    memory = psutil.Process().memory_info()
     result.update(
         elapsed_seconds=time.perf_counter() - start,
-        peak_working_set_bytes=peak,
-        peak_private_bytes=private,
+        peak_working_set_bytes=getattr(memory, "peak_wset", memory.rss),
+        peak_private_bytes=getattr(memory, "peak_pagefile", None),
     )
-    write(output, result)
+    temp = output.with_suffix(".tmp")
+    temp.write_text(json.dumps(result, allow_nan=False), encoding="utf-8")
+    temp.replace(output)
 
 
 if __name__ == "__main__":

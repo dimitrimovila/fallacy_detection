@@ -860,8 +860,9 @@ argumentative validity. Run artifacts contain no new LLM calls or annotations.
 The fixed protocol is in [spec 12](docs/specs/12_gosdt_structure_learning.md).
 The optional native GOSDT dependency is loaded by a separate worker from an
 explicitly supplied interpreter and vendor directory; the command never installs
-packages or creates cluster allocations. Supervision supports Windows Job Objects
-and numbered Linux Slurm steps with verified cgroup-v2 memory enforcement.
+packages or creates cluster allocations. The retained local supervisor uses
+Windows Job Objects. The one-off Linux/Slurm deployment was retired after the
+completed experiment and verified local preservation.
 
 ```powershell
 argfallacy evaluate-gosdt configs/gosdt_schemes2_diagnostic.yaml --worker-python <python-path> --worker-vendor <vendor-directory> --check-only
@@ -874,7 +875,9 @@ recorded hashes before reusing completed checkpoints. The run retains all 601
 arguments in canonical scoring and saves full trees, held-out library/replay
 comparisons, candidate scores, selected configurations, native status/bounds and
 resource records. Missing required solver fits make the scientific comparison
-incomplete. The [CPU deployment runbook](docs/gosdt_cluster_runbook.md) describes
-private runtime setup, verified input transfer and the synthetic preflight that
-gates cluster execution. Native cluster enforcement remains a deployment check,
-not a claim established by local tests.
+incomplete. The completed experiment and interpretation are documented in
+[research findings F20](docs/research_findings.md#f20--completed-gosdt-versus-matched-binary-cart-diagnostic).
+The exact executed cluster source and environment records are preserved with the
+local result archive and remain recoverable from commit 969f36e. Existing cluster
+checkpoints cannot be resumed using the cleaned local code because source hashes
+have deliberately changed.
