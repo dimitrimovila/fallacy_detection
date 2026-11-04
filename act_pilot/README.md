@@ -66,7 +66,10 @@ a boundary must have a fold; items of other schemes or classes are ignored.
    - all candidate questions are saved; the selected one is the best on the **inner
      validation** set (ties to the earliest step), never on training;
    - three seeds (0, 1, 2) change the examples shown to the optimizer.
-3. **Evaluation** on the outer folds (`evaluation/`, `report.md`):
+3. **Content-validity template**: `content_validity_template.csv` lists every question to be
+   rated by hand. It needs only the ACT stage, so the ratings are given before the
+   evaluation, without seeing any result.
+4. **Evaluation** on the outer folds (`evaluation/`, `report.md`):
    - candidates: the original CQ, the hand-written rewrites (`manual_rewrites.yaml`), the
      question selected by ACT for each seed (one per outer fold, chosen without that fold),
      and four generic control questions;
@@ -79,9 +82,12 @@ a boundary must have a fold; items of other schemes or classes are ignored.
      are described only (counts and class recalls);
    - lexical predictability: out-of-fold AUC of a TF-IDF + logistic regression that predicts the
      **answer** of the LLM to each question, with the most weighted terms;
-   - acceptance of each manual and ACT candidate (below).
-4. **Content-validity template**: `content_validity_template.csv` lists every question to be
-   rated by hand.
+   - acceptance of each manual and ACT candidate (below);
+   - sensitivity: the same evaluation with the "cannot determine" and unreadable answers
+     counted as the positive class (`evaluation.sensitivity_policies`), on the same answers
+     and the same ACT questions, so it makes no further call
+     (`evaluation/<B>_questions_positive.csv`, `<B>_sources_positive.csv` and a section of
+     the report).
 
 ## Acceptance criterion
 
@@ -103,11 +109,16 @@ optionally, `rater` and `notes`. Questions are matched ignoring case and spacing
 - **"cannot determine" and unreadable answers.** The prompt asks for yes or no. A reply that
   says the answer cannot be determined is kept as a third category and counted per question;
   for the metrics it counts as "no" (`evaluation.undetermined_policy: negative`), because only
-  "yes" stands for the positive class. The alternative `positive` exists; excluding such items
-  would make the paired comparisons run on different item sets, so it is not offered.
+  "yes" stands for the positive class. The alternative `positive` is computed as a sensitivity
+  analysis (`evaluation.sensitivity_policies: [positive]`): the answers are the same, only
+  their mapping changes, and the ACT questions are those selected under the primary policy.
+  Excluding such items would make the paired comparisons run on different item sets, so it is
+  not offered.
 - **Seeds and small groups.** When a group has fewer than `m` correct or wrong examples, all of
-  them are shown and the seed only changes their order. With about 100 items per class the
-  groups are larger than 20 and the seeds also change which examples are shown.
+  them are shown and the seed only changes their order. The development set has 21 and 67
+  items for B1 and 25 and 36 for B2, so an inner training set has fewer than 20 items of
+  the positive class: many groups have fewer than 20 correct or wrong examples, and for them
+  the seeds change the order more than the choice of the examples shown.
 - **The rewrite prompt includes the earlier questions** with their training balanced accuracy
   (never the validation one). At temperature 0 with a cache, a step after a rejected one would
   otherwise send the same prompt and get the same rejected reply.
@@ -137,9 +148,12 @@ runs the whole pipeline in about ten seconds.
 ## Running on the cluster with vLLM
 
 The two roles can use different models, each behind its own OpenAI-compatible server. The
-defaults of `configs/pilot.yaml` are Qwen3.8 27B (answerer) and Gemma 4 31B (optimizer), both
-with reasoning off, as in `serving/models.yaml`. vLLM is installed and launched as described in
-`serving/README.md`; `serving/serve_command.py <entry>` prints the model, its pinned revision
+defaults of `configs/pilot.yaml` are Qwen3.8 27B (answerer, reasoning off) and gpt oss 120b
+(optimizer, reasoning at low effort, which cannot be switched off), as in
+`serving/models.yaml`. Each model needs one GPU of at least 96 GB or two of 48 GB, and the two
+servers run at the same time: four 48 GB GPUs (or two of 96 GB) in all. A node with two 48 GB
+GPUs, such as `labdasan0`, holds one of the two servers only. vLLM is installed and launched
+as described in `serving/README.md`; `serving/serve_command.py <entry>` prints the model, its pinned revision
 and its flags. In an interactive job with GPUs, start the two servers:
 
 ```bash
@@ -147,7 +161,7 @@ vllm serve $(python ../serving/serve_command.py qwen3_8_27b) --port 8000 --host 
 ```
 
 ```bash
-vllm serve $(python ../serving/serve_command.py gemma4_31b) --port 8001 --host 127.0.0.1
+vllm serve $(python ../serving/serve_command.py gpt_oss_120b) --port 8001 --host 127.0.0.1
 ```
 
 Then, in the client environment (this package installed), point the roles at the servers and
@@ -174,20 +188,27 @@ results of other folds and seeds already on disk are kept. Every reply is cached
 `runs/act_pilot/cache/`, so an interrupted run resumes where it stopped, and every request is
 logged in `runs/act_pilot/calls.jsonl`.
 
-Evaluate and write the report:
-
-```bash
-act-pilot evaluate --config configs/pilot.yaml
-```
-
-Write the template of the ratings, copy it to `content_validity.csv`, fill in the scores and
-evaluate again (only the acceptance changes; all answers come from the cache):
+Write the template of the ratings, copy it to `content_validity.csv` (next to
+`manual_rewrites.yaml`, the path of `content_validity` in the configuration) and fill in the
+scores **before** the evaluation:
 
 ```bash
 act-pilot validity-template --config configs/pilot.yaml
 ```
 
-`act-pilot all --config configs/pilot.yaml` runs the three stages in sequence. Outputs go to
+Content validity is judged on the text of the questions only, without seeing any result:
+not `report.md`, not `evaluation/`, and not the scores of the candidates in `act/`. The
+template holds the questions and their candidate ids, and no score.
+
+Then evaluate and write the report:
+
+```bash
+act-pilot evaluate --config configs/pilot.yaml
+```
+
+`act-pilot all --config configs/pilot.yaml` runs the ACT stage, the evaluation and the
+template in sequence, so it evaluates before the ratings exist: acceptance stays pending, and
+the report it writes must not be read before the ratings are given. Outputs go to
 `runs/act_pilot/`, which git ignores.
 
 ## Outputs
@@ -202,6 +223,8 @@ runs/act_pilot/
   evaluation/<B>_items.csv         one row per item and candidate or baseline
   evaluation/<B>_questions.csv     one row per candidate or baseline: metrics and acceptance
   evaluation/<B>_sources.csv       the same per source
+  evaluation/<B>_questions_<P>.csv the same under the sensitivity policy <P> (same answers)
+  evaluation/<B>_sources_<P>.csv   the same per source
   content_validity_template.csv    the questions to rate
   report.md                        the report
 ```

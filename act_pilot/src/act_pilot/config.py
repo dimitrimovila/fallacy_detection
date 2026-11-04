@@ -89,6 +89,8 @@ class EvaluationConfig:
     ci_level: float = 0.95
     min_items_per_class_in_source: int = 10
     undetermined_policy: str = "negative"
+    # further policies under which the evaluation is repeated on the same answers
+    sensitivity_policies: tuple[str, ...] = ()
     min_content_validity: int = 2
     lexical: LexicalConfig = field(default_factory=LexicalConfig)
 
@@ -252,11 +254,22 @@ def load_config(path: str | Path) -> PilotConfig:
                             ("cart_depths",))
     )
     evaluation = EvaluationConfig(
-        lexical=lexical, **_dataclass_kwargs(EvaluationConfig, ev_raw, "evaluation")
+        lexical=lexical,
+        **_dataclass_kwargs(EvaluationConfig, ev_raw, "evaluation", ("sensitivity_policies",)),
     )
     if evaluation.undetermined_policy not in UNDETERMINED_POLICIES:
         raise ConfigError(
             f"evaluation.undetermined_policy must be one of {UNDETERMINED_POLICIES}"
+        )
+    sensitivity = evaluation.sensitivity_policies
+    if (
+        any(p not in UNDETERMINED_POLICIES for p in sensitivity)
+        or evaluation.undetermined_policy in sensitivity
+        or len(set(sensitivity)) != len(sensitivity)
+    ):
+        raise ConfigError(
+            "evaluation.sensitivity_policies: distinct policies among "
+            f"{UNDETERMINED_POLICIES}, other than undetermined_policy"
         )
 
     boundaries_raw = _section(top["boundaries"], set(top["boundaries"] or {}), "boundaries")

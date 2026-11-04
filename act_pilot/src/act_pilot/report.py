@@ -244,6 +244,12 @@ def render_report(
         f"{ev_cfg.ci_level:.0%} percentile intervals; McNemar exact test.",
         f"- 'cannot determine' and unreadable answers count as the "
         f"{ev_cfg.undetermined_policy} class; their numbers are reported per question.",
+        *(
+            [f"- Sensitivity: the evaluation is repeated on the same answers with them counted "
+             f"as the {', '.join(ev_cfg.sensitivity_policies)} class; the ACT questions stay "
+             f"those selected under the {ev_cfg.undetermined_policy} policy."]
+            if ev_cfg.sensitivity_policies else []
+        ),
         f"- A source is evaluable with at least {ev_cfg.min_items_per_class_in_source} items "
         f"per class.",
         "",
@@ -379,6 +385,36 @@ def render_report(
                 f"{fmt(lx.auc)}; yes terms: {', '.join(lx.positive_terms) or 'n/a'}; "
                 f"no terms: {', '.join(lx.negative_terms) or 'n/a'}"
             )
+
+        for alt in ev.sensitivity:
+            lines += [
+                "",
+                f"### Sensitivity: undetermined and unreadable answers as "
+                f"{alt.undetermined_policy}",
+                "",
+                "Same answers and same ACT questions; only their mapping to a class changes. "
+                "Acceptance here is computed with this mapping, for comparison only.",
+                "",
+            ]
+            main = {s.candidate.candidate_id: s for s in ev.questions}
+            lines += _md_table(
+                ["candidate", "BA", f"BA ({ev.undetermined_policy})",
+                 "delta vs original [CI]", "acceptance",
+                 f"acceptance ({ev.undetermined_policy})"],
+                [
+                    [s.candidate.candidate_id, fmt(s.ba),
+                     fmt(main[s.candidate.candidate_id].ba),
+                     f"{_signed(s.difference.value)} [{_signed(s.difference.low)}, "
+                     f"{_signed(s.difference.high)}]" if s.candidate.kind != "original" else "",
+                     s.acceptance.status if s.acceptance else "",
+                     main[s.candidate.candidate_id].acceptance.status
+                     if main[s.candidate.candidate_id].acceptance else ""]
+                    for s in alt.questions
+                ],
+            )
+            lines += ["", "The lexical baselines do not depend on the answers: "
+                      + ", ".join(f"{x.result.name} {fmt(x.ba)}" for x in alt.baselines
+                                  if x.result.name != "source_only") + "."]
 
         act_rows = read_act_summary(act_dir, b.id)
         lines += ["", "### ACT runs", ""]

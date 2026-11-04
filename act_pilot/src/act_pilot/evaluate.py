@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 
 from .acceptance import Acceptance, SourceComparison, assess
 from .act import answer_items
-from .answers import Answer
+from .answers import Answer, to_prediction
 from .baselines import BaselineResult, LexicalPredictability, lexical_predictability
 from .config import Boundary, ControlQuestion, EvaluationConfig
 from .constraints import check_question
@@ -113,6 +113,13 @@ def predict(
     return CandidatePredictions(candidate, [a for a in answers if a is not None], raw, preds)
 
 
+def with_policy(cp: CandidatePredictions, policy: str) -> CandidatePredictions:
+    """The same answers mapped to classes with another ``undetermined_policy``; no call."""
+    return CandidatePredictions(
+        cp.candidate, cp.answers, cp.raw, [to_prediction(a, policy) for a in cp.answers]
+    )
+
+
 @dataclass
 class SourceRow:
     name: str
@@ -165,6 +172,9 @@ class BoundaryEvaluation:
     sources: dict[str, tuple[int, int]]
     evaluable_sources: list[str]
     notes: list[str]
+    undetermined_policy: str = "negative"
+    # the same evaluation under each of evaluation.sensitivity_policies
+    sensitivity: list[BoundaryEvaluation] = field(default_factory=list)
 
 
 def _source_rows(
@@ -314,4 +324,5 @@ def summarise_boundary(
         sources=dict(sorted(sources.items())),
         evaluable_sources=evaluable,
         notes=list(notes),
+        undetermined_policy=cfg.undetermined_policy,
     )

@@ -3,6 +3,7 @@
 import csv
 import time
 
+from act_pilot.answers import Answer
 from act_pilot.cli import main
 from act_pilot.config import load_config
 from act_pilot.pipeline import BudgetExceeded, estimate, load_inputs, run_all
@@ -31,7 +32,8 @@ def test_end_to_end_with_fakes(tmp_path):
     for bid in ("B1", "B2"):
         for name in (f"act/{bid}_act_candidates.csv", f"act/{bid}_act_selected.csv",
                      f"evaluation/{bid}_items.csv", f"evaluation/{bid}_questions.csv",
-                     f"evaluation/{bid}_sources.csv"):
+                     f"evaluation/{bid}_sources.csv", f"evaluation/{bid}_questions_positive.csv",
+                     f"evaluation/{bid}_sources_positive.csv"):
             assert (out / name).exists(), name
         selected = _read(out / f"act/{bid}_act_selected.csv")
         assert len(selected) == 5 * 2  # outer folds x seeds
@@ -61,8 +63,26 @@ def test_end_to_end_with_fakes(tmp_path):
                     "### Acceptance", "### Per source", "### ACT runs"):
         assert heading in report
     assert chr(0x2014) not in report and chr(0x2013) not in report
+    assert "### Sensitivity: undetermined and unreadable answers as positive" in report
     b1 = next(e for e in evaluations if e.boundary.id == "B1")
     assert b1.evaluable_sources == ["NLAS"]
+
+    # The sensitivity analysis maps the same answers; only "cannot determine" and unreadable
+    # answers change class, and the candidates are the same.
+    (alt,) = b1.sensitivity
+    assert alt.undetermined_policy == "positive"
+    assert [q.candidate for q in alt.questions] == [q.candidate for q in b1.questions]
+    changed = 0
+    for main_p, alt_p in zip(b1.predictions, alt.predictions, strict=True):
+        assert main_p.answers == alt_p.answers
+        for answer, a, b in zip(main_p.answers, main_p.predictions, alt_p.predictions,
+                                strict=True):
+            if answer in (Answer.YES, Answer.NO):
+                assert a == b
+            else:
+                assert (a, b) == (0, 1)
+                changed += 1
+    assert changed > 0
 
     # A second run is answered entirely from the cache.
     answerer2, optimizer2 = FakeAnswerer(), FakeOptimizer()

@@ -10,6 +10,8 @@ Output layout under ``output_dir``::
     evaluation/<B>_items.csv          one row per item and candidate or baseline
     evaluation/<B>_questions.csv      one row per candidate or baseline
     evaluation/<B>_sources.csv        one row per candidate or baseline and source
+    evaluation/<B>_questions_<P>.csv  the same under sensitivity policy <P>, same answers
+    evaluation/<B>_sources_<P>.csv
     content_validity_template.csv     the questions to rate by hand
     report.md                         the report
 """
@@ -18,7 +20,7 @@ from __future__ import annotations
 
 import csv
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from .acceptance import load_content_validity, write_validity_template
@@ -27,7 +29,13 @@ from .baselines import source_only, tfidf_cart, tfidf_rulefit
 from .config import PilotConfig, load_manual_rewrites
 from .costs import BoundaryCost, estimate_boundary, format_costs
 from .data import LabeledItem, boundary_items, load_folds, load_items
-from .evaluate import BoundaryEvaluation, build_candidates, predict, summarise_boundary
+from .evaluate import (
+    BoundaryEvaluation,
+    build_candidates,
+    predict,
+    summarise_boundary,
+    with_policy,
+)
 from .llm import ChatBackend, LLMClient, make_clients, total_stats
 from .report import (
     act_candidate_rows,
@@ -178,16 +186,27 @@ def evaluate_stage(
         lexical = config.evaluation.lexical
         baselines = [tfidf_cart(items, lexical), tfidf_rulefit(items, lexical),
                      source_only(items)]
-        ev = summarise_boundary(
-            boundary, items, predictions, baselines, config.evaluation,
+        common = dict(
             validity_scores=validity,
             max_logical_ops=config.act.max_logical_ops,
             max_question_chars=config.act.max_question_chars,
             notes=notes,
         )
+        ev = summarise_boundary(boundary, items, predictions, baselines, config.evaluation,
+                                **common)
         write_item_csv(out_dir / f"{bid}_items.csv", ev)
         write_question_csv(out_dir / f"{bid}_questions.csv", ev)
         write_source_csv(out_dir / f"{bid}_sources.csv", ev)
+        # Sensitivity: the same answers, mapped with another policy. The ACT questions stay
+        # those selected under evaluation.undetermined_policy.
+        for policy in config.evaluation.sensitivity_policies:
+            alt = summarise_boundary(
+                boundary, items, [with_policy(p, policy) for p in predictions], baselines,
+                replace(config.evaluation, undetermined_policy=policy), **common,
+            )
+            write_question_csv(out_dir / f"{bid}_questions_{policy}.csv", alt)
+            write_source_csv(out_dir / f"{bid}_sources_{policy}.csv", alt)
+            ev.sensitivity.append(alt)
         evaluations.append(ev)
     stats = total_stats([answerer, *extra_stats_clients])
     report = render_report(config, evaluations, costs, stats, act_dir(config))

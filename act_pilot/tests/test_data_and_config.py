@@ -31,6 +31,8 @@ def test_pilot_config_loads(monkeypatch):
     assert config.act.steps == 10 and config.act.examples_per_group == 20
     assert config.act.seeds == (0, 1, 2) and config.llm.temperature == 0.0
     assert len(config.controls) == 4
+    assert config.evaluation.undetermined_policy == "negative"
+    assert config.evaluation.sensitivity_policies == ("positive",)
     manual = load_manual_rewrites(config.manual_rewrites, config.boundaries)
     assert len(manual["B1"]) == 3 and len(manual["B2"]) == 3
 
@@ -56,6 +58,16 @@ def test_nonzero_temperature_is_refused(tmp_path):
     raw["llm"]["temperature"] = 0.7
     path.write_text(yaml.safe_dump(raw))
     with pytest.raises(ConfigError, match="temperature"):
+        load_config(path)
+
+
+@pytest.mark.parametrize("policies", [["negative"], ["positive", "positive"], ["both"]])
+def test_sensitivity_policies_are_checked(tmp_path, policies):
+    path = make_config(tmp_path)
+    raw = yaml.safe_load(path.read_text())
+    raw["evaluation"]["sensitivity_policies"] = policies
+    path.write_text(yaml.safe_dump(raw))
+    with pytest.raises(ConfigError, match="sensitivity_policies"):
         load_config(path)
 
 
