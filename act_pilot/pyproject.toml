@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "act-pilot"
+version = "0.1.0"
+description = "Pilot: rewriting two Walton critical questions by hand and with a depth-one ACT loop"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Dumitru Movila" }]
+
+dependencies = [
+    "pyyaml>=6.0",
+    "numpy>=1.23",
+    "scipy>=1.11",
+    # RuleFit in imodels still passes penalty="l1" to LogisticRegression; scikit-learn
+    # deprecates that argument in 1.8 and removes it in 1.10, so the upper bound keeps the
+    # L1 sparsity that RuleFit depends on.
+    "scikit-learn>=1.5,<1.10",
+    "imodels>=2.0",          # RuleFit baseline, MIT licence
+    "six>=1.16",             # imported by imodels but not declared by every release
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+act-pilot = "act_pilot.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/act_pilot"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    "ignore::FutureWarning:sklearn.*",
+    "ignore::UserWarning:sklearn.*",
+]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

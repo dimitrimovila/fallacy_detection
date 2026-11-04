@@ -1,0 +1,140 @@
+# Configuration of the ACT pilot. Relative paths are resolved against this file's folder;
+# ${VAR} is expanded from the environment (set ACT_PILOT_DATA to the folder that holds the
+# two CSV files, prepared outside this repository).
+
+data:
+  items: ${ACT_PILOT_DATA}/items.csv     # item_id, text, scheme, gold, source
+  folds: ${ACT_PILOT_DATA}/folds.csv     # item_id, outer_fold (0 to 4)
+  # columns: {scheme: gold_scheme, gold: gold_fallacy}   # remap if the names differ
+
+n_outer_folds: 5
+manual_rewrites: ../manual_rewrites.yaml
+content_validity: ../content_validity.csv   # filled in by hand; until then (iii) is pending
+output_dir: ../runs/act_pilot               # ignored by git (runs/)
+
+llm:
+  # Two roles, each with its own server; the URLs come from the environment.
+  answerer:
+    model: Qwen/Qwen3.8-27B
+    base_url_env: LLM_BASE_URL
+    api_key_env: LLM_API_KEY
+    max_tokens: 512
+    extra_body: {chat_template_kwargs: {enable_thinking: false}}
+  optimizer:
+    model: google/gemma-4-31B-it
+    base_url_env: OPTIMIZER_BASE_URL
+    api_key_env: OPTIMIZER_API_KEY
+    max_tokens: 1024
+    extra_body: {chat_template_kwargs: {enable_thinking: false}}
+  temperature: 0.0
+  timeout_s: 180
+  max_retries: 4
+  backoff_s: 2.0
+  max_workers: 16
+
+act:
+  steps: 10                    # k: rewrite steps; k + 1 questions are evaluated per run
+  examples_per_group: 20       # m: correct and wrong examples shown per group
+  seeds: [0, 1, 2]             # seeds of the sampling of the examples shown
+  validation_fraction: 0.2     # inner validation share of the outer training folds
+  split_seed: 2026             # the inner split of outer fold f uses split_seed + f
+  max_logical_ops: 2
+  max_rewrite_attempts: 3
+  specific_term_max_df: 0.05
+  max_question_chars: 300
+  max_example_chars: 800
+  show_error_reasoning: true
+
+evaluation:
+  bootstrap: 5000
+  bootstrap_seed: 12345
+  ci_level: 0.95
+  min_items_per_class_in_source: 10
+  undetermined_policy: negative   # "cannot determine" and unreadable answers count as "no"
+  min_content_validity: 2
+  lexical:
+    max_features: 2000
+    min_df: 2
+    ngram_max: 2
+    cart_depths: [2, 3, 4, 5]
+    rulefit_max_rules: 30
+    rulefit_n_estimators: 100
+    rulefit_cv: true          # imodels picks the L1 strength by 5-fold CV
+    inner_folds: 3
+    top_terms: 10
+    random_state: 0
+
+controls:
+  - id: control_length
+    question: Is the text longer than three sentences?
+  - id: control_named_person
+    question: Does the text mention a specific person by name?
+  - id: control_formal
+    question: Is the tone of the text formal?
+  - id: control_question
+    question: Does the text contain a question?
+
+boundaries:
+  B1:
+    scheme: popular_opinion
+    positive: good_argumentation
+    negative: ad_populum
+    seed_question: >-
+      Is the fact that A is considered to be true (or false) by many people a good reason
+      to believe that A is in fact true (or false)?
+    scheme_text: |
+      If a large majority of some reference group accept A as true, then there is a
+      presumption in favour of A.
+      A large majority of the reference group accept A as true.
+      Therefore there is a presumption in favour of A.
+    question_function: >-
+      It tests whether wide acceptance of A is, in this argument, an adequate ground for
+      the presumption that A is true, or whether popularity is used as if it were evidence
+      of truth.
+    positive_description: >-
+      The argument is acceptable as it stands: wide acceptance supports a presumption in
+      favour of A without being treated as proof.
+    negative_description: >-
+      The argument uses the popularity of a premise or a thesis as evidence of its truth.
+    banned_terms:
+      - ad populum
+      - argumentum ad populum
+      - bandwagon
+      - appeal to popularity
+      - appeal to majority
+      - appeal to the people
+      - popular opinion
+      - fallacy
+      - fallacious
+      - good argumentation
+      - argumentation scheme
+  B2:
+    scheme: ad_hominem
+    positive: poisoning_the_well
+    negative: ad_hominem_abusive
+    seed_question: >-
+      Is a direct attack on the other person used as a pretext to discredit them even
+      before the discussion has begun?
+    scheme_text: |
+      a is a person of bad character.
+      Therefore, a's argument A should not be accepted.
+    question_function: >-
+      It tests whether the attack on the person is pre-emptive, meant to discredit in
+      advance whatever the person says, as opposed to a personal attack made in place of a
+      reply to an argument.
+    positive_description: >-
+      A pre-emptive attack against an opponent: the audience is prepared from the start with
+      negative information about the opponent, to make one's own thesis more acceptable or
+      to lessen the credibility of the opponent's.
+    negative_description: >-
+      An attack on the person making the argument, rather than on the argument itself, when
+      the attack is entirely irrelevant to the argument they are making.
+    banned_terms:
+      - ad hominem
+      - poisoning the well
+      - poison the well
+      - poisoning
+      - abusive
+      - fallacy
+      - fallacious
+      - argumentation scheme
