@@ -153,8 +153,8 @@ defaults of `configs/pilot.yaml` are Qwen3.8 27B (answerer, reasoning off) and g
 `serving/models.yaml`. Each model needs one GPU of at least 96 GB or two of 48 GB, and the two
 servers run at the same time: four 48 GB GPUs (or two of 96 GB) in all. A node with two 48 GB
 GPUs, such as `labdasan0`, holds one of the two servers only. vLLM is installed and launched
-as described in `serving/README.md`; `serving/serve_command.py <entry>` prints the model, its pinned revision
-and its flags. In an interactive job with GPUs, start the two servers:
+as described in `serving/README.md`; `serving/serve_command.py <entry>` prints the model, its
+pinned revision and its flags. In an interactive job with GPUs, start the two servers:
 
 ```bash
 vllm serve $(python ../serving/serve_command.py qwen3_8_27b) --port 8000 --host 127.0.0.1
@@ -187,6 +187,47 @@ A single boundary, fold or seed can be run with `--boundary B1`, `--folds 0 1`, 
 results of other folds and seeds already on disk are kept. Every reply is cached under
 `runs/act_pilot/cache/`, so an interrupted run resumes where it stopped, and every request is
 logged in `runs/act_pilot/calls.jsonl`.
+
+### On node22 (UPSCALE)
+
+`slurm/pilot_node22.sbatch` runs the ACT stage in one job with four of the six L40S GPUs of
+`node22` (partition `pgpu_dm`, account `dm_warm_up`): Qwen3.8 27B on the first two GPUs of the
+job (port 8000) and gpt oss 120b on the other two (port 8001), each with the `serve_args` of
+`serving/models.yaml` and `--tensor-parallel-size 2`, in the Apptainer image of
+`serving/apptainer/vllm.def`. It waits for `/health` of both servers (`HEALTH_TIMEOUT` of the
+`.env`), checks that each port serves the model of its role, runs `run-act`, and stops the
+servers and waits for the GPUs to be released, as `serving/slurm/common.sh` does. It does not
+evaluate. It refuses to start if port 8000 or 8001 is already in use on the node.
+
+Once, before the first job:
+
+1. Copy the folder with `items.csv` and `folds.csv` to the project storage of the cluster.
+2. The image has vLLM and the libraries of the main client, not scikit-learn, SciPy and
+   imodels. Install them into a folder of the project storage with the Python of the image,
+   on a compute node (the login node runs no Python), with `CONTAINER` and `ACT_PILOT_DEPS`
+   set to the values of the `.env`:
+
+   ```bash
+   mkdir -p $ACT_PILOT_DEPS && srun --partition=pgpu_dm --account=dm_warm_up --cpus-per-task=4 --mem=16G --time=00:30:00 apptainer exec --bind $ACT_PILOT_DEPS $CONTAINER python3 -m pip install --target $ACT_PILOT_DEPS "scikit-learn>=1.5,<1.10" "scipy>=1.11" "imodels>=2.0" "six>=1.16"
+   ```
+
+   Only the client puts this folder on its path; the servers use the libraries of the image.
+3. Add to the `.env` at the root of the repository, next to `CONTAINER`, `HF_HOME`,
+   `TIKTOKEN_ENCODINGS_BASE`, `LLM_API_KEY` and `HEALTH_TIMEOUT`: `ACT_PILOT_DATA` (the
+   folder of step 1) and `ACT_PILOT_DEPS` (the folder of step 2).
+
+Then, from the root of the repository, with `runs/slurm/` already there for the log:
+
+```bash
+sbatch act_pilot/slurm/pilot_node22.sbatch --max-calls 21000
+```
+
+The arguments go to `run-act` (`--max-calls`, `--boundary`, `--folds`, `--seeds`). The job
+checks the configuration and the data with `estimate` before starting the servers; one that
+runs out of its three days is resubmitted with the same arguments and resumes from the cache.
+The template of the ratings needs no server. The evaluation does: it answers every question on
+the held-out folds (the evaluation answers of `cost_estimate.md`), so it runs in a later job
+with the answerer, after the ratings.
 
 Write the template of the ratings, copy it to `content_validity.csv` (next to
 `manual_rewrites.yaml`, the path of `content_validity` in the configuration) and fill in the
