@@ -167,7 +167,14 @@ class DiskCache:
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_suffix(f".{os.getpid()}.{threading.get_ident()}.tmp")
         tmp.write_text(json.dumps(record, ensure_ascii=False), encoding="utf-8")
-        os.replace(tmp, path)
+        try:
+            os.replace(tmp, path)
+        except PermissionError:
+            # Windows refuses to replace a file that another thread is replacing or reading.
+            # A file already at the path is a complete record of the same key, so it is kept.
+            tmp.unlink(missing_ok=True)
+            if not path.exists():
+                raise
 
 
 class CallLog:

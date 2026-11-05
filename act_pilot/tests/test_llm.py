@@ -1,5 +1,6 @@
 import io
 import json
+import os
 import urllib.error
 
 import pytest
@@ -45,6 +46,22 @@ def test_cache_persists_across_clients(tmp_path):
     backend = FakeAnswerer()
     _client(tmp_path, backend).ask(prompt, "Text A")
     assert backend.calls == []
+
+
+def test_cache_put_survives_a_refused_replace(tmp_path, monkeypatch):
+    # On Windows a replace of a file that another thread is replacing or reading is refused.
+    cache = DiskCache(tmp_path)
+    cache.put("ab" + "0" * 62, {"response": "first"})
+
+    def refuse(src, dst):
+        raise PermissionError(5, "access denied", str(dst))
+
+    monkeypatch.setattr(os, "replace", refuse)
+    cache.put("ab" + "0" * 62, {"response": "second"})
+    assert cache.get("ab" + "0" * 62) == "first"
+    assert list(tmp_path.rglob("*.tmp")) == []
+    with pytest.raises(PermissionError):  # nothing stored under the key: the error stays
+        cache.put("cd" + "0" * 62, {"response": "third"})
 
 
 def test_cache_key_depends_on_model_prompt_and_text():
