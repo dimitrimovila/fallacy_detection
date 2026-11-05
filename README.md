@@ -234,6 +234,14 @@ report read the diagrams from there; a manifest without it means `schemes/v1/`. 
 version 2.0 the report leaves out the agreement with the per-CQ annotation, which answers the
 CQs of version 1.1.
 
+`docs/schemes_v2.md` describes the eight schemes of version 2.0 (questions, diagrams, an
+index from fallacy to schemes and the hashes of the source files). It is generated from
+`schemes/v2/*.yaml` and written again after any change to them:
+
+```bash
+python serving/schemes_v2_doc.py
+```
+
 On the cluster two Slurm jobs do this, launching and stopping the servers themselves
 (preparation in `serving/README.md`):
 
