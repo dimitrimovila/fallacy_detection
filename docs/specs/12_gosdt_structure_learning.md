@@ -140,7 +140,10 @@ dynamic program avoids any additional tuning grid. For node v:
     F(v) = min(F_stop(v), F(left(v)) + F(right(v)))
 
 At an existing leaf only stopping is possible. Choose the minimum-cost prediction
-at a stopped node; ties use canonical class order. On objective equality within
+at a stopped node; ties use canonical class order. The prediction is chosen on the nominal
+float64 costs, two costs within 1e-12 being a tie, while the stored effective values still
+give the risk and J: on the float32 matrix an exact tie, such as every balanced root, would
+otherwise be decided by rounding. The same rule chooses the class of an analytic root. On objective equality within
 1e-12 prefer stopping, hence fewer leaves. This gives the minimum J among rooted
 subtrees of the grown greedy tree, not among all possible binary trees. Verify
 this claim against exhaustive pruning enumeration on small invented trees.

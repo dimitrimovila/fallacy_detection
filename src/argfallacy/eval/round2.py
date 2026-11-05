@@ -15,6 +15,7 @@ import json
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from functools import partial
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any
@@ -94,6 +95,7 @@ from .uncertainty import (
     composition,
     conformal_sets,
     conformal_summary,
+    nested_calibration,
 )
 
 ROUND2_RUNS = ("answers_schemes_2", "ssoft", "ssoft_nohistory")
@@ -359,6 +361,18 @@ def _b1_family(data, labels, folds, seed, configs) -> dict[str, B1Result]:
     return results
 
 
+def _refit_b1(data, labels, seed, b1_config, folds, target=None):
+    """The aggregations of a B1 configuration fitted out of fold under ``folds``; with
+    ``target``, its coefficients transferred to the dataset of the schemes 2.0."""
+    result = b1_out_of_fold(data, labels, folds, seed, b1_config)
+    return (transfer_b1(result, target) if target is not None else result).aggregations
+
+
+def _refit_pooled(source, folds):
+    """The aggregations of B3.pooled fitted out of fold under ``folds``."""
+    return b3_out_of_fold(source, folds, kind="pooled").aggregations
+
+
 def _choices(component: str, choices: Sequence[Mapping[str, Any]]) -> list[dict]:
     """Long rows: fold, component, scheme, parameter, value."""
     rows = []
@@ -457,7 +471,9 @@ def evaluate_round2(config: EvaluationConfig, runs_dir: str | Path,
                 "conformal export overlap with evaluation inputs or output")
 
     capture = {} if conformal_export_dir is not None else None
-    extra = {"conformal_capture": capture} if capture is not None else {}
+    calibration = {} if capture is not None else None
+    extra = ({"conformal_capture": capture, "conformal_calibration": calibration}
+             if capture is not None else {})
     out, items, folds, indices, without_indices, labels = _round2_tables(
         config, runs_dir, out_root, items_path, annotations_path, progress, **extra)
     gc.collect()
@@ -473,7 +489,8 @@ def evaluate_round2(config: EvaluationConfig, runs_dir: str | Path,
         export_calculated_conformal(config, runs_dir, out, items, capture,
                                     conformal_export_dir, [items_path, annotations_path],
                                     {"elapsed_seconds": time.perf_counter() - calculation_started,
-                                     "peak_process_memory_bytes": peak_memory_bytes()})
+                                     "peak_process_memory_bytes": peak_memory_bytes()},
+                                    calibration)
     write_summary(out)
     return out
 
@@ -481,7 +498,7 @@ def evaluate_round2(config: EvaluationConfig, runs_dir: str | Path,
 def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
                    out_root: str | Path, items_path: str | Path,
                    annotations_path: str | Path, progress: Callable[[str], None] | None,
-                   conformal_capture=None):
+                   conformal_capture=None, conformal_calibration=None):
     """Compute round 2 and write it into ``out_root/<name>/``."""
     say = progress or (lambda message: None)
     runs_dir = Path(runs_dir)
@@ -906,18 +923,37 @@ def _round2_tables(config: EvaluationConfig, runs_dir: str | Path,
         abstention_rows.append(row)
         curves.append(own_curve)
         kinds += composition(name, ids, ranked, by_item, LEVELS)
-    conformal = []
+    # The systems fitted on labels refit with two folds merged (P13): the threshold of a
+    # fold then depends on no label of that fold.
+    refits = {}
+    for name, result in v2.items():
+        if result.config.supervision != "none":
+            refits[name] = partial(_refit_b1, data, labels, config.seed, result.config)
+    for name, result in v3.items():
+        if name in ("B1@2.0", "B1.hard@2.0"):
+            refits[name] = partial(_refit_b1, data, labels, config.seed,
+                                   v2[name.removesuffix("@2.0")].config, target=data3)
+        elif result.config.supervision != "none":
+            refits[name] = partial(_refit_b1, data3, None, config.seed, result.config)
+    refits["B3.pooled"] = partial(_refit_pooled, source)
+    conformal, calibrations = [], {}
     for name in distributions:
         version_schemes = schemes if systems[name].schemes == "1.1" else schemes3
         terminals = {i: sorted(version_schemes[scheme_of[i]].terminals) for i in ids}
+        if name in refits:
+            say(f"B5 nested calibration of {name}")
+            calibrations[name] = nested_calibration(refits[name], folds)
         sets, thresholds = conformal_sets(systems[name].aggregations, terminals, gold_of, folds,
-                                          ALPHA)
-        conformal += conformal_summary(name, sets, gold_of,
-                                       {"gold origin": origin, "scheme": scheme_of})
+                                          ALPHA, calibrations.get(name))
+        calibration = "nested" if name in calibrations else "out of fold"
+        conformal += [{**row, "calibration": calibration} for row in conformal_summary(
+            name, sets, gold_of, {"gold origin": origin, "scheme": scheme_of})]
         choices += [{"fold": f, "component": f"conformal {name}", "scheme": "",
                      "parameter": "threshold", "value": q} for f, q in thresholds.items()]
     if conformal_capture is not None:
         conformal_capture.update({n: systems[n].aggregations for n in distributions})
+        if conformal_calibration is not None:
+            conformal_calibration.update(calibrations)
 
     # output
     say("writing")

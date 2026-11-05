@@ -10,7 +10,8 @@ times as the resample draws them.
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
+from itertools import combinations
 
 import numpy as np
 import pandas as pd
@@ -242,12 +243,39 @@ def terminal_probabilities(aggregation: Aggregation,
     return None if total <= 0 else {t: m / total for t, m in masses.items()}
 
 
+def nested_calibration(
+    refit: Callable[[Mapping[str, int]], Mapping[str, Aggregation]],
+    folds: Mapping[str, int],
+) -> dict[int, dict[str, Aggregation]]:
+    """For every fold f, the aggregations of the items of the other folds from fits that
+    never saw a label of f.
+
+    ``refit`` runs the out-of-fold fitting of a system under a given fold assignment.
+    One refit per pair of folds f, g, with the two merged into one fold: the items of
+    g are then predicted by a model trained on the folds other than f and g, and the
+    items of f by the same model.  Ten refits for five folds; each calibration model
+    sees three fifths of the items instead of four.
+    """
+    order = sorted(set(folds.values()))
+    calibration: dict[int, dict[str, Aggregation]] = {f: {} for f in order}
+    for f, g in combinations(order, 2):
+        merged = {i: (g if k == f else k) for i, k in folds.items()}
+        aggregations = refit(merged)
+        for item, k in folds.items():
+            if k == g:
+                calibration[f][item] = aggregations[item]
+            elif k == f:
+                calibration[g][item] = aggregations[item]
+    return calibration
+
+
 def conformal_sets(
     aggregations: Mapping[str, Aggregation],
     terminals: Mapping[str, Sequence[str]],
     gold: Mapping[str, str],
     folds: Mapping[str, int],
     alpha: float = ALPHA,
+    calibration: Mapping[int, Mapping[str, Aggregation]] | None = None,
 ) -> tuple[dict[str, tuple[str, ...]], dict[int, float]]:
     """The set of every item and the threshold of every fold.
 
@@ -256,13 +284,26 @@ def conformal_sets(
     without mass, or outside the terminals of its scheme, scores 1.  The set holds
     the terminals with a score at most the threshold, every terminal when no
     terminal has mass.
+
+    Without ``calibration`` those scores are read from ``aggregations``, which is
+    exact only for a system that uses no label.  A system fitted on labels passes
+    the :func:`nested_calibration` of its fits, so that the threshold of fold f
+    depends on no label of fold f.
     """
     probabilities = {i: terminal_probabilities(aggregations[i], terminals[i])
                      for i in aggregations}
     gold_score = {i: 1.0 - (probabilities[i] or {}).get(gold[i], 0.0) for i in aggregations}
     sets, thresholds = {}, {}
     for fold in sorted({folds[i] for i in aggregations}):
-        q = conformal_threshold([s for i, s in gold_score.items() if folds[i] != fold], alpha)
+        if calibration is None:
+            scores = [s for i, s in gold_score.items() if folds[i] != fold]
+        else:
+            own = calibration[fold]
+            if set(own) != {i for i in aggregations if folds[i] != fold}:
+                raise ValueError(f"the calibration of fold {fold} does not cover the other folds")
+            scores = [1.0 - (terminal_probabilities(own[i], terminals[i]) or {}).get(gold[i], 0.0)
+                      for i in sorted(own)]
+        q = conformal_threshold(scores, alpha)
         thresholds[fold] = q
         for item in (i for i in aggregations if folds[i] == fold):
             given = probabilities[item]

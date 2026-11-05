@@ -15,8 +15,10 @@ from argfallacy.aggregate.sparse_tree import (
     constant_mask,
     encode,
     fit_cart,
+    minimum_cost_class,
     objective,
     replay,
+    root_leaf,
     sample_weights,
 )
 from argfallacy.eval import gosdt_diagnostic as diagnostic
@@ -56,6 +58,24 @@ def test_native_cost_orientation_and_exact_root_are_not_failure_fallbacks():
     assert single["objective"] == single["cost"]["lambda"]
     empty = fit_cart(np.empty((0, 2), bool), [], 2, 2, 23)
     assert not empty["valid"] and empty["tree"]["verdict"] is None
+
+
+def test_exact_cost_ties_take_the_first_canonical_class_not_the_float32_rounding():
+    # Under balanced costs every root has risk (K-1)/K exactly; the float32 matrix
+    # alone would pick whichever class its rounding favours (here c1 for counts 1, 6).
+    y = np.array(["c0"] + ["c1"] * 6)
+    cost = objective(y, 5)
+    effective = np.array(cost["matrix"]) @ np.array(cost["counts"])
+    assert cost["classes"][int(np.argmin(effective))] == "c1"
+    assert root_leaf(y, cost)["verdict"] == "c0"
+    for counts in itertools.product(range(1, 12), repeat=3):
+        labels = np.repeat(["a", "b", "c"], counts)
+        assert root_leaf(labels, objective(labels, 2))["verdict"] == "a"
+    # a leaf with weighted errors exactly equal between b and c, a strictly worse
+    leaf_cost = objective(np.array(["a"] * 2 + ["b"] * 3 + ["c"] * 6), 2)
+    assert minimum_cost_class(leaf_cost, [0, 1, 2]) == 1
+    # a strict difference is never treated as a tie
+    assert minimum_cost_class(leaf_cost, [0, 1, 3]) == 2
 
 
 def test_cart_pruning_matches_exhaustive_subtrees_and_replay():

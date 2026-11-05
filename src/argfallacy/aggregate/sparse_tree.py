@@ -82,13 +82,37 @@ def sample_weights(y, cost):
     return np.array([cost["n"] * matrix[(index[c] + 1) % len(classes), index[c]] for c in y])
 
 
+TIE_TOLERANCE = 1e-12
+"""Two nominal leaf costs closer than this are a tie.  Distinct costs differ by at
+least 1/(K * n_a * n_b), several orders of magnitude above it at these sample sizes."""
+
+
+def nominal_matrix(cost):
+    """The cost matrix C[p,c] = 1/(K*n_c), p != c, in float64, before the float32 cast."""
+    counts = np.asarray(cost["counts"], dtype=np.float64)
+    k = len(counts)
+    matrix = np.zeros((k, k))
+    if k > 1:
+        matrix[:] = 1 / (k * counts)
+        np.fill_diagonal(matrix, 0)
+    return matrix
+
+
+def minimum_cost_class(cost, counts):
+    """Index of the minimum-cost prediction for the true-class ``counts`` of a leaf.
+
+    The comparison uses the nominal costs, and exact ties go to the first class in
+    canonical order.  With the float32 effective matrix an exact tie, such as every
+    root under balanced costs, would otherwise be decided by rounding.
+    """
+    losses = nominal_matrix(cost) @ np.asarray(counts, dtype=np.float64)
+    return int(np.flatnonzero(losses <= losses.min() + TIE_TOLERANCE)[0])
+
+
 def root_leaf(y, cost):
     if not len(y):
         return {"verdict": None}
-    matrix = np.asarray(cost["matrix"])
-    counts = np.asarray(cost["counts"])
-    losses = matrix @ counts
-    return {"verdict": cost["classes"][int(np.argmin(losses))]}
+    return {"verdict": cost["classes"][minimum_cost_class(cost, cost["counts"])]}
 
 
 def analytic_tree(x, y, cost):
@@ -175,7 +199,7 @@ def fit_cart(x, y, depth, coefficient, seed, evaluation_x=None):
         def prune(node, ids):
             counts = np.array([np.sum(y[ids] == c) for c in cost["classes"]])
             losses = matrix @ counts
-            cls = int(np.argmin(losses))
+            cls = minimum_cost_class(cost, counts)
             leaf = {"verdict": cost["classes"][cls], "native_node": int(node)}
             stop = float(losses[cls]) + cost["lambda"]
             if native.children_left[node] == -1:

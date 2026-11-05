@@ -28,6 +28,8 @@ ITEM_COLUMNS = [
     "gold_included",
     "threshold",
 ]
+CALIBRATION_COLUMNS = ["system", "fold", "item_id", "distribution"]
+"""The nested calibration of a learned system: per fold, the items of the other folds."""
 SUMMARY_COLUMNS = [
     "evaluation",
     "system",
@@ -97,7 +99,7 @@ def validate_distribution(system, item, aggregation, schemes, scheme):
     )
 
 
-def calculate(evaluation, system, items, registry, aggregations):
+def calculate(evaluation, system, items, registry, aggregations, calibration=None):
     require(set(aggregations) == set(items.item_id), "conformal distribution population mismatch")
     schemes = load_all(registry[system.version])
     gold = items.set_index("item_id").gold_fallacy.to_dict()
@@ -106,7 +108,7 @@ def calculate(evaluation, system, items, registry, aggregations):
     for item, aggregation in aggregations.items():
         validate_distribution(system, item, aggregation, schemes, scheme[item])
     terminals = {i: sorted(schemes[scheme[i]].terminals) for i in aggregations}
-    sets, thresholds = conformal_sets(aggregations, terminals, gold, folds, ALPHA)
+    sets, thresholds = conformal_sets(aggregations, terminals, gold, folds, ALPHA, calibration)
     meta = dict(evaluation=evaluation.name, system=system.name, scheme_version=system.version)
     rows = [
         {
@@ -171,9 +173,13 @@ def saved_distributions(system):
 
 
 def export_conformal(
-    evaluation, items, registry, aggregations, out, dependencies=(), calculation_resources=None
+    evaluation, items, registry, aggregations, out, dependencies=(), calculation_resources=None,
+    calibration=None,
 ):
     """Opt-in export of already calculated genuine B5 aggregations; no fitting or replay.
+
+    ``calibration`` holds, per learned system, the nested calibration aggregations that
+    the round-two calculation used for its thresholds; the other systems need none.
 
     A fitted-system caller must profile its separate deterministic calculation and
     provide its dependency files here. This function never initiates that calculation.
@@ -229,7 +235,8 @@ def export_conformal(
                 row.fold == evaluation.manifest["folds"]["assignment"][item],
                 "conformal export/saved fold disagreement",
             )
-        own, summary = calculate(evaluation, system, items, registry, values)
+        own, summary = calculate(evaluation, system, items, registry, values,
+                                 (calibration or {}).get(name))
         verify_summary(name, summary, source)
         rows.extend(own)
         distributions.extend(
@@ -247,8 +254,19 @@ def export_conformal(
     pd.DataFrame(distributions).to_csv(
         out / "conformal_distributions.csv", index=False, lineterminator="\n"
     )
+    pd.DataFrame(
+        [
+            dict(system=name, fold=fold, item_id=i,
+                 distribution=json.dumps(a.distribution, sort_keys=True))
+            for name, by_fold in sorted((calibration or {}).items())
+            if name in aggregations
+            for fold, own in sorted(by_fold.items())
+            for i, a in sorted(own.items())
+        ],
+        columns=CALIBRATION_COLUMNS,
+    ).to_csv(out / "conformal_calibration.csv", index=False, lineterminator="\n")
     exported = Inputs()
-    for name in ("conformal_items.csv", "conformal_distributions.csv"):
+    for name in ("conformal_items.csv", "conformal_distributions.csv", "conformal_calibration.csv"):
         exported.add(out / name)
     record = {
         "format": "genuine-conformal-v1",
@@ -263,7 +281,8 @@ def export_conformal(
         "inputs": inputs.records(),
         "exports": exported.records(),
         "calculation": (
-            "existing uncertainty.conformal_sets on supplied genuine aggregations; no fitting"
+            "existing uncertainty.conformal_sets on supplied genuine aggregations and, for "
+            "learned systems, their supplied nested calibration; no fitting"
         ),
         "replay": "not performed by this export; any fitted calculation is separate",
         "source_calculation_resources": calculation_resources,
@@ -283,7 +302,8 @@ def frozen_fingerprint(items):
 
 
 def export_calculated_conformal(
-    config, runs_dir, evaluation_path, items, capture, out, dependencies, calculation_resources=None
+    config, runs_dir, evaluation_path, items, capture, out, dependencies,
+    calculation_resources=None, calibration=None,
 ):
     """Companion hook on the existing round-two calculation, explicitly opted in."""
     from .analysis_inputs import read_evaluation, scheme_registry
@@ -311,6 +331,7 @@ def export_calculated_conformal(
         out,
         [*dependencies, *sources, *inputs.files],
         calculation_resources,
+        calibration,
     )
 
 
@@ -348,6 +369,16 @@ def read_export(path, evaluation, inputs):
         path / "conformal_distributions.csv", ["system", "item_id", "distribution"]
     )
     unique(distributions, ["system", "item_id"], "conformal distribution export")
+    calibration = {}
+    if "conformal_calibration.csv" in exports:
+        name = "conformal_calibration.csv"
+        require(inputs.files[inputs.add(path / name)] == exports[name],
+                f"{name}: conformal export hash mismatch")
+        frame = inputs.csv(path / name, CALIBRATION_COLUMNS, dtype={"item_id": str})
+        unique(frame, ["system", "fold", "item_id"], "conformal calibration export")
+        for row in frame.itertuples():
+            calibration.setdefault(row.system, {}).setdefault(int(row.fold), {})[row.item_id] = (
+                decide(json.loads(row.distribution), 0.0, "validated exact export"))
     require(
         set(rows.system) == set(distributions.system) == set(record.get("systems", {})),
         "conformal export system mismatch",
@@ -357,7 +388,16 @@ def read_export(path, evaluation, inputs):
             name in evaluation.systems and evaluation.systems[name].version == version,
             "conformal export version mismatch",
         )
-    return distributions, rows
+    return distributions, rows, calibration
+
+
+def nested_systems(evaluation):
+    """The systems whose saved thresholds come from a nested calibration."""
+    path = evaluation.path / "conformal.csv"
+    frame = pd.read_csv(path)
+    if "calibration" not in frame:
+        return set()
+    return set(frame.loc[frame.calibration == "nested", "system"])
 
 
 def conformal_tables(config, evaluations, items, registry, human, inputs):
@@ -369,9 +409,10 @@ def conformal_tables(config, evaluations, items, registry, human, inputs):
             require(export is None, "configured conformal export has no compatible B5 source")
             status[evaluation.name] = {"status": "pending", "reason": "no saved B5 aggregates"}
             continue
-        exported, exported_items = (
-            read_export(export, evaluation, inputs) if export is not None else (None, None)
+        exported, exported_items, calibration = (
+            read_export(export, evaluation, inputs) if export is not None else (None, None, {})
         )
+        nested = nested_systems(evaluation)
         if export is not None:
             record = inputs.json(export / "manifest.json")
             require(
@@ -394,6 +435,13 @@ def conformal_tables(config, evaluations, items, registry, human, inputs):
                 values = saved_distributions(system)
                 provenance = "saved genuine verdict distributions"
             key = f"{evaluation.name}/{name}"
+            if values is not None and name in nested and name not in calibration:
+                status[key] = {
+                    "status": "pending",
+                    "reason": "nested calibration of a learned system not exported; its "
+                              "thresholds cannot be recomputed from its own distributions",
+                }
+                continue
             if values is None:
                 status[key] = {
                     "status": "pending",
@@ -404,7 +452,8 @@ def conformal_tables(config, evaluations, items, registry, human, inputs):
                     ),
                 }
                 continue
-            own_rows, summary = calculate(evaluation, system, items, registry, values)
+            own_rows, summary = calculate(evaluation, system, items, registry, values,
+                                          calibration.get(name))
             verify_summary(name, summary, source)
             if exported_items is not None and name in set(exported_items.system):
                 expected = exported_items[exported_items.system == name].set_index("item_id")

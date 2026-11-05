@@ -525,7 +525,8 @@ balanced accuracy, the same comparisons by gold origin, by scheme and without NL
 exploratory comparisons. Abstention curves (AUGRC, AURC, selective accuracy at 100, 95,
 90, 80 and 70 per cent coverage, the composition of the abstained items) cover every system
 with a confidence; conformal sets at alpha 0.10, with thresholds from the other four folds,
-cover the systems with a distribution over the terminals.
+cover the systems with a distribution over the terminals. For the learned systems those
+thresholds come from nested refits that never see the labels of the fold they serve.
 
 It writes `manifest.json` (runs, seed, folds, m, primary configurations, grids, what was
 not computed and why), `verdicts.csv`, `main_table.csv`, `deciding.csv`,

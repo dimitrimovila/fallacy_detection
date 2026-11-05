@@ -13,7 +13,12 @@ import pytest
 from argfallacy.aggregate.interface import decide
 from argfallacy.eval.evaluate import EvaluationConfig, evaluate, resample_indices, scores
 from argfallacy.eval.round2 import deciding_family, hypotheses
-from argfallacy.eval.uncertainty import ALPHA, conformal_sets, conformal_threshold
+from argfallacy.eval.uncertainty import (
+    ALPHA,
+    conformal_sets,
+    conformal_threshold,
+    nested_calibration,
+)
 from argfallacy.paths import REPO_ROOT
 from argfallacy.schemes import SchemeError, load_all, traverse
 
@@ -68,6 +73,59 @@ def test_conformal_sets_use_the_scores_of_the_other_folds():
     # fold 1 is calibrated on the three items of fold 0: ceil(4 * 0.9) = 4 > 3, every terminal
     assert thresholds[1] == math.inf
     assert all(sets[f"cal{k}"] == terminals for k in range(1, 10))
+
+
+def _learned(gold, folds):
+    """A toy system fitted on labels: every item gets the training frequency of its
+    gold class as the mass of that class, the rest of the mass on the other terminal."""
+    def refit(assignment):
+        out = {}
+        for item, fold in assignment.items():
+            train = [i for i, f in assignment.items() if f != fold]
+            share = sum(gold[i] == gold[item] for i in train) / len(train)
+            other = "b" if gold[item] == "a" else "a"
+            out[item] = decide({gold[item]: share, other: 1 - share}, 0.0, "")
+        return out
+    return refit
+
+
+def test_nested_calibration_keeps_the_labels_of_a_fold_out_of_its_threshold():
+    rng = np.random.default_rng(5)
+    items = [f"i{k:02d}" for k in range(50)]
+    folds = {i: k % 5 for k, i in enumerate(items)}
+    gold = {i: "a" if rng.random() < 0.6 else "b" for i in items}
+    terminals = dict.fromkeys(items, ("a", "b"))
+    calls = []
+
+    def recording(gold_of):
+        inner = _learned(gold_of, folds)
+
+        def refit(assignment):
+            calls.append(sorted(set(assignment.values())))
+            return inner(assignment)
+        return refit
+
+    calibration = nested_calibration(recording(gold), folds)
+    # ten pairs of five folds, each refit with two folds merged into four
+    assert len(calls) == 10 and all(len(c) == 4 for c in calls)
+    for fold, own in calibration.items():
+        assert set(own) == {i for i in items if folds[i] != fold}
+    aggregations = _learned(gold, folds)(folds)
+    _, thresholds = conformal_sets(aggregations, terminals, gold, folds, ALPHA, calibration)
+    # every gold of fold 0 becomes b; the threshold of fold 0 does not move
+    flipped = {i: "b" if folds[i] == 0 else g for i, g in gold.items()}
+    again = nested_calibration(_learned(flipped, folds), folds)
+    _, moved = conformal_sets(_learned(flipped, folds)(folds), terminals, flipped, folds, ALPHA,
+                              again)
+    assert moved[0] == thresholds[0]
+    # without the nested calibration the same change moves it
+    _, plain = conformal_sets(aggregations, terminals, gold, folds, ALPHA)
+    _, plain_moved = conformal_sets(_learned(flipped, folds)(folds), terminals, flipped, folds,
+                                    ALPHA)
+    assert plain_moved[0] != plain[0]
+    with pytest.raises(ValueError, match="does not cover"):
+        conformal_sets(aggregations, terminals, gold, folds, ALPHA,
+                       {f: dict(list(c.items())[:-1]) for f, c in calibration.items()})
 
 
 # ------------------------------------------------------- deciding comparisons

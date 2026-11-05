@@ -23,6 +23,7 @@ The organization is thematic, following the research progression rather than the
 | F16–F17 | Which analyses actually completed, what remains unreproduced, and what did B3@2.0 establish? |
 | F18 and decision table | Which directions remain open, and which choices have actually been confirmed? |
 | F19–F20 | What was fixed for GOSDT/CART, and what did the completed matched comparison establish? |
+| F21 | Do the saved results follow from the current aggregator code, and what did the audit correct? |
 
 These identifiers are stable so later corrections can cite them. Evidence lists deliberately point to detailed local records rather than copy every secondary table. Recovered observations with an unresolved denominator or source convention remain explicitly qualified; they must not be silently promoted to frozen-benchmark results.
 
@@ -395,6 +396,8 @@ A guarded Linux deployment path is implemented: fresh detached checkout and exac
 
 ## F20 — Completed GOSDT versus matched binary CART diagnostic
 
+**Correction, 5 November:** the point estimates below were computed before the tie-break correction of F21, which supersedes them (Macro-F1 delta +0.0175 [-0.0262, +0.0651]); the interpretation is unchanged.
+
 **Measured, 31 October 2026.** Fixed transferred-B1 inputs on schemes 2.0, five historical outer folds on 601 arguments, three nested downstream validation folds and the six agreed depth/penalty configurations. The primary contrast is GOSDT minus matched binary CART, not GOSDT minus historical B3. No new LLM calls, diagram edits or dataset changes were made.
 
 | System | Accuracy | Macro-F1 | Coverage |
@@ -420,6 +423,40 @@ The final trees contain 164 GOSDT leaves versus 156 CART leaves across 40 scheme
 
 **Confirmed operational decision, 31 October.** After verified local preservation and this interpretation, remove the dedicated remote GOSDT deployment checkout/runtime and transfer archives. Preserve the original cluster repository and all unrelated runs, including the historical raw data available only remotely. Remote deletion was subsequently confirmed from the authenticated terminal. The dedicated Linux deployment helpers, supervisor and tests were then retired from the active local repository; the retained local runner uses its earlier Windows implementation. Scientific code/results and original executed source/environment evidence are preserved. This is operational cleanup, not a new scientific method.
 
+## F21: Audit of the aggregators, reproduction and two corrections
+
+**Measured, 5 November 2026.** An independent audit of the aggregator code (diagrams, burden routes, hard and soft traversal, polarity, learned fits, metrics, bootstrap) found no high-severity defect. The saved results were then recomputed from the local `summary.csv`, `ssoft.csv` and manifests with the code at 2f2bd68, without new LLM calls.
+
+**Reproduction.** `decision_v2` and `exploratory_aggregators_v3`: every verdict, the main tables and the deciding tables are identical; confidences differ by at most 1e-5. `round2`: all 25,701 verdicts, the main, deciding, exploratory, D+Q and frequent-class tables and `conformal.csv` are identical. Confidences differ by at most 6e-5 except B2 (0.0049), the numerical drift already recorded in F16 (scikit-learn 1.9.1 and pandas 3.1.1 here, against 1.9.0 and 3.0.2 in the manifests). The schemes hashes recorded by full v2 (1.1), full v3 and S-soft (2.0) equal those of the current `schemes/v1` and `schemes/v2`, so the CQ texts of the runs are the versioned ones. The `round2` and `exploratory_aggregators_v3` manifests record no commit; the identical recomputation replaces the missing `git diff` check for them.
+
+**Parser prefix tokens, measured.** A top-logprob token that begins two options ("n" for "no" and "na") goes to the first option. In the 3,534 CQ answer positions of the Qwen D+Q run on 1.1 (the only local raw file with CQ logprobs), "n" appears at every position, never as the chosen token, with mass at most 0.00075 (mean 3e-6). No row of full v2 or full v3 has zero mass on its own chosen answer. The effect on the soft systems is negligible; the parser is unchanged.
+
+**B4.path, measured.** The greedy path of S-soft can stop when its mass falls below the pruning threshold. In `round2/verdicts.csv` all 601 B4.path rows have a verdict, so the exploratory comparison B4.path against A0@2.0 is unaffected.
+
+**Correction 1: conformal thresholds of the learned systems (spec 08, P13).** The threshold of fold f used out-of-fold scores of the other folds, but those scores came from models trained also on the labels of fold f. For B1.weighted.cq.soft, B1, B1.stacking.gold.soft, B1.stacking.gold.soft@2.0, B1@2.0 and B3.pooled the calibration is now nested: one refit per pair of folds with the two merged, so that no threshold depends on a label of its own fold (spec 09, section 7). Coverage at alpha 0.10 moves by at most 0.007 and stays between 0.897 and 0.907; mean set size moves by at most 0.11.
+
+| System | Coverage before | Coverage nested | Mean size before | Mean size nested |
+| --- | ---: | ---: | ---: | ---: |
+| B1.weighted.cq.soft | 0.8985 | 0.9018 | 3.587 | 3.607 |
+| B1 | 0.8935 | 0.8968 | 3.115 | 3.108 |
+| B1.stacking.gold.soft | 0.8985 | 0.9035 | 3.255 | 3.243 |
+| B1.stacking.gold.soft@2.0 | 0.9035 | 0.9002 | 2.696 | 2.661 |
+| B1@2.0 | 0.9035 | 0.8968 | 2.770 | 2.716 |
+| B3.pooled | 0.9002 | 0.9068 | 2.637 | 2.744 |
+
+The systems without labels (majority, Dawid and Skene, A2, A4, B4) keep their sets. The conclusion on B5 does not change: the coverage of the learned systems stays close to the nominal 0.90.
+
+**Correction 2: exact cost ties in GOSDT/CART (F20, spec 12).** The leaf class was the argmin over the float32 effective cost matrix, so an exact tie was decided by rounding instead of the canonical order of spec 12. This affected every balanced analytic root (Correlation to Cause in folds 1 to 4 predicted post_hoc instead of causal_reductionism, for both systems) and 60 of 702 inner CART fits, which changed the selected CART configuration of three groups (example folds 3 and 4, popular opinion fold 3). No native GOSDT leaf was affected. The class is now chosen on the nominal float64 costs with ties to the first canonical class; risk and objective still use the stored effective values. Replayed from the saved group arrays with every CART fit refitted (the old code reproduces all saved CART fits exactly) and the native GOSDT trees reused (their configuration choices do not change), 9 GOSDT and 27 CART held-out verdicts change:
+
+| System | Accuracy | Macro-F1 |
+| --- | ---: | ---: |
+| GOSDT@2.0 | 0.4892 | 0.3133 |
+| CART.binary@2.0 | 0.4493 | 0.2958 |
+
+Primary Macro-F1 difference: **+0.0175 [-0.0262, +0.0651]** (F20: +0.0111 [-0.0268, +0.0564]); Accuracy **+0.0399 [+0.0083, +0.0715]** (F20: +0.0516). The interpretation of F20 stands: no convincing Macro-F1 gain, still below the +0.03 practical threshold, with a secondary Accuracy gain. The size of the shift shows that the F20 point estimate is sensitive to how a few arbitrary constant predictions are labelled. These figures supersede the point estimates of F20; the saved collection keeps the original run, and a rerun of `argfallacy evaluate-gosdt` with the corrected code would regenerate it.
+
+**Smaller points, not corrected.** Removed and outdated diagram documents (cite 2.0 from the YAML or specs 07 and 09); the 1.1/2.0 guard on human answers relies partly on CQ identifiers; no schemes hash check in `round2.py` (verified above); `invalid` handled differently by the canonical scorer and the evaluation scorer, without effect on saved numbers; two declared conventions for "without NLAS" (F04 against F17/F20 are not comparable); the exploratory 2.0 evaluation still writes round-1 style deciding labels.
+
 ## Confirmed decisions and their boundaries
 
 | Date / phase | Confirmed choice | Reason and execution status |
@@ -433,6 +470,7 @@ The final trees contain 164 GOSDT leaves versus 156 CART leaves across 40 scheme
 | 30 October | Prioritize algorithms on existing CQ outputs; do not require another manual redesign/annotation campaign first | Initial direction; the later GOSDT/CART design is confirmed in F19, with the later implementation/site status recorded below. |
 | 30–31 October | GOSDT versus CART on identical fixed binary B1@2.0 inputs; six configurations and three inner folds | Accepted, implemented and completed on CPU cluster; complete local results and interpretation in F20. No follow-up method selected. |
 | 30 October | Consolidate and publish readable evidence; document future findings and only explicitly agreed decisions | This register and aligned local guidance implement that request; no new scientific method selected by documentation alone. |
+| 5 November | Nested calibration for the conformal thresholds of learned systems; canonical tie-break for GOSDT/CART leaf classes | Audit findings (F21): the first restores P13, the second the canonical order of spec 12; both computed without new LLM calls. |
 
 Not confirmed: deleting Expert 2.0 CQ3; a 2.1 graph; a per-scheme post-hoc hybrid; additions or changes to the GOSDT/CART grid/encoding; new annotation collection or external evaluation. The specified GOSDT/CART experiment completed with the accepted failure policies. No additional submission or retry is authorized by documenting its outcome. Historical recommendations are not authorization.
 
