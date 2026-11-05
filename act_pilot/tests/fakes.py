@@ -132,7 +132,8 @@ TOPICS = ["recycling", "public transport", "the new library", "solar panels", "s
 
 
 def synthetic_items() -> list[dict[str, str]]:
-    """Items for B1 and B2 with sources chosen so that one source of B1 is evaluable."""
+    """Items of the two boundaries, with sources chosen so that one source of the first
+    boundary (popular_good_vs_ad_populum) is evaluable."""
     rows: list[dict[str, str]] = []
 
     def add(n: int, scheme: str, gold: str, source: str, templates: list[str], tag: str):

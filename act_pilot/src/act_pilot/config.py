@@ -109,6 +109,8 @@ class Boundary:
     positive_description: str
     negative_description: str
     banned_terms: tuple[str, ...] = ()
+    seed_cq: str = ""             # id of the seed question in the scheme file
+    schemes_version: str = ""     # version of the scheme file it was read from
 
 
 @dataclass(frozen=True)
@@ -190,20 +192,77 @@ def _role(name: str, data: Any) -> RoleConfig:
     return RoleConfig(name=name, **data)
 
 
-def _boundary(boundary_id: str, data: Any) -> Boundary:
+def _terminals(nodes: dict, start: str) -> set[str]:
+    """The terminals reachable from node ``start`` of a scheme graph."""
+    seen, stack, out = set(), [start], set()
+    while stack:
+        node = stack.pop()
+        if node in seen:
+            continue
+        seen.add(node)
+        for edge in (nodes.get(node) or {}).values():
+            if "terminal" in edge:
+                out.add(str(edge["terminal"]))
+            elif "node" in edge:
+                stack.append(str(edge["node"]))
+    return out
+
+
+def _seed_cq(schemes_dir: Path, version: str, scheme: str, cq_id: str, positive: str,
+             negative: str, where: str) -> str:
+    """The text of critical question ``cq_id`` of ``scheme``, read from its scheme file.
+
+    The file must have the expected version, the question must be answered yes or no, and
+    its "yes" branch must lead to the positive class and not to the negative one, its "no"
+    branch the other way round.
+    """
+    path = schemes_dir / f"{scheme}.yaml"
+    if not path.is_file():
+        raise ConfigError(f"{where}: no scheme file {path}")
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if str(data.get("scheme_id")) != scheme:
+        raise ConfigError(f"{where}: {path} has scheme_id {data.get('scheme_id')!r}")
+    if str(data.get("version")) != version:
+        raise ConfigError(
+            f"{where}: {path} has version {data.get('version')!r}, schemes_version is {version!r}"
+        )
+    cq = next((q for q in data.get("critical_questions") or [] if q.get("id") == cq_id), None)
+    if cq is None:
+        raise ConfigError(f"{where}: {path} has no critical question {cq_id!r}")
+    space = cq.get("answer_space", data.get("default_answer_space"))
+    if list(space or []) != ["yes", "no"]:
+        raise ConfigError(f"{where}: {scheme} {cq_id} is not answered yes or no ({space})")
+    nodes = (data.get("graph") or {}).get("nodes") or {}
+    edges = nodes.get(cq_id) or {}
+    for answer, wanted, other in (("yes", positive, negative), ("no", negative, positive)):
+        edge = edges.get(answer) or {}
+        reached = ({str(edge["terminal"])} if "terminal" in edge
+                   else _terminals(nodes, str(edge["node"])) if "node" in edge else set())
+        if wanted not in reached or other in reached:
+            raise ConfigError(
+                f"{where}: the {answer!r} branch of {scheme} {cq_id} leads to {sorted(reached)}, "
+                f"which must include {wanted!r} and not {other!r}"
+            )
+    return " ".join(str(cq["text"]).split())
+
+
+def _boundary(boundary_id: str, data: Any, schemes_dir: Path, version: str) -> Boundary:
     fields = {
-        "scheme", "positive", "negative", "seed_question", "scheme_text", "question_function",
+        "scheme", "positive", "negative", "seed_cq", "scheme_text", "question_function",
         "positive_description", "negative_description", "banned_terms",
     }
     required = fields - {"banned_terms"}
-    data = _section(data, fields, f"boundaries.{boundary_id}", required=required)
+    where = f"boundaries.{boundary_id}"
+    data = _section(data, fields, where, required=required)
     clean = {k: (" ".join(str(v).split()) if isinstance(v, str) else v) for k, v in data.items()}
     if "scheme_text" in data:
         clean["scheme_text"] = str(data["scheme_text"]).strip()
     clean["banned_terms"] = tuple(str(t).lower() for t in data.get("banned_terms", ()))
     if clean["positive"] == clean["negative"]:
-        raise ConfigError(f"boundaries.{boundary_id}: positive and negative classes coincide")
-    return Boundary(id=boundary_id, **clean)
+        raise ConfigError(f"{where}: positive and negative classes coincide")
+    seed = _seed_cq(schemes_dir, version, clean["scheme"], clean["seed_cq"], clean["positive"],
+                    clean["negative"], where)
+    return Boundary(id=boundary_id, seed_question=seed, schemes_version=version, **clean)
 
 
 def load_config(path: str | Path) -> PilotConfig:
@@ -215,10 +274,12 @@ def load_config(path: str | Path) -> PilotConfig:
         raw,
         {
             "data", "manual_rewrites", "content_validity", "output_dir", "cache_dir", "llm",
-            "act", "evaluation", "boundaries", "controls", "n_outer_folds",
+            "act", "evaluation", "boundaries", "controls", "n_outer_folds", "schemes_dir",
+            "schemes_version",
         },
         "config",
-        required={"data", "llm", "boundaries", "manual_rewrites", "output_dir"},
+        required={"data", "llm", "boundaries", "manual_rewrites", "output_dir", "schemes_dir",
+                  "schemes_version"},
     )
     base = path.parent
 
@@ -275,7 +336,10 @@ def load_config(path: str | Path) -> PilotConfig:
     boundaries_raw = _section(top["boundaries"], set(top["boundaries"] or {}), "boundaries")
     if not boundaries_raw:
         raise ConfigError("boundaries: at least one boundary is required")
-    boundaries = {bid: _boundary(bid, spec) for bid, spec in boundaries_raw.items()}
+    schemes_dir = _resolve_path(top["schemes_dir"], base, "schemes_dir")
+    schemes_version = str(top["schemes_version"])
+    boundaries = {bid: _boundary(bid, spec, schemes_dir, schemes_version)
+                  for bid, spec in boundaries_raw.items()}
 
     controls = []
     for i, entry in enumerate(top.get("controls") or []):

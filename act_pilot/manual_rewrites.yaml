@@ -1,13 +1,14 @@
-# Hand-written rewrites of the two critical questions. Drafts to be revised by hand.
-# Same polarity as the original question: "yes" stands for the positive class of the
-# boundary (B1: good_argumentation; B2: poisoning_the_well).
+# Hand-written rewrites of the two critical questions of the schemes version 2.0
+# (popular_opinion CQ1, ad_hominem CQ6). Same polarity as the original question: "yes"
+# stands for the positive class of the boundary (popular_good_vs_ad_populum:
+# good_argumentation; ad_hominem_poisoning_vs_abusive: poisoning_the_well).
 
-B1:
-  - "Does the text give a reason why the reference group is likely to be right about A (for example expertise, direct experience or careful deliberation), beyond the bare fact that many people accept it?"
+popular_good_vs_ad_populum:
+  - "Does the text give a reason why the reference group is likely to be right about A, beyond the bare fact that many people accept it?"
   - "Is the wide acceptance of A offered as a presumption that remains open to other evidence, rather than as proof that A is true?"
-  - "Is A the kind of matter on which wide acceptance is a reasonable guide, such as a shared practice, a social norm or common experience?"
+  - "Is the reference group in a position to know whether A is true, for example through direct experience?"
 
-B2:
-  - "Is the attack meant to make the audience distrust in advance anything the person will say on the topic, rather than to reply to an argument the person has already made?"
+ad_hominem_poisoning_vs_abusive:
   - "Is the attack presented as a reason to dismiss whatever the person says or will say, instead of as a reply to a particular claim?"
-  - "Is the attack made before the person has put forward the argument in question, so that the argument will be discounted when it is made?"
+  - "Is the attack made before the other person has put forward the argument in question?"
+  - "Does the text warn the audience not to trust or accept what the person says, on the basis of the attack on them?"

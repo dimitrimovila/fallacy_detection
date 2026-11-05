@@ -13,6 +13,10 @@ from fakes import write_synthetic  # noqa: E402
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 PILOT_CONFIG = PACKAGE_ROOT / "configs" / "pilot.yaml"
 MANUAL = PACKAGE_ROOT / "manual_rewrites.yaml"
+SCHEMES_V2 = PACKAGE_ROOT.parent / "schemes" / "v2"
+# the two boundaries of configs/pilot.yaml
+POPULAR = "popular_good_vs_ad_populum"
+HOMINEM = "ad_hominem_poisoning_vs_abusive"
 
 
 def make_config(tmp_path: Path, *, steps: int = 3, seeds=(0, 1), **act_overrides) -> Path:
@@ -21,6 +25,7 @@ def make_config(tmp_path: Path, *, steps: int = 3, seeds=(0, 1), **act_overrides
     raw = yaml.safe_load(PILOT_CONFIG.read_text(encoding="utf-8"))
     raw["data"] = {"items": str(items), "folds": str(folds)}
     raw["manual_rewrites"] = str(MANUAL)
+    raw["schemes_dir"] = str(SCHEMES_V2)
     raw["output_dir"] = str(tmp_path / "out")
     raw["content_validity"] = str(tmp_path / "content_validity.csv")
     raw["llm"]["max_workers"] = 4

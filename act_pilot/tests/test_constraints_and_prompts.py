@@ -9,7 +9,7 @@ from act_pilot.prompts import (
     parse_rewrite,
     rewrite_text,
 )
-from conftest import MANUAL, PILOT_CONFIG
+from conftest import HOMINEM, MANUAL, PILOT_CONFIG, POPULAR
 
 
 @pytest.fixture
@@ -38,7 +38,7 @@ def test_seed_and_manual_questions_pass(config):
 
 
 def test_controls_are_yes_no_questions(config):
-    b1 = config.boundaries["B1"]
+    b1 = config.boundaries[POPULAR]
     for c in config.controls:
         assert _check(b1, c.question) == []
 
@@ -55,11 +55,11 @@ def test_controls_are_yes_no_questions(config):
     ],
 )
 def test_violations(config, question, fragment):
-    assert any(fragment in v for v in _check(config.boundaries["B1"], question))
+    assert any(fragment in v for v in _check(config.boundaries[POPULAR], question))
 
 
 def test_example_specific_words_are_flagged(config):
-    b1 = config.boundaries["B1"]
+    b1 = config.boundaries[POPULAR]
     corpus = ["Everyone drinks kombucha now."] + [f"Many people agree on topic {i}." for i in
                                                   range(40)]
     df = document_frequency(corpus)
@@ -73,7 +73,7 @@ def test_example_specific_words_are_flagged(config):
 
 
 def test_capitalised_names_are_flagged(config):
-    v = _check(config.boundaries["B2"], "Is the attack on Trump made before the debate?")
+    v = _check(config.boundaries[HOMINEM], "Is the attack on Trump made before the debate?")
     assert any("Trump" in x for x in v)
 
 
@@ -94,7 +94,7 @@ def test_parse_rewrite(raw, expected):
 
 
 def test_prompts_do_not_name_the_classes(config):
-    b1 = config.boundaries["B1"]
+    b1 = config.boundaries[POPULAR]
     example = ShownExample("Everyone does it.", "no", "yes", "It is popular.")
     group = GroupSummary("answered yes", 3, 1, 2, 0.44, [example], [example])
     text = critique_text(b1, b1.seed_question, [group, group], weighted_gini=0.4,

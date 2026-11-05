@@ -7,7 +7,7 @@ from act_pilot.answers import Answer
 from act_pilot.cli import main
 from act_pilot.config import load_config
 from act_pilot.pipeline import BudgetExceeded, estimate, load_inputs, run_all
-from conftest import make_config
+from conftest import HOMINEM, POPULAR, make_config
 from fakes import FakeAnswerer, FakeOptimizer
 
 
@@ -29,7 +29,7 @@ def test_end_to_end_with_fakes(tmp_path):
     for name in ("report.md", "cost_estimate.md", "calls.jsonl",
                  "content_validity_template.csv"):
         assert (out / name).exists(), name
-    for bid in ("B1", "B2"):
+    for bid in (POPULAR, HOMINEM):
         for name in (f"act/{bid}_act_candidates.csv", f"act/{bid}_act_selected.csv",
                      f"evaluation/{bid}_items.csv", f"evaluation/{bid}_questions.csv",
                      f"evaluation/{bid}_sources.csv", f"evaluation/{bid}_questions_positive.csv",
@@ -59,12 +59,15 @@ def test_end_to_end_with_fakes(tmp_path):
     assert all(c["temperature"] == 0.0 for c in answerer.calls)
 
     report = (out / "report.md").read_text(encoding="utf-8")
-    for heading in ("## Calls", "## B1:", "## B2:", "### Questions", "### Baselines",
-                    "### Acceptance", "### Per source", "### ACT runs"):
+    for heading in ("## Calls", f"## {POPULAR}:", f"## {HOMINEM}:", "### Questions",
+                    "### Baselines", "### Acceptance", "### Per source", "### ACT runs"):
         assert heading in report
     assert chr(0x2014) not in report and chr(0x2013) not in report
+    assert "schemes version 2.0" in report
+    seed_line = "Original question: CQ1 of `popular_opinion`, schemes version 2.0: Is the reference"
+    assert seed_line in report
     assert "### Sensitivity: undetermined and unreadable answers as positive" in report
-    b1 = next(e for e in evaluations if e.boundary.id == "B1")
+    b1 = next(e for e in evaluations if e.boundary.id == POPULAR)
     assert b1.evaluable_sources == ["NLAS"]
 
     # The sensitivity analysis maps the same answers; only "cannot determine" and unreadable
@@ -87,7 +90,7 @@ def test_end_to_end_with_fakes(tmp_path):
     # A second run is answered entirely from the cache.
     answerer2, optimizer2 = FakeAnswerer(), FakeOptimizer()
     run_all(config, backends={"answerer": answerer2, "optimizer": optimizer2},
-            boundary_ids=["B2"])
+            boundary_ids=[HOMINEM])
     assert answerer2.calls == [] and optimizer2.calls == []
     assert time.monotonic() - started < 60
 
@@ -108,6 +111,6 @@ def test_cli_estimate_makes_no_call(tmp_path, capsys):
     path = make_config(tmp_path)
     assert main(["estimate", "--config", str(path)]) == 0
     out = capsys.readouterr().out
-    assert "| B1 |" in out and "| B2 |" in out
+    assert "| popular_good_vs_ad_populum |" in out and "| ad_hominem_poisoning_vs_abusive |" in out
     assert main(["run-act", "--config", str(path), "--dry-run"]) == 0
     assert main(["run-act", "--config", str(path), "--max-calls", "5"]) == 2

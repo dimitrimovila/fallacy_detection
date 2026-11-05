@@ -1,10 +1,11 @@
 # ACT pilot: rewriting two critical questions
 
 This folder holds a self-contained Python package, `act_pilot`, for a small experiment of the
-thesis. Two critical questions (CQ) of Walton's schemes do not separate classes that they
-should separate. The pilot looks for better wordings of those two questions, written by hand
-and obtained with a reimplementation of the loop of ACT (Agentic Classification Tree, Grari et
-al., arXiv:2509.26433) at depth one, and checks them against lexical baselines on outer
+thesis. Two critical questions (CQ) of Walton's schemes, in the version 2.0 of the schemes of
+this repository (`schemes/v2/`), do not separate classes that they should separate. The pilot
+looks for better wordings of those two questions, written by hand and obtained with a
+reimplementation of the loop of ACT (Agentic Classification Tree, Grari et al.,
+arXiv:2509.26433) at depth one, and checks them against lexical baselines on outer
 cross-validation folds.
 
 No experiment has been run with this code yet: it has been tested with fake models and
@@ -12,14 +13,19 @@ synthetic data only.
 
 ## The two boundaries
 
-| id | scheme | positive class ("yes") | negative class ("no") | original question |
+| id | scheme | positive class ("yes") | negative class ("no") | original question (schemes 2.0) |
 |---|---|---|---|---|
-| B1 | `popular_opinion` | `good_argumentation` | `ad_populum` | Is the fact that A is considered to be true (or false) by many people a good reason to believe that A is in fact true (or false)? |
-| B2 | `ad_hominem` | `poisoning_the_well` | `ad_hominem_abusive` | Is a direct attack on the other person used as a pretext to discredit them even before the discussion has begun? |
+| `popular_good_vs_ad_populum` | `popular_opinion` | `good_argumentation` | `ad_populum` | CQ1 of `schemes/v2/popular_opinion.yaml` |
+| `ad_hominem_poisoning_vs_abusive` | `ad_hominem` | `poisoning_the_well` | `ad_hominem_abusive` | CQ6 of `schemes/v2/ad_hominem.yaml` |
 
 Polarity is fixed: the answer "yes" stands for the positive class. Both boundaries are defined
 in `configs/pilot.yaml` (scheme text, role of the question, class descriptions shown to the
-optimizer, forbidden terms), so a third boundary is a new YAML block, not new code.
+optimizer, forbidden terms), so a third boundary is a new YAML block, not new code. The
+original question is not written there: `seed_cq` names it, and its text is read from the
+scheme file under `schemes_dir` (`schemes/v2/`). Loading the configuration checks that the
+file has the version of `schemes_version` (2.0), that the question is answered yes or no, and
+that its "yes" branch in the diagram leads to the positive class and not to the negative one,
+its "no" branch the other way round. The report gives the CQ id and the version with the text.
 
 ## Input files
 
@@ -116,8 +122,9 @@ optionally, `rater` and `notes`. Questions are matched ignoring case and spacing
   not offered.
 - **Seeds and small groups.** When a group has fewer than `m` correct or wrong examples, all of
   them are shown and the seed only changes their order. The development set has 21 and 67
-  items for B1 and 25 and 36 for B2, so an inner training set has fewer than 20 items of
-  the positive class: many groups have fewer than 20 correct or wrong examples, and for them
+  items for `popular_good_vs_ad_populum` and 25 and 36 for
+  `ad_hominem_poisoning_vs_abusive`, so an inner training set has fewer than 20 items of the
+  positive class: many groups have fewer than 20 correct or wrong examples, and for them
   the seeds change the order more than the choice of the examples shown.
 - **The rewrite prompt includes the earlier questions** with their training balanced accuracy
   (never the validation one). At temperature 0 with a cache, a step after a rejected one would
@@ -183,9 +190,10 @@ Run the ACT stage, with a guard on the number of calls (adjust the limit to the 
 act-pilot run-act --config configs/pilot.yaml --max-calls 60000
 ```
 
-A single boundary, fold or seed can be run with `--boundary B1`, `--folds 0 1`, `--seeds 0`;
-results of other folds and seeds already on disk are kept. Every reply is cached under
-`runs/act_pilot/cache/`, so an interrupted run resumes where it stopped, and every request is
+A single boundary, fold or seed can be run with `--boundary popular_good_vs_ad_populum`,
+`--folds 0 1`, `--seeds 0`; results of other folds and seeds already on disk are kept. Every
+reply is cached under `runs/act_pilot/cache/`, so an interrupted run resumes where it stopped,
+and every request is
 logged in `runs/act_pilot/calls.jsonl`.
 
 ### On node22 (UPSCALE)
@@ -255,7 +263,7 @@ the report it writes must not be read before the ratings are given. Outputs go t
 ## Outputs
 
 ```
-runs/act_pilot/
+runs/act_pilot/                    (<B> is the id of a boundary)
   cost_estimate.md                 the estimate, with the split sizes per fold
   calls.jsonl                      one line per request (role, model, cache hit, attempts, reply)
   cache/                           the reply cache

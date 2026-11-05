@@ -8,6 +8,10 @@ data:
   # columns: {scheme: gold_scheme, gold: gold_fallacy}   # remap if the names differ
 
 n_outer_folds: 5
+# The seed questions are read from the scheme files of this version (seed_cq of each
+# boundary), not written here; the version of every file read is checked.
+schemes_dir: ../../schemes/v2
+schemes_version: "2.0"
 manual_rewrites: ../manual_rewrites.yaml
 content_validity: ../content_validity.csv   # filled in by hand; until then (iii) is pending
 output_dir: ../runs/act_pilot               # ignored by git (runs/)
@@ -84,13 +88,11 @@ controls:
     question: Does the text contain a question?
 
 boundaries:
-  B1:
+  popular_good_vs_ad_populum:
     scheme: popular_opinion
     positive: good_argumentation
     negative: ad_populum
-    seed_question: >-
-      Is the fact that A is considered to be true (or false) by many people a good reason
-      to believe that A is in fact true (or false)?
+    seed_cq: CQ1
     scheme_text: |
       If a large majority of some reference group accept A as true, then there is a
       presumption in favour of A.
@@ -117,13 +119,11 @@ boundaries:
       - fallacious
       - good argumentation
       - argumentation scheme
-  B2:
+  ad_hominem_poisoning_vs_abusive:
     scheme: ad_hominem
     positive: poisoning_the_well
     negative: ad_hominem_abusive
-    seed_question: >-
-      Is a direct attack on the other person used as a pretext to discredit them even
-      before the discussion has begun?
+    seed_cq: CQ6
     scheme_text: |
       a is a person of bad character.
       Therefore, a's argument A should not be accepted.

@@ -235,6 +235,9 @@ def render_report(
         f"Generated on {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')} from "
         f"`{config.path.name}`.",
         "",
+        "- Original questions: the critical questions of the schemes version "
+        f"{', '.join(sorted({b.schemes_version for b in config.boundaries.values()}))}, "
+        "read from the scheme files.",
         f"- Answerer: `{config.llm.answerer.model}`; optimizer: `{config.llm.optimizer.model}`; "
         f"temperature {config.llm.temperature}.",
         f"- ACT: depth 1, {config.act.steps} steps, m = {config.act.examples_per_group} "
@@ -278,7 +281,8 @@ def render_report(
             "",
             f"## {b.id}: {b.scheme}, {b.positive} (yes) against {b.negative} (no)",
             "",
-            f"Original question: {b.seed_question}",
+            f"Original question: {b.seed_cq} of `{b.scheme}`, schemes version "
+            f"{b.schemes_version}: {b.seed_question}",
             "",
             "### Data",
             "",
