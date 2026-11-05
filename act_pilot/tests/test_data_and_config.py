@@ -16,10 +16,12 @@ from act_pilot.data import (
 from conftest import PILOT_CONFIG, make_config
 
 
-def test_pilot_config_loads(monkeypatch):
-    monkeypatch.setenv("ACT_PILOT_DATA", "/data/pilot")
+def test_pilot_config_loads(monkeypatch, tmp_path):
+    # an absolute folder on every system ("/data/pilot" has no drive on Windows)
+    monkeypatch.setenv("ACT_PILOT_DATA", str(tmp_path))
     config = load_config(PILOT_CONFIG)
-    assert str(config.items) == "/data/pilot/items.csv"
+    assert config.items == (tmp_path / "items.csv").resolve()
+    assert config.folds == (tmp_path / "folds.csv").resolve()
     assert set(config.boundaries) == {"B1", "B2"}
     b1, b2 = config.boundaries["B1"], config.boundaries["B2"]
     assert (b1.scheme, b1.positive, b1.negative) == (
