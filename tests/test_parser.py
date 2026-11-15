@@ -78,6 +78,34 @@ def _row(summary, **keys) -> pd.Series:
 FOUR = {"yes": 0.7, "no": 0.2, "cannot_be_determined": 0.05, "na": 0.05}
 
 
+@pytest.mark.parametrize("stage", [STAGE2, ZEROSHOT])
+@pytest.mark.parametrize("valid_response", [True, False])
+def test_completed_retry_supersedes_transport_error(schemes, stage, valid_response):
+    answer = "yes" if stage == STAGE2 else "Weak Analogy"
+    completed = _line(
+        schemes, stage=stage, answer=answer,
+        content=None if valid_response else "not a JSON response",
+    )
+    failed = {**completed, "error": "APITimeoutError: Request timed out.", "raw_response": {}}
+    answers, summary = _tables(schemes, [failed, completed])
+    assert len(answers) == 2
+    assert answers.iloc[0]["error"] == failed["error"]
+    expected = _tables(schemes, [completed])[1]
+    pd.testing.assert_frame_equal(summary, expected)
+    assert summary.iloc[0]["invalid_count"] == (0 if valid_response else 1)
+
+
+def test_retry_matching_stays_within_the_item(schemes):
+    completed = _line(schemes, item="answered")
+    failed = {
+        **completed, "item_id": "unanswered", "raw_response": {},
+        "error": "APITimeoutError: Request timed out.",
+    }
+    summary = _tables(schemes, [failed, completed])[1].set_index("item_id")
+    assert summary.loc["unanswered", "answer"] == "invalid"
+    assert summary.loc["answered", "answer"] == "yes"
+
+
 # --------------------------------------------------------------- one sample
 
 

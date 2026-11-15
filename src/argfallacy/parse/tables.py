@@ -601,6 +601,11 @@ def summarise(
         )
 
         group = group.sort_values("sample_index")
+        # Keep attempt history in answers.csv, but score the completed retry of this call.
+        completed = group["error"].fillna("").eq("")
+        keyed = group["cache_key"].notna() & group["cache_key"].ne("")
+        answered_keys = group.loc[completed & keyed, "cache_key"]
+        group = group.loc[completed | ~group["cache_key"].isin(answered_keys)]
         zero = group[group["sample_index"] == 0]
         zero_row = zero.iloc[0] if len(zero) else None
         several = bool((group["sample_index"] > 0).any())

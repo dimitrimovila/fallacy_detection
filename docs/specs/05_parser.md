@@ -33,6 +33,8 @@ Changed columns, for the entries with several samples only:
 
 The samples of an entry are drawn in the same way, so sample 0 has no special status, and the hard answer is already the majority of all of them. The mean of the stated confidence over several samples is one of the aggregations evaluated by Xiong et al. (2024).
 
+When a resumed call has both a transport error and a completed response with the same cache key, only the completed response enters the summary. The error attempt remains in `answers.csv` and `raw.jsonl`. A completed response with invalid content still counts as invalid. Without a completed retry, the transport failure remains an invalid sample.
+
 `p_sample`, the share of the valid samples that gave the first admitted answer, does not change. `idk`, `n_samples_ok` and `invalid_count` do not change.
 
 ## 5. `summary.csv`, stages whose answer is a label
