@@ -1,6 +1,6 @@
 # Research findings and confirmed decisions
 
-Updated 5 November 2026. This is the public, readable record of the evidence accumulated in this project. It consolidates saved evaluations, diagnostic reports and case discussions, including the completed GOSDT/CART experiment, the audit of the aggregator code (F21), the check of the original LOGIC labels (F22), the cross-cutting diagnosis of saved outputs (F23) and the exploratory abstention analysis on schemes 2.0 (F24). Updating this register does not itself run experiments. It is intended to make the scientific reasoning recoverable without inspecting all result tables or conversation histories.
+Updated 15 November 2026. This is the public, readable record of the evidence accumulated in this project. It consolidates saved evaluations, diagnostic reports and case discussions, including the completed GOSDT/CART experiment, the audit of the aggregator code (F21), the check of the original LOGIC labels (F22), the cross-cutting diagnosis of saved outputs (F23), the exploratory abstention analysis on schemes 2.0 (F24), the A2 early-depth diagnostic (F25), the reference sensitivity analysis (F26) and the external T1 direct-verdict evaluation (F27). Conservative NLAS candidate curation is recorded in F29. Updating this register does not itself run experiments. It is intended to make the scientific reasoning recoverable without inspecting all result tables or conversation histories.
 
 ## How to read and maintain this record
 
@@ -27,6 +27,8 @@ The organization is thematic, following the research progression rather than the
 | F22 | Do the fine LOGIC labels in the gold come from the original source annotation? |
 | F23 | What does a diagnosis of all saved outputs show about where errors arise? |
 | F24 | Do saved confidences support abstention on schemes 2.0 without discarding hard classes? |
+| F26 | How do fixed verdict scores and rankings change under the integrated reference? |
+| F29 | What survives conservative Good-candidate review and overlap checks in NLAS? |
 
 These identifiers are stable so later corrections can cite them. Evidence lists deliberately point to detailed local records rather than copy every secondary table. Recovered observations with an unresolved denominator or source convention remain explicitly qualified; they must not be silently promoted to frozen-benchmark results.
 
@@ -399,7 +401,7 @@ A guarded Linux deployment path is implemented: fresh detached checkout and exac
 
 ## F20 — Completed GOSDT versus matched binary CART diagnostic
 
-**Correction, 5 November:** the figures below include the tie-break correction of F21. The original run gave a primary Macro-F1 delta of +0.0111 [-0.0268, +0.0564]; the interpretation is unchanged.
+**Values.** Every figure in this section uses the leaf tie handling corrected in the audit of 5 November ([F21](#f21-audit-of-the-aggregators-reproduction-and-two-corrections), correction 2) and was recomputed on 11 November from a replay of the saved fits, not from a new cluster run. The saved collection keeps the uncorrected outputs of the original run; its numbers are superseded and must not be cited.
 
 **Measured, 31 October 2026.** Fixed transferred-B1 inputs on schemes 2.0, five historical outer folds on 601 arguments, three nested downstream validation folds and the six agreed depth/penalty configurations. The primary contrast is GOSDT minus matched binary CART, not GOSDT minus historical B3. No new LLM calls, diagram edits or dataset changes were made.
 
@@ -410,9 +412,9 @@ A guarded Linux deployment path is implemented: fresh detached checkout and exac
 | B1.hard@2.0, secondary manual reference | 0.4942 | 0.3893 | 0.9800 |
 | B3@2.0, secondary historical reference | 0.4825 | 0.2853 | 1.0000 |
 
-Primary paired Macro-F1 difference: **+0.0175, IC95% [-0.0262, +0.0651]**, from 10,000 argument-level bootstrap draws. The point estimate is below the +0.03 practical-interest threshold and the interval includes zero. This does not establish a convincing primary advantage, equivalence, or the exclusion of a practically useful benefit. Secondary Accuracy improves by **+0.0399 [ +0.0083, +0.0715 ]**, or 24 additional correct verdicts; that secondary result does not replace the primary endpoint. Both primary systems cover all 601 items, so their common-coverage contrast is identical.
+Primary paired Macro-F1 difference: **+0.0175, IC95% [-0.0262, +0.0651]**, from 10,000 argument-level bootstrap draws. The point estimate is below the +0.03 practical-interest threshold and the interval includes zero. This does not establish a convincing primary advantage, equivalence, or the exclusion of a practically useful benefit. Secondary Accuracy improves by **+0.0399 [+0.0083, +0.0715]**, or 24 additional correct verdicts, 16 of them on Good Argumentation; that secondary result does not replace the primary endpoint. Both primary systems cover all 601 items, so their common-coverage contrast is identical.
 
-**Sensitivity and heterogeneity, descriptive only.** On 598 reachable-gold items the Macro-F1 delta is +0.0174 [-0.0264, +0.0652]; all three unreachable cases remain errors for both systems. Without NLAS it is +0.0201 [-0.0262, +0.0724]. On the 477 gold-non-Good items it is +0.0067 [-0.0416, +0.0599]. Removing Good-labelled arguments changes both population and error accounting; this is not the same operation as removing Good only from the class average. The latter, retaining all arguments and averaging the 22 supported fallacy classes, gives GOSDT 0.3037 versus CART 0.2898 (delta +0.0139; point estimates only). The Accuracy gain on that non-Good population is +0.0168: gains are not exclusively Good predictions, but do not translate into a clear balanced class improvement.
+**Sensitivity and heterogeneity, descriptive only.** On 598 reachable-gold items the Macro-F1 delta is +0.0174 [-0.0264, +0.0652]; all three unreachable cases remain errors for both systems. Without NLAS it is +0.0201 [-0.0262, +0.0724]. On the 477 gold-non-Good items it is +0.0067 [-0.0416, +0.0599]. Removing Good-labelled arguments changes both population and error accounting; this is not the same operation as removing Good only from the class average. The latter, retaining all arguments and averaging the 22 supported fallacy classes, gives GOSDT 0.3037 versus CART 0.2898 (delta +0.0139 [-0.0313, +0.0634]). The Accuracy gain on that non-Good population is +0.0168 [-0.0163, +0.0491]: most of the overall Accuracy gain comes from Good Argumentation verdicts, and it does not translate into a clear balanced class improvement.
 
 Per-scheme Macro-F1 deltas range from -0.0360 (Popular Opinion) to +0.1644 (Cause to Effect); Correlation to Cause and Slippery Slope are unchanged. The Cause interval is [+0.0013, +0.3327], unadjusted for the many subgroup comparisons. By gold origin, the delta is +0.0055 [-0.0560, +0.0768] on fallacy corpora and +0.0195 [-0.0213, +0.0616] on scheme corpora. Individual classes also move in opposite directions: Post Hoc improves by 0.4444 F1 (support 6) and Guilt by Association by 0.2385 (support 8), while Tradition falls by 0.2857 (support 2) and Strawman by 0.2500 (support 2). These small supports preclude stable class-level claims. No subgroup result authorizes a post-hoc hybrid.
 
@@ -422,7 +424,7 @@ The final trees contain 164 GOSDT leaves versus 152 CART leaves across 40 scheme
 
 **Interpretation and limits.** Broader tree search with these fixed binary CQ inputs improves Accuracy but supplies no convincing Macro-F1 gain over the matched greedy procedure. It also remains below the manual B1.hard reference in point-estimate Macro-F1 (0.3133 versus 0.3893). This is not evidence that global search can never help, that the CQ information is exhausted, or that a different representation would fail. Historical B3 uses different features, so its lower score cannot isolate an algorithm effect. Bootstrap intervals condition on fixed OOF predictions and omit refitting uncertainty; previous benchmark adaptation, rare classes and heterogeneous gold provenance remain limitations. No new method or further experiment is selected by this interpretation.
 
-**Evidence and preservation.** Canonical local collection: `evaluations/gosdt_schemes2_diagnostic_20261030/`, especially `manifest.json`, `metrics.csv`, `differences.csv`, `per_class.csv`, `fit_statuses.csv`, `selected_configs.csv`, `trees.json`, `rules.json` and saved group arrays. The directory date identifies the frozen design, not the execution date. The original export, exact tracked source at 969f36e, dependency inventory, preflight, scheduler logs and checksum are retained in `scratch/gosdt_results_2624504/`. All 5,227 archived files and 5,054 manifest output hashes were checked locally, the canonical copy was byte-verified, and the saved held-out arrays independently replayed all 601 verdicts per primary system with their training-derived column masks. Slurm records preflight 2624503 as 3 min 42 s and experiment 2624504 as 18 min 42 s; the earlier 12 h 40 min solver sum was a worst-case ceiling, not a duration forecast. Local verification is recorded in `scratch/gosdt_results_2624504/local_verification.json`.
+**Evidence and preservation.** Canonical local collection: `evaluations/gosdt_schemes2_diagnostic_20261030/`, especially `manifest.json`, `metrics.csv`, `differences.csv`, `per_class.csv`, `fit_statuses.csv`, `selected_configs.csv`, `trees.json`, `rules.json` and saved group arrays. Its verdicts, metric tables, trees and rules are those of the original run, before the tie correction; the corrected verdicts, trees and figures of this section come from `scratch/gosdt_tie_replay_20261111/`. The directory date identifies the frozen design, not the execution date. The original export, exact tracked source at 969f36e, dependency inventory, preflight, scheduler logs and checksum are retained in `scratch/gosdt_results_2624504/`. All 5,227 archived files and 5,054 manifest output hashes were checked locally, the canonical copy was byte-verified, and the saved held-out arrays independently replayed all 601 verdicts per primary system with their training-derived column masks. Slurm records preflight 2624503 as 3 min 42 s and experiment 2624504 as 18 min 42 s; the earlier 12 h 40 min solver sum was a worst-case ceiling, not a duration forecast. Local verification is recorded in `scratch/gosdt_results_2624504/local_verification.json`.
 
 **Confirmed operational decision, 31 October.** After verified local preservation and this interpretation, remove the dedicated remote GOSDT deployment checkout/runtime and transfer archives. Preserve the original cluster repository and all unrelated runs, including the historical raw data available only remotely. Remote deletion was subsequently confirmed from the authenticated terminal. The dedicated Linux deployment helpers, supervisor and tests were then retired from the active local repository; the retained local runner uses its earlier Windows implementation. Scientific code/results and original executed source/environment evidence are preserved. This is operational cleanup, not a new scientific method.
 
@@ -449,14 +451,9 @@ The final trees contain 164 GOSDT leaves versus 152 CART leaves across 40 scheme
 
 The systems without labels (majority, Dawid and Skene, A2, A4, B4) keep their sets. `evaluations/round2/conformal.csv` (with a `calibration` column), the conformal thresholds in `round2_choices.csv`, `summary.html` and the manifest record of that collection were updated with these values; every other output of round 2 keeps its original values. A full rerun of `analyses_v1` on these inputs reproduces every table byte for byte except `source_conformal.csv`, which now carries the nested values; that table, the manifest record and `summary.html` of the collection were updated. The conclusion on B5 does not change: the coverage of the learned systems stays close to the nominal 0.90.
 
-**Correction 2: exact cost ties in GOSDT/CART (F20, spec 12).** The leaf class was the argmin over the float32 effective cost matrix, so an exact tie was decided by rounding instead of the canonical order of spec 12. This affected every balanced analytic root (Correlation to Cause in folds 1 to 4 predicted post_hoc instead of causal_reductionism, for both systems) and 60 of 702 inner CART fits, which changed the selected CART configuration of three groups (example folds 3 and 4, popular opinion fold 3). No native GOSDT leaf was affected. The class is now chosen on the nominal float64 costs with ties to the first canonical class; risk and objective still use the stored effective values. Replayed from the saved group arrays with every CART fit refitted (the old code reproduces all saved CART fits exactly) and the native GOSDT trees reused (their configuration choices do not change), 9 GOSDT and 27 CART held-out verdicts change:
+**Correction 2: exact cost ties in GOSDT/CART (spec 12).** The leaf class was the argmin over the float32 effective cost matrix, so an exact tie was decided by rounding instead of the canonical order of spec 12. This affected every balanced analytic root (Correlation to Cause in folds 1 to 4 predicted post_hoc instead of causal_reductionism, for both systems) and 60 of 702 inner CART fits, which changed the selected CART configuration of three groups (example folds 3 and 4, popular opinion fold 3). No native GOSDT leaf was affected. The class is now chosen on the nominal float64 costs with ties to the first canonical class; risk and objective still use the stored effective values. Replayed from the saved group arrays with every CART fit refitted (the old code reproduces all saved CART fits exactly) and the native GOSDT trees reused (their configuration choices do not change), 9 GOSDT and 27 CART held-out verdicts change. F20 and the GOSDT/CART figures of F23 report only the corrected results; the conclusion did not change (no convincing Macro-F1 gain, below the +0.03 practical threshold, with a secondary Accuracy gain), but the point estimate proved sensitive to how a few arbitrary constant predictions are labelled.
 
-| System | Accuracy | Macro-F1 |
-| --- | ---: | ---: |
-| GOSDT@2.0 | 0.4892 | 0.3133 |
-| CART.binary@2.0 | 0.4493 | 0.2958 |
-
-Primary Macro-F1 difference: **+0.0175 [-0.0262, +0.0651]** (original run: +0.0111 [-0.0268, +0.0564]); Accuracy **+0.0399 [+0.0083, +0.0715]** (original run: +0.0516). The interpretation of F20 stands: no convincing Macro-F1 gain, still below the +0.03 practical threshold, with a secondary Accuracy gain. The size of the shift shows that the F20 point estimate is sensitive to how a few arbitrary constant predictions are labelled. Derived descriptive figures change accordingly: the final CART trees have 152 leaves (original run: 156), CART recognizes 4 of 67 Ad Populum arguments (original run: none), and the two systems agree on 70.9% of verdicts (original run: 71.7%). Mean balanced accuracy over the 40 scheme/fold trees (F23) is 0.685 in training and 0.418 on the outer test for GOSDT, and 0.659 and 0.377 for CART (original run: 0.442 and 0.397). F20 now reports these corrected figures; the saved collection keeps the original run, and a rerun of `argfallacy evaluate-gosdt` with the corrected code would regenerate it.
+**Replay check, 11 November.** The replay was repeated from the saved group arrays and fits. With the old rule it reproduces every held-out verdict and every selected configuration of the 40 scheme/fold groups for both systems, and the scorer of the experiment reproduces the saved intervals exactly; with the corrected rule it gives the values of F20. The replay script, the corrected item verdicts and trees, and the derived figures are in `scratch/gosdt_tie_replay_20261111/`. The saved collection keeps the original run; a rerun of `argfallacy evaluate-gosdt` with the corrected code would regenerate it.
 
 **Smaller points, not corrected.** Removed and outdated diagram documents (cite 2.0 from the YAML or specs 07 and 09); the 1.1/2.0 guard on human answers relies partly on CQ identifiers; no schemes hash check in `round2.py` (verified above); `invalid` handled differently by the canonical scorer and the evaluation scorer, without effect on saved numbers; two declared conventions for "without NLAS" (F04 against F17/F20 are not comparable); the exploratory 2.0 evaluation still writes round-1 style deciding labels.
 
@@ -475,6 +472,8 @@ Primary Macro-F1 difference: **+0.0175 [-0.0262, +0.0651]** (original run: +0.01
 Evidence: local comparison of `edu_all.csv` with `data/items.csv`, 2 November 2026; source repository cited above. No frozen data or gold labels were changed.
 
 ## F23: Diagnosis of bottlenecks on saved outputs
+
+**Tree results:** the GOSDT/CART figures in this section use the corrected verdicts and trees of F21 (recomputed 11 November).
 
 **Scope, 2 November 2026.** Exploratory analyses of saved verdicts, CQ answers, human vectors, trees and rules only: no new inference, training, or change to data, CQs, diagrams or configurations. Subsets and simulated edits were chosen after inspecting the benchmark, so every result here is in-sample and exploratory. An independent traversal of the 1.1 diagrams reproduces all 3,005 saved A0 verdicts and all 476 human-path verdicts; on 2.0 it reproduces the 86 Example verdicts of each model. Simulated diagram edits use in-memory copies.
 
@@ -501,9 +500,9 @@ Of the 46 net LOGIC arguments, 26 are hasty generalization golds; A0@2.0 labels 
 
 **Structural probes and their transfer.** With human 1.1 vectors: asking Example CQ2.2 also when CQ2 = yes gives 14 corrections and no regression; treating Cause CQ2 = na as not applicable resolves 35 paths with 27 corrections and none lost (the 2.0 graph already removes that gate); Expert CQ2 before CQ1 gives 10 corrections and 5 regressions, a priority convention the gold applies inconsistently; Ad Hominem CQ3 before CQ2 gives a net +2. The same Example edit on 1.1 LLM answers is net −4 summed over models, and on 2.0 LLM answers it worsens all five models (−2 to −8; +22 hasty generalization, −40 Good, losses on scheme origin). **Interpretation:** the Example defect is demonstrated only for 1.1 with human answers; for 2.0, neither the correctness of the bypass nor the benefit of removing it is established. Manual diagrams are consistent with their own paths; their argumentative validity remains to be verified.
 
-**Learned trees (complements F20).** Mean balanced accuracy over the 40 scheme/fold trees falls from 0.685 on the training risk to 0.418 on the outer test for GOSDT, and from 0.659 to 0.377 for CART, with 36–85 training arguments per scheme (test balanced accuracy per group, groups with a single test class excluded). The class-balanced objective over-predicts rare classes (non sequitur 27 and 24 predictions for 11 golds, appeal to extremes 21 for 7, circumstantial 17–22 for 5), while ad populum collapses (5 of 67 correct for GOSDT, 4 for CART). GOSDT's 24 additional correct verdicts are mainly Good +16, abusive +3, appeal to authority +3, tu quoque +2 and post hoc +2, against −1 on each of six classes, three of them with two examples; the two systems agree on 70.9% of predictions.
+**Learned trees (complements F20).** Balanced accuracy, averaged over the 40 scheme/fold trees with recall averaged over the gold classes present, falls from 0.685 on the training arguments (one minus the unpenalised class-balanced training risk) to 0.460 on the outer test for GOSDT, and from 0.659 to 0.425 for CART; each tree has 8 to 86 training arguments. The class-balanced objective over-predicts rare classes (non sequitur: 27 GOSDT and 24 CART predictions for 11 golds; appeal to extremes 21 for 7; circumstantial 17–22 for 5), while ad populum collapses (5 of 67 correct for GOSDT, 4 for CART). GOSDT's 24 additional correct verdicts are mainly Good +16, abusive +3 and appeal to authority +3, against −1 on each of six classes (the three with two examples, hasty generalization, irrelevant authority and weak analogy); the two systems agree on 70.9% of predictions.
 
-**Rule audit on the outer test.** The `raw_support` values in `rules.json` are training counts, with each argument counted in four folds. Routing each test argument to its leaf: leaves whose conditions strongly contradict the CQ that defines their verdict produce 35 GOSDT test verdicts (5.8%, 3% of them correct) and 32 CART (5.3%, none correct). A manual review of the eight GOSDT leaves finds 19 test verdicts (3.2%) from robust contradictions (for example irrelevant authority with competence CQ1 > 0.75; circumstantial with the personal-interest CQ2 ≤ 0.25, in a leaf holding 2 circumstantial among 34 training arguments), 15 (2.5%) that depend on reading a probability of at most 0.5 as no, and one priority inversion wrongly flagged. Leaves in which no tested CQ supports any manual route produce 21.1% and 23.3% of test verdicts; these are mostly incomplete justifications, some resting only on the class prior (Slippery Slope). The audit is automatic with limited manual review; it is not a theoretical validation and, by construction, cannot validate the manual diagrams.
+**Rule audit on the outer test.** The `raw_support` values in `rules.json` are training counts, with each argument counted in four folds. Routing each test argument to its leaf: leaves whose conditions strongly contradict the CQ that defines their verdict produce 35 GOSDT test verdicts (5.8%, one of them correct) and 32 CART (5.3%, none correct). A manual review of the eight GOSDT leaves finds 19 test verdicts (3.2%) from robust contradictions (for example irrelevant authority with competence CQ1 > 0.75; circumstantial with the personal-interest CQ2 ≤ 0.25, in a leaf holding 2 circumstantial among 34 training arguments), 15 (2.5%) that depend on reading a probability of at most 0.5 as no, and one priority inversion wrongly flagged. Leaves in which no tested CQ supports any manual route produce 21.1% and 23.3% of test verdicts; these are mostly incomplete justifications, some resting only on the class prior (Slippery Slope). The audit is automatic with limited manual review; it is not a theoretical validation and, by construction, cannot validate the manual diagrams.
 
 **Soft-traversal explanations and confidences (complements F13).** For Qwen A2@2.0, the class of the most probable path equals the winning class in 594 of 601 arguments; that path carries a median 0.74 of the total mass, less than 0.5 in 20% of arguments, and at least 80% of the winning-class mass in 89%. Class agreement, representation of the probabilistic computation and argumentative sufficiency are distinct properties. The saved A2@2.0 confidences equal the recomputed winning-class mass exactly; A2.pruned has the same verdicts but confidences differing by up to 0.019; A0, zero-shot and A5 have no confidence in their `verdicts.csv`. Exploratory AUGRC differences already exist in `evaluations/analyses_v1/abstention_differences.csv`, whose confidence sources for A5 and zero-shot remain to be identified.
 
@@ -529,10 +528,158 @@ Evidence: `workspace:scratch/diagnosi_colli_20261102/` (scripts and main tables,
 
 **Implication.** No abstention rule is adopted. Any future use of abstention should report Macro-F1 and per-class coverage next to AUGRC, and should be tested on data not used here.
 
+## F25: Early-depth mass and verdict support in A2
+
+**Measured, 7 November 2026.** Descriptive replay of Qwen A0/A2 on the same 601 gold-scheme arguments for versions 1.1 and 2.0. Original A2 uses no pruning. Depth counts visited CQ nodes, including subquestions. For each item, all path-end masses are enumerated using production answer extraction and burden routes. All 1,202 A0 and 1,202 A2 verdicts reproduce the saved outputs; terminal distributions match production A2 and the maximum confidence difference is 6.66e-16. Terminal plus abstention mass sums to one per item.
+
+Mean A2 terminal mass through depth 1/2 is 24.95%/47.95% on 1.1 and 19.53%/40.29% on 2.0. A0 reaches a verdict by those depths on 143/291 and 128/250 arguments, or 23.79%/48.42% and 21.30%/41.60%. A2 abstention through depth 2 is 2.70% and 2.74%, leaving 49.35% and 56.97% of the unit mass continuing beyond the second CQ. The counts of items with more than half of their unit mass on terminals by depth 2 are 291 and 247. These are descriptive definitions rather than literal complete halts of A2.
+
+**Winning-class support.** More than half of the final winning class's mass comes from paths ending by depth 2 on 309/601 items (51.41%) in 1.1 and 267/601 (44.43%) in 2.0. These exceed A0's early verdict counts by 18 and 17 items, about three percentage points. This metric uses winning-class mass as its denominator, not the item's unit mass. Early terminal concentration is heterogeneous: Slippery Slope already exits by depth 2 in A0 on 94/95 items in both versions; A2 places 94.95%/93.84% of that scheme's mass on early terminals. Other schemes can increase their early mass, for example Cause to Effect 1.1 (16.37% A2 mass versus 2/45 A0 verdicts).
+
+**Interpretation and limits.** Overall terminal mass does not show a large increase in shallow exits under A2, while a modest increase in early support for the winning label is present. This descriptive comparison measures different hard/soft quantities explicitly and does not establish the semantic validity of early decisions or a causal effect of path length on errors. No model was called or fitted, and no independent evaluation or hypothesis test was performed. Source fingerprints, per-item/per-scheme results, definitions and figures are in `workspace:research_notes/A2_early_exit/`.
+
+## F26 — Verdict score sensitivity to the integrated reference
+
+**Measured on 10 November 2026, recomputed on 15 November.** The recomputation follows the revision of seven expert-opinion verdicts of the integrated reference, made by applying the operational definition of appeal to authority (an appeal to authority when the conclusion rests only on the source's word) to all 28 expert-opinion items labelled Good or appeal to authority in the annotation app (thesis_plan.md, section 6.7). Saved predictions are unchanged; only the reference labels of those seven items differ. Offline scoring of 129 saved system conditions against the historical gold and the *riferimento integrato di Dumitru*. The populations are all 601 test IDs and the 405 cases selected by the original-label audit. The audit cohort contains all 155 label differences between the two references. The two references agree on the other 196 test items. The primary fine-space ranking includes 86 full-denominator systems with the reference scheme supplied on 1.1 or 2.0. Restricted cohorts, prior conditions and oracles are reported separately. The canonical historical scores reproduce the saved tables at their recorded precision.
+
+On 601 items 73 of 86 ranked systems gain Macro-F1, with a median gain of 3.42 percentage points. The judge with justifications on 1.1 moves from fourth to first, from 48.11% to 54.90%. Its Accuracy remains first and increases from 62.90% to 70.38%. On the 405 audit items, 64 of 86 systems gain Macro-F1, with a median gain of 3.17 points. The judge with justifications on 1.1 moves from third to first on Macro-F1, from 43.85% to 51.01%, 0.96 points ahead of the same judge on 2.0 (paired difference +0.96, 95% interval −4.93 to +6.49), and its Accuracy increases from 55.31% to 66.42%. The changes in the paired Macro-F1 gap against each population's previous leader are +6.31 points on 601 items (95% interval −1.49 to +12.55, against B2.dq on 2.0) and +7.50 points on 405 items (−0.05 to +13.90, against the answers-only judge on 2.0). The integrated reference contains one false attribution, a class absent from the historical gold, so its Macro-F1 averages one class more; systems that never predict that label lose about 1.4 points on it, and without that class all 86 systems would gain on 601 items (median 4.79 points).
+
+**Interpretation and limits.** Rank changes describe the fixed predictions under different label assignments and class supports. The audit subset follows original-label provenance and covers a selected part of the test set. The learned methods retain their historical training and tuning, and the paired intervals condition on those predictions and fits. The GOSDT/CART rows use the verdicts of the original run; the tie-corrected verdicts of F21 have not been scored against the integrated reference. The evidence, including per-item transitions, per-class supports and source fingerprints, is in `evaluations/dumitru_integrated_verdict_20261110_audit405/`.
+
+## F27 — Direct verdicts on the external T1 cohort
+
+**Measured, 11 November 2026.** The five configured models completed 6,136 generations on 472 external T1 arguments, with the annotated scheme supplied, scheme menus 2.0 and the existing zero-shot v1 prompt. The gold retains mapped source fallacy labels. The cohort contains 19 supported fallacy classes, of which 13 meet the frozen threshold of at least 20 items for the primary T1 Macro-F1. Every argument remains in the accuracy and per-class counting denominators. Thread titles are included where available, and extended context only where admitted by the annotation protocol.
+
+| Model | Correct / 472 | Accuracy | T1 Macro-F1, 13 classes | Macro-F1, all 19 supported classes |
+| --- | ---: | ---: | ---: | ---: |
+| Gemma 4 31B | 273 | 0.5784 | 0.6312 | 0.5607 |
+| gpt-oss-120b | 296 | 0.6271 | 0.6545 | 0.5617 |
+| gpt-oss-20b | 291 | 0.6165 | 0.6260 | 0.5536 |
+| K2 Horizon 32B, high | 291 | 0.6165 | 0.6385 | 0.5908 |
+| Qwen 3.8 27B | 290 | 0.6144 | 0.6452 | 0.5718 |
+
+**Class-set sensitivity, descriptive check on 11 November.** Restricting the T1 Macro-F1 average to its 13 frequent classes raises the reported value by 4.78 to 9.28 percentage points across models compared with averaging all 19 supported classes. For the matched Qwen 2.0 condition, the updated integrated historical reference of F26 (recomputed on 15 November) gives Accuracy 0.6489 and Macro-F1 0.5111 across 23 supported classes on 601 items, against T1 Accuracy 0.6144 and Macro-F1 0.5718 across 19 classes on 472 items. Averaging the saved historical per-class F1 values over the same 13 classes selected for the T1 primary metric gives 0.6271, against T1 0.6452. This post-results diagnostic retains every item in each cohort's precision/recall counting, and changes only the class average. Its 1.81-point difference remains a cross-population point estimate. Historical source: `evaluations/dumitru_integrated_verdict_20261110_audit405/per_class.csv`, Qwen zero-shot 2.0, `test_601`, fine space, integrated reference. The other four saved historical zero-shot models used menus 1.1, whereas T1 uses 2.0.
+
+**Execution and scoring checks.** Job 2997010 completed all but one K2 call. Job 3013337 supplied the remaining response, and the final manifest records 6,136 completed generations and zero outstanding failures. The local scorer now counts the parser's invalid-output marker as an error. A parser defect had selected the first timeout rather than the completed retry of sample zero. Correcting this selection changes one summary verdict, from invalid to Post Hoc, which agrees with its T1 reference. The raw attempts remain preserved. Independent accuracy and Macro-F1 calculations were checked against the canonical evaluation outputs.
+
+**Interpretation and limits.** These are descriptive point estimates. The highest observed accuracy is 62.71%, with 176 errors, and the largest observed primary T1 Macro-F1 is 0.6545. No pairwise significance claim is made. T1 contains only source-labelled fallacies, and supplies a selected annotated scheme. Its source mappings, support distribution, context and exclusion of Good Argumentation differ from the historical 601-item test. Differences across those datasets do not by themselves establish improved model performance or reference validity. Evidence is in `evaluations/t1_zeroshot/t1_472/`, the frozen input audit in `scratch/t1_zero_shot_20261110/preflight.json`, and run `20261110T105606Z_t1_zeroshot_v2`.
+
+## F28 — First pooled neural aggregator: implementation and CPU evaluation
+
+**Confirmed scope, 13 November 2026.** Implement an independent neural aggregator
+using the five models' CQ answers separately and one model across all eight
+schemes. A3 is motivation for learning from CQ answers, not a required architecture
+or comparator. The selected scope was explicitly confirmed; the detailed feature
+encoding, candidate grid, reference population and comparison protocol remain
+initial implementation defaults rather than confirmed scientific choices.
+
+**Engineering checks.** Spec 13 and the isolated `evaluate-neural` command provide
+input validation, nested fitting, per-initialization scores and checkpoint replay.
+Synthetic checks cover nonlinear learning, distinct missing/invalid/outside-answer
+states, held-out-label isolation and reproducibility. The schemes 2.0 input check
+finds 601 historical-reference items, five entries, eight schemes, 15,810 expected
+CQ/entry observations, no missing or invalid hard observations, and 15,756 available
+preferred soft signals. The proposed encoding has 2,373 features. Its example grid
+would require 195 fits, including inner validation and three initializations.
+
+**First real execution, 13 November 2026.** Following the explicit request to try
+the implemented network and inspect results, the initial configuration was run
+locally without tuning it further. All 195 fits completed on CPU with one thread
+in 134.54 seconds. The three initializations each produced 601 out-of-fold verdicts.
+Input and executed-source hashes match; all 15 saved networks exactly reproduce
+their held-out probabilities and verdicts. This establishes CPU feasibility for
+the aggregator on already available CQ answers, not the cost of generating new
+answers with the five LLMs.
+
+| Initialization | Accuracy | Macro-F1 | Delta vs Qwen A0 2.0, paired 95% CI | Delta vs Qwen zero-shot 2.0, paired 95% CI |
+| --- | ---: | ---: | --- | --- |
+| 17 | 0.6273 | 0.3989 | -0.0040 [-0.0785, 0.0844] | -0.0724 [-0.1207, 0.0276] |
+| 29 | 0.6206 | 0.3833 | -0.0195 [-0.0827, 0.0709] | -0.0880 [-0.1363, 0.0211] |
+| 43 | 0.6090 | 0.3942 | -0.0086 [-0.0919, 0.0846] | -0.0771 [-0.1311, 0.0155] |
+
+Contextual references rescored on the same items and frozen labels: Qwen A0 2.0
+accuracy 0.5458/Macro-F1 0.4028, Qwen zero-shot 2.0 0.6090/0.4713. The neural
+accuracy point estimates exceed A0's, but its Macro-F1 point estimates fall below
+both references. No Macro-F1 advantage is established by this initial configuration.
+All paired intervals contain zero, which does not establish equivalence. The
+zero-shot comparison is task-level context, not an architecture ablation with
+identical inputs. No best initialization is promoted as the selected system.
+
+**Limitations.** The 10,000 paired item resamples condition on fixed predictions,
+omit refitting variability and are not multiplicity-adjusted. The comparison was
+added as exploratory interpretation of the first run. This is the previously
+inspected historical collection, not the integrated revised reference or external
+T1 evaluation. Predictive agreement is separate from explanation fidelity and
+argumentative validity. The pooled network does not make different schemes' CQ
+meanings interchangeable. Class imbalance, limited sample size and trainable
+parameter count remain concerns. Canonical evidence:
+`evaluations/neural_pooled_20261113/` (metrics, contextual paired intervals, runtime,
+execution audit and executed-source snapshot); implementation: spec 13 and
+`tests/test_neural.py`. No further tuning or new external run is implied.
+
+## F29: Conservative NLAS Good candidates and limits of selection calibration
+
+**Confirmed scope, 13 November 2026.** Prioritize precision of proposed T2 Good
+arguments, with project schemes and CQs 2.0. Main-scheme mismatch, uncertain
+generalization rescued only by a weak modal, and popularity without pertinent
+knowledge or a shared convention remain unselected. Popular Practice is an
+eligible subtype of popular_opinion, capped at eight distinct-topic selections.
+Original arguments and reference labels remain unchanged; curation is separate
+from importing a new benchmark or running a classifier.
+
+**Descriptive calibration.** The previously reviewed 69 local NLAS items were
+sorted by existing hexadecimal item ID into 34 initial and 35 control texts.
+This followed exposure to all reference labels and is not independent blind
+validation. The initial half selected zero Good arguments; precision is undefined.
+The control selected one argument with matching scheme, also Good in the unchanged
+reference: precision 1/1, 100%, exact binomial 95% interval 2.5%-100%. There were
+no selected example arguments and no selected disputed-reference cases. Two
+reference disputes were documented separately without relabeling. The point
+estimate satisfies the requested numerical gate but cannot establish population
+precision of at least 85%. The single control selection is already in the local
+corpus and is not a new T2 item.
+
+**Candidate review.** The 29 provisional selections were reassessed, and all
+available non-quarantined Slippery Slope (66), Expert Opinion (99), Analogy (86)
+and Cause to Effect (74) arguments were read in that order. The dossier contains
+474 reviewed source items, including 120 earlier nonselected judgments retained
+without a new full assessment. Final selections: 19 synthetic arguments, comprising
+seven Popular Practice, three Analogy and nine Cause to Effect. No ordinary
+Popular Opinion, Example, Slippery Slope or Expert Opinion selection survives.
+There are 214 doubtful and 241 excluded items, with five overlap quarantines
+included in the latter count. Of the earlier 29, seven remain selected, 20 become
+doubtful and two are quarantined. Another 111 popular-source items remain unread;
+these figures are not estimates of corpus-wide Good prevalence.
+
+**Overlap finding.** The original 76 quarantines remain outside review. Manual
+inspection of the top five external neighbours of 25 initial strict selections,
+including similarities below the original 0.60 threshold, found three substantial
+paraphrases and two possible overlaps with existing items. All five are excluded
+from the proposed T2 pool while preserving their semantic assessments. One further
+analogy became doubtful during the final strict check. Shared topics and template
+wording are documented separately from matching arguments. Thus the original
+character similarity threshold alone did not ensure independence. The prior 26
+external research selections were also compared but were not merged into this pool.
+
+**Implication and limits.** These are conservative research candidates rather than
+new gold. Neither the small, post-exposure calibration nor graph-path validity
+guarantees semantic precision. Source `yes` annotations are not project Good
+labels; public NLAS-CQ answers were unavailable in the acquisition audit, so no
+source-CQ filter was applied. The yield and coverage are insufficient to assume
+balanced Good coverage of the high-priority schemes. All selected paths replay to
+Good under 2.0, and 177 protected source/gold/T1 files retain their hashes.
+Canonical local evidence:
+`workspace:research_notes/Good_NLAS_revisione_20261112/precisione_20261113/`
+(`risultati_precisione.json`, sealed half judgments, `riepilogo_finale.json`,
+`decisioni_controllo_finale.json`, `selezionati.jsonl`, `validation_finale.json`
+and `manifest_finale.json`). No T2 import or new model evaluation was performed.
+
 ## Confirmed decisions and their boundaries
 
 | Date / phase | Confirmed choice | Reason and execution status |
 | --- | --- | --- |
+| 13 November | Conservative NLAS Good-candidate curation for T2, preserving sources and reference labels | Completed the specified review and retained 19 synthetic research candidates; the 1/1 post-exposure control is descriptive, not independent precision validation (F29). |
+| 13 November | Implement a pooled five-entry neural aggregator and try its initial configuration locally | Completed 195 CPU fits; three initialization results and qualified contextual comparisons are recorded in F28. |
 | Pilot/full-run preparation | Preserve chosen model regimes and immutable versioned prompts/schemes per run | Pilot evidence and reproducibility; completed runs retain their original manifests. |
 | Original evaluation protocols | Keep canonical scoring, argument-level folds, prescribed references and multiplicity rules | Avoid selecting comparisons after outcomes; round-1/round-2 complete. |
 | 30 October | Use B1–B5 throughout for the second-round family; A0–A5 identify round 1 | Distinguish the two families consistently in code, configurations, saved artifacts and the manuscript; names do not change the methods or their results. |
@@ -543,8 +690,9 @@ Evidence: `workspace:scratch/diagnosi_colli_20261102/` (scripts and main tables,
 | 30–31 October | GOSDT versus CART on identical fixed binary B1@2.0 inputs; six configurations and three inner folds | Accepted, implemented and completed on CPU cluster; complete local results and interpretation in F20. No follow-up method selected. |
 | 30 October | Consolidate and publish readable evidence; document future findings and only explicitly agreed decisions | This register and aligned local guidance implement that request; no new scientific method selected by documentation alone. |
 | 5 November | Nested calibration for the conformal thresholds of learned systems; canonical tie-break for GOSDT/CART leaf classes | Audit findings (F21): the first restores P13, the second the canonical order of spec 12; both computed without new LLM calls. |
+| 10–11 November | External T1 zero-shot evaluation using the existing five model regimes and schemes 2.0 | Completed in jobs 2997010 and 3013337; all 472 items per model scored locally, with the frozen T1 class threshold (F27). |
 
-Not confirmed: deleting Expert 2.0 CQ3; a 2.1 graph; a per-scheme post-hoc hybrid; additions or changes to the GOSDT/CART grid/encoding; new annotation collection or external evaluation. The specified GOSDT/CART experiment completed with the accepted failure policies. No additional submission or retry is authorized by documenting its outcome. Historical recommendations are not authorization.
+Not confirmed: deleting Expert 2.0 CQ3; a 2.1 graph; a per-scheme post-hoc hybrid; additions or changes to the GOSDT/CART grid/encoding; further annotation collection or external evaluation beyond the completed T1 run. The specified GOSDT/CART experiment completed with the accepted failure policies. No additional submission or retry is authorized by documenting its outcome. Historical recommendations are not authorization.
 
 ## Practical reading map
 
@@ -552,6 +700,7 @@ For conclusions and choices, start with this file. For exact local outputs, sele
 
 | Local collection | Purpose |
 | --- | --- |
+| `evaluations/neural_pooled_20261113` | First pooled neural CPU evaluation, three initializations, checkpoint replay and exploratory contextual comparisons (F28) |
 | `evaluations/decision_v2` | Original round 1, CQ diagnostics and five-model/direct references |
 | `evaluations/round2` | Original round 2, S-soft controls, D+Q, post-results additions |
 | `evaluations/exploratory_aggregators_v3` | Later saved aggregator comparisons on 2.0 |
@@ -559,5 +708,6 @@ For conclusions and choices, start with this file. For exact local outputs, sele
 | `evaluations/b3_schemes2_diagnostic_20261029` | Completed B3@2.0 protocol, trees, sensitivities and review |
 | `evaluations/gosdt_schemes2_diagnostic_20261030` | Completed matched GOSDT/CART diagnostic, paired intervals, full trees and execution checks (F20) |
 | `evaluations/_archive` | Historical audits and preserved alternative snapshots; relocation manifest resolves old paths |
+| `evaluations/t1_zeroshot/t1_472` | External T1 direct-verdict scores and per-item predictions for the five models (F27) |
 
 The two local diagnostic reports and their `workspace:research_notes/` contain the detailed human/graph analyses consolidated in F07–F15. The roadmap organizes alternatives; it is not a substitute for this result/status record. Future updates must keep this map, the local evaluation catalog and strategic overview consistent without rewriting historical measured results.
