@@ -890,3 +890,28 @@ The exact executed cluster source and environment records are preserved with the
 local result archive and remain recoverable from commit 969f36e. Existing cluster
 checkpoints cannot be resumed using the cleaned local code because source hashes
 have deliberately changed.
+
+### Pooled neural CQ aggregator
+
+The independent `N1` learner combines separate CQ answers from all five entries
+in one network across all schemes. It predicts verdicts directly, without diagram
+traversal or a per-scheme terminal restriction. The initial implementation and its
+limitations are described in [spec 13](docs/specs/13_neural_aggregator.md).
+Training optionally requires `python -m pip install --editable ".[neural]"`;
+the input check does not require PyTorch.
+
+```powershell
+argfallacy evaluate-neural configs/neural_pooled.yaml --check-only
+argfallacy evaluate-neural configs/neural_pooled.yaml --out evaluations/neural_pooled_trial
+```
+
+The first command only validates saved inputs. The second fits and evaluates with
+nested validation, writes per-initialization metrics and replayable fold models,
+and refuses an existing output directory. It never calls an LLM. The example uses
+schemes 2.0 and the frozen historical reference; it does not use the revised labels.
+Candidate settings are initial defaults, not a confirmed comparison protocol.
+Synthetic acceptance tests establish implementation behavior, not fallacy accuracy.
+The runner reports exploratory point estimates; probabilities are not guaranteed
+calibrated. The first CPU run and a separate saved-prediction audit with exploratory
+paired intervals are recorded in [finding F28](docs/research_findings.md#f28--first-pooled-neural-aggregator-implementation-and-cpu-evaluation).
+An external neural evaluation remains open.

@@ -169,6 +169,20 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_evaluate_neural(args: argparse.Namespace) -> int:
+    import json
+
+    from .eval.neural import run
+    from .schemes import SchemeError
+
+    try:
+        result = run(args.config, args.out, args.check_only)
+    except (SchemeError, FileNotFoundError, FileExistsError) as error:
+        raise SystemExit(str(error)) from None
+    print(json.dumps(result, indent=2) if args.check_only else str(result / "metrics.csv"))
+    return 0
+
+
 def _cmd_evaluate_b3(args: argparse.Namespace) -> int:
     from .eval.b3_diagnostic import run
     from .schemes import SchemeError
@@ -352,6 +366,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     evaluate_cmd.add_argument("config", help="a YAML evaluation configuration")
     evaluate_cmd.set_defaults(func=_cmd_evaluate)
+    neural_cmd = sub.add_parser("evaluate-neural", help="pooled neural CQ classifier")
+    neural_cmd.add_argument("config", help="a neural evaluation YAML configuration")
+    neural_cmd.add_argument("--check-only", action="store_true",
+                            help="validate inputs without fitting")
+    neural_cmd.add_argument("--out", help="required for training; refuses existing directories")
+    neural_cmd.set_defaults(func=_cmd_evaluate_neural)
     b3_cmd = sub.add_parser("evaluate-b3", help="the isolated schemes 2.0 B3 diagnostic")
     b3_cmd.add_argument("config", help="a frozen B3 diagnostic configuration")
     b3_cmd.add_argument("--out", help="alternate output root; refuses to overwrite results")

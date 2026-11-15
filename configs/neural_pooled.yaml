@@ -1,0 +1,20 @@
+# Initial implementation settings, not a frozen confirmatory protocol.
+# --check-only reads existing inputs; training needs a new explicit --out directory.
+run: runs/20261019T151336Z_full_v3
+items: data/items.csv
+entries:
+  - qwen3_8_27b
+  - gemma4_31b
+  - gpt_oss_20b
+  - gpt_oss_120b
+  - k2_horizon_32b_high
+fold_seed: 20261019
+folds: 5
+inner_folds: 3
+seeds: [17, 29, 43]
+threads: 1
+candidates:
+  - {hidden: 8, weight_decay: 0.1, learning_rate: 0.01, epochs: 200, patience: 30, tolerance: 0.000001}
+  - {hidden: 8, weight_decay: 0.01, learning_rate: 0.01, epochs: 200, patience: 30, tolerance: 0.000001}
+  - {hidden: 16, weight_decay: 0.1, learning_rate: 0.01, epochs: 200, patience: 30, tolerance: 0.000001}
+  - {hidden: 16, weight_decay: 0.01, learning_rate: 0.01, epochs: 200, patience: 30, tolerance: 0.000001}
