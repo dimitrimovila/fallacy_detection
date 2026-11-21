@@ -59,11 +59,14 @@ MANIFEST_NAME = "manifest.json"
 
 RETRYABLE = ("429", "500", "502", "503", "504", "timeout", "connection")
 
-SCHEMES_FOLDERS = ("v1", "v2")
-"""The folders of ``schemes/`` a run can load: version 1.1 and version 2.0."""
+SCHEMES_FOLDERS = ("v1", "v2", "v3", "v3b")
+"""The folders of ``schemes/`` a run can load: versions 1.1, 2.0, 2.1 and its variant 2.1b,
+which has the second wording of the example transfer question in place of the first."""
 V2_SCHEMES, V3_PROMPTS = "v2", "v3"
-"""The definitions of ``stage2_v3_answers.yaml`` are written on the CQ ids of version 2.0,
-so the two go together and with nothing else."""
+STAGE2_PROMPTS = {"v2": "v3", "v3": "v4", "v3b": "v4"}
+"""The stage-two definitions are written on the CQ ids of one version of the diagrams:
+``stage2_v3_answers.yaml`` on 2.0, ``stage2_v4_answers.yaml`` on 2.1 and 2.1b. Each goes
+with those folders and with nothing else; schemes/v1/ takes the earlier prompts."""
 JUDGE_KEYS = ("answers_from", "answers_model", "justifications")
 
 
@@ -115,6 +118,10 @@ class RunConfig:
     answers; ``answers_model``, the entry whose answers are shown; ``justifications``."""
     history: bool = True
     threshold: float = 0.02
+    cqs: dict[str, list[str]] | None = None
+    """For stage two: the CQs to ask, by scheme, in the order of the diagram; a scheme
+    not listed gets no call. Absent, every CQ of every scheme. For answers that other
+    runs already hold, which are not asked again."""
     raw: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -138,15 +145,27 @@ class RunConfig:
         if self.schemes not in SCHEMES_FOLDERS:
             raise SchemeError(f"{self.name}: schemes must be one of {list(SCHEMES_FOLDERS)}, "
                               f"not {self.schemes!r}")
+        paired = {version: [f for f, v in STAGE2_PROMPTS.items() if v == version]
+                  for version in STAGE2_PROMPTS.values()}
         if {STAGE1, STAGE2} & set(self.stages) and (
-            (self.prompt_version == V3_PROMPTS) != (self.schemes == V2_SCHEMES)
-        ):
+            self.prompt_version in paired or self.schemes in STAGE2_PROMPTS
+        ) and STAGE2_PROMPTS.get(self.schemes) != self.prompt_version:
+            expected = STAGE2_PROMPTS.get(self.schemes)
             raise SchemeError(
                 f"{self.name}: prompt_version {self.prompt_version!r} with schemes "
-                f"{self.schemes!r}; prompt_version {V3_PROMPTS!r} goes only with schemes "
-                f"{V2_SCHEMES!r}, and schemes {V2_SCHEMES!r} only with prompt_version "
-                f"{V3_PROMPTS!r}"
+                f"{self.schemes!r}; "
+                + (f"schemes {self.schemes!r} go only with prompt_version {expected!r}"
+                   if expected else
+                   f"prompt_version {self.prompt_version!r} goes only with schemes "
+                   f"{paired[self.prompt_version]}")
             )
+        if self.cqs is not None and (
+            not isinstance(self.cqs, dict)
+            or any(not isinstance(v, list) or len(set(v)) != len(v) for v in self.cqs.values())
+        ):
+            raise SchemeError(f"{self.name}: cqs must map schemes to lists of distinct CQ ids")
+        if self.cqs is not None and self.stages != [STAGE2]:
+            raise SchemeError(f"{self.name}: cqs applies only to stages [stage2]")
 
     @classmethod
     def load(cls, path: str | Path) -> RunConfig:
@@ -169,7 +188,7 @@ def dq_definitions_path(config: RunConfig) -> Path:
     """The answer definitions follow the scheme files, independently of the D+Q version."""
     from ..prompts.render import answers_path
 
-    return answers_path({"v1": "v2", "v2": "v3"}[config.schemes])
+    return answers_path({"v1": "v2", **STAGE2_PROMPTS}[config.schemes])
 
 
 def max_tokens_for(spec: Mapping[str, Any], config: RunConfig) -> int:
@@ -288,6 +307,7 @@ def plan(
     entries = select_models(config, only)
     models = models if models is not None else load_models()
     schemes = schemes if schemes is not None else load_all(config.schemes_dir)
+    asked = questions_asked(config, schemes)
     items = list(items)
     calls: list[PlannedCall] = []
     judged = (judge_answers(config, runs_dir if runs_dir is not None else default_runs_dir())
@@ -378,7 +398,7 @@ def plan(
                     ))
             if STAGE2 not in config.stages:
                 continue
-            for cq_id in scheme.cq_order:
+            for cq_id in asked[scheme_id]:
                 rendered = render_stage2(item, scheme, cq_id, config.prompt_version)
                 for sample in range(samples):
                     calls.append(PlannedCall(
@@ -390,6 +410,25 @@ def plan(
                         **identity,
                     ))
     return calls
+
+
+def questions_asked(config: RunConfig, schemes: Mapping[str, Any]) -> dict[str, list[str]]:
+    """The stage-two CQs of every scheme the configuration asks, in the order of the diagram.
+
+    Every CQ without ``cqs``; with it, the CQs listed, which must be CQs of the diagrams
+    the run loads, under schemes it has.
+    """
+    if config.cqs is None:
+        return {scheme_id: list(scheme.cq_order) for scheme_id, scheme in schemes.items()}
+    problems = [f"{scheme_id}: not a scheme of schemes/{config.schemes}/"
+                for scheme_id in sorted(set(config.cqs) - set(schemes))]
+    problems += [f"{scheme_id} {cq}: not a CQ of schemes/{config.schemes}/"
+                 for scheme_id, listed in config.cqs.items() if scheme_id in schemes
+                 for cq in listed if cq not in schemes[scheme_id].cqs]
+    if problems:
+        raise SchemeError(f"{config.name}: cqs: " + "; ".join(problems))
+    return {scheme_id: [cq for cq in scheme.cq_order if cq in (config.cqs.get(scheme_id) or ())]
+            for scheme_id, scheme in schemes.items()}
 
 
 def judge_answers(

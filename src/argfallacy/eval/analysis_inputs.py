@@ -264,7 +264,8 @@ def read_items(config, inputs):
 
 def scheme_registry(inputs):
     registry = {}
-    for directory in sorted(SCHEMES_ROOT / folder for folder in SCHEMES_FOLDERS):
+    # the saved-result analyses read versions 1.1 and 2.0 only
+    for directory in sorted(SCHEMES_ROOT / folder for folder in SCHEMES_FOLDERS[:2]):
         if directory.is_dir():
             for path in directory.glob("*.yaml"):
                 inputs.add(path)

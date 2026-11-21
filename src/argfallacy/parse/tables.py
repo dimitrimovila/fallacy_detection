@@ -77,6 +77,21 @@ SUMMARY_COLUMNS = [
 ]
 
 
+def extra_options(schemes: Mapping[str, Any]) -> list[str]:
+    """The answers of stage-two questions that are not in ``ALL_OPTIONS``, in diagram order.
+
+    A question that names its alternatives (letters, say) gets the same columns as
+    yes and no; the tables of diagrams without such questions keep their columns.
+    """
+    out: list[str] = []
+    for scheme_id in sorted(schemes):
+        scheme = schemes[scheme_id]
+        for cq_id in getattr(scheme, "cq_order", ()):
+            out.extend(option for option in scheme.answer_space(cq_id)
+                       if option not in ALL_OPTIONS and option not in out)
+    return out
+
+
 @lru_cache(maxsize=1)
 def _vocabulary() -> dict[str, Any]:
     return load_vocabulary(check_schemes=False)
@@ -346,7 +361,7 @@ def parse_row(
         "error": row.get("error"),
     }
     # the masses are over the answers at stage two, over the scheme ids at stage one
-    for option in (*ALL_OPTIONS, *SCHEME_IDS):
+    for option in (*ALL_OPTIONS, *SCHEME_IDS, *masses):
         out[f"p_logprob_{option}"] = masses.get(option)
     if row.get("stage") == SSOFT:
         out["path"] = row.get("path") or ""
@@ -378,7 +393,8 @@ def parse_answers(
     extra = ["path", "depth"] if any(row["stage"] == SSOFT for row in parsed) else []
     if any(row["stage"] == DQ for row in parsed):
         extra.append("keys_in_order")
-    return pd.DataFrame(parsed, columns=[*ANSWERS_COLUMNS, *extra])
+    options = [f"p_logprob_{option}" for option in extra_options(schemes)]
+    return pd.DataFrame(parsed, columns=[*ANSWERS_COLUMNS, *options, *extra])
 
 
 def keys_in_order(content: str | None, schema: Mapping[str, Any] | None) -> bool:
@@ -414,7 +430,7 @@ def parse_dq_row(
                "answer": answer, "keys_in_order": ordered,
                "confidence": None, "justification": None,
                "p_label": None, "p_label_lower_bound": None, "logprob_partial": False}
-        for option in (*ALL_OPTIONS, *SCHEME_IDS):
+        for option in (*ALL_OPTIONS, *SCHEME_IDS, *extra_options(schemes)):
             out[f"p_logprob_{option}"] = None
         if cq:
             masses, partial = logprob_masses(raw.get("logprobs"), options, key)
@@ -487,7 +503,8 @@ def _answer_probabilities(
     means and shares over the valid samples.
     """
     yes_like = options[0]
-    admitted = [option for option in ALL_OPTIONS if option in options]
+    admitted = [option for option in (*ALL_OPTIONS, *options) if option in options]
+    admitted = list(dict.fromkeys(admitted))
     columns = [f"p_logprob_{option}" for option in admitted]
     out: dict[str, Any] = {}
     if not several:
@@ -633,7 +650,9 @@ def summarise(
                if "keys_in_order" in answers else {}),
         })
     extra = ["keys_in_order"] if "keys_in_order" in answers else []
-    return pd.DataFrame(records, columns=[*SUMMARY_COLUMNS, *extra]).sort_values(
+    options = extra_options(schemes)
+    options = [*(f"p_logprob_{o}" for o in options), *(f"p_sample_{o}" for o in options)]
+    return pd.DataFrame(records, columns=[*SUMMARY_COLUMNS, *options, *extra]).sort_values(
         ["model", "item_id", "stage", "cq_id"]
     ).reset_index(drop=True)
 

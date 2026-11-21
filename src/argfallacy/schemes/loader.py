@@ -108,6 +108,16 @@ def _as_tuple(value: Any) -> tuple[str, ...]:
     return tuple(value)
 
 
+def _question_text(text: str) -> str:
+    """The text with its spaces normalised and its line breaks kept.
+
+    A folded block already joins its lines with spaces; a literal block keeps them,
+    for a question that lists its alternatives one per line.
+    """
+    lines = (" ".join(line.split()) for line in text.strip().splitlines())
+    return "\n".join(line for line in lines if line)
+
+
 def load_scheme(path: str | Path) -> Scheme:
     path = Path(path)
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -121,7 +131,7 @@ def load_scheme(path: str | Path) -> Scheme:
     for entry in raw["critical_questions"]:
         cq = CriticalQuestion(
             id=entry["id"],
-            text=" ".join(entry["text"].split()),
+            text=_question_text(entry["text"]),
             answer_space=tuple(entry.get("answer_space", default_space)),
             flags=_as_tuple(entry.get("flags")),
             note=entry.get("note"),

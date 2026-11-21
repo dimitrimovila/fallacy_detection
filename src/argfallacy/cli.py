@@ -1,4 +1,5 @@
 """Command line: ``argfallacy annotations update|samples``, ``argfallacy run plan|execute CONFIG``,
+``argfallacy run assemble NAME``,
 ``argfallacy parse RUN_ID``, ``argfallacy report run RUN_ID`` (and its earlier name
 ``argfallacy pilot report RUN_ID``), ``argfallacy score prior``, ``argfallacy evaluate CONFIG``."""
 
@@ -110,6 +111,24 @@ def _cmd_run_execute(args: argparse.Namespace) -> int:
                   f"from cache {counts['from_cache']}, failed {counts['failed']}")
     # the exit code speaks for the entries this invocation ran
     return 1 if any(per_model[name]["failed"] for name in entries) else 0
+
+
+def _cmd_run_assemble(args: argparse.Namespace) -> int:
+    from .client import load_items
+    from .client.reuse import assemble
+    from .client.run import default_runs_dir
+    from .schemes import SchemeError
+
+    try:
+        manifest = assemble(args.name, args.schemes, args.runs, load_items(args.items),
+                            default_runs_dir())
+    except SchemeError as error:
+        raise SystemExit(str(error)) from None
+    print(f"wrote runs/{args.name}/summary.csv: {manifest['rows']} rows, "
+          f"schemes {args.schemes} ({manifest['schemes_version']['tag']})")
+    for cq, by_run in manifest["answers_by_cq"].items():
+        print(f"  {cq:<28}" + ", ".join(f"{run} {own}" for run, own in by_run.items()))
+    return 0
 
 
 def _cmd_parse(args: argparse.Namespace) -> int:
@@ -312,6 +331,19 @@ def build_parser() -> argparse.ArgumentParser:
                 "--run-id", default=None, help="resume this run, or add entries to it"
             )
         parser_for.set_defaults(func=func)
+    assemble_cmd = run.add_parser(
+        "assemble", help="the answer table of a version of the diagrams from several runs"
+    )
+    assemble_cmd.add_argument("name", help="the new folder under runs/, which must not exist")
+    assemble_cmd.add_argument("--schemes", required=True, help="the folder of schemes/")
+    assemble_cmd.add_argument(
+        "--runs", nargs="+", required=True, metavar="RUN_ID",
+        help="the runs to take answers from, the first one first; its entries are kept",
+    )
+    assemble_cmd.add_argument(
+        "--items", default=None, help="an items table (default: data/items.csv)"
+    )
+    assemble_cmd.set_defaults(func=_cmd_run_assemble)
 
     parse_cmd = sub.add_parser("parse", help="turn a run's raw.jsonl into tables")
     parse_cmd.add_argument("run_id")

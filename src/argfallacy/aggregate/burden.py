@@ -3,7 +3,9 @@
 The table of a version of the diagrams sits in ``schemes/burden/<folder>.yaml``,
 outside the folder of the diagrams, so the hash of the schemes in the manifests
 does not change.  It gives one type per CQ: P (premise), E (exception), G (gate),
-D (two fallacies); the arcs follow from the diagram.
+D (two fallacies); the arcs follow from the diagram.  An entry ``{type: T, arc: A}``
+also names the arc that takes the mass under the burden policy, for a node whose
+rule is not the one its type implies (two fallacies, one of them the default).
 """
 
 from __future__ import annotations
@@ -29,6 +31,32 @@ POLICIES = ("burden", "stop", "branch", "charitable")
 BURDEN_DIR = SCHEMES_ROOT / "burden"
 
 
+class Burden(str):
+    """A burden type, compared and printed as its letter, with the arc it may name."""
+
+    arc: str | None
+
+    def __new__(cls, kind: str, arc: str | None = None) -> Burden:
+        value = super().__new__(cls, kind)
+        value.arc = arc
+        return value
+
+
+def _entry(value: object) -> str:
+    """A plain type letter, or a :class:`Burden` for an entry that names its arc."""
+    if isinstance(value, dict):
+        unknown = sorted(set(value) - {"type", "arc"})
+        if unknown or "type" not in value:
+            raise SchemeError(f"burden entry {value!r}: expected keys type and arc")
+        if isinstance(value.get("arc"), bool):
+            raise SchemeError(f"burden entry {value!r}: quote the arc yes or no (YAML 1.1 "
+                              f"booleans)")
+        if value.get("arc") is None:
+            return str(value["type"])
+        return Burden(str(value["type"]), str(value["arc"]))
+    return value if isinstance(value, str) else str(value)
+
+
 def load_burden(
     folder: str, schemes: Mapping[str, Scheme], root: str | Path = BURDEN_DIR
 ) -> dict[str, dict[str, str]]:
@@ -44,6 +72,8 @@ def load_burden(
                           f"does not exist, so A2 and A4 cannot route the answers outside "
                           f"the arcs")
     table = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    table = {scheme_id: {cq: _entry(kind) for cq, kind in (types or {}).items()}
+             for scheme_id, types in table.items()}
     good = good_terminal()
     problems = [f"{name}: not a scheme of schemes/{folder}/" for name in sorted(set(table)
                                                                             - set(schemes))]
@@ -54,7 +84,11 @@ def load_burden(
             if cq not in scheme.nodes:
                 problems.append(f"{scheme_id} {cq}: not a CQ of the diagram")
             elif kind not in TYPES:
-                problems.append(f"{scheme_id} {cq}: type {kind!r}, not one of {list(TYPES)}")
+                problems.append(f"{scheme_id} {cq}: type {str(kind)!r}, not one of "
+                                f"{list(TYPES)}")
+            elif (arc := getattr(kind, "arc", None)) is not None and (
+                    arc not in scheme.nodes[cq]):
+                problems.append(f"{scheme_id} {cq}: arc {arc!r} is not an answer of the node")
             elif kind == GATE and not all(reaches_good(scheme, cq).values()):
                 problems.append(f"{scheme_id} {cq}: a gate, but not both arcs reach {good}")
             elif kind == TWO_FALLACIES and not all(
@@ -71,7 +105,8 @@ def routes(scheme: Scheme, types: Mapping[str, str], policy: str = "burden") -> 
     """Where the mass outside the arcs of each node goes: an arc, ABSTAIN or SPLIT.
 
     With ``burden``: a premise abstains, an exception takes the pass arc, a gate the
-    arc to its follow-up questions, two fallacies split.  ``stop`` abstains at every
+    arc to its follow-up questions, two fallacies split; an entry that names an arc
+    takes that arc.  ``stop`` abstains at every
     CQ, ``branch`` splits at every CQ, ``charitable`` takes the pass arc at every CQ
     and splits at the node with two fallacies.
     """
@@ -80,7 +115,9 @@ def routes(scheme: Scheme, types: Mapping[str, str], policy: str = "burden") -> 
     out = {}
     for node in scheme.nodes:
         kind = types[node]
-        if policy == "stop":
+        if policy == "burden" and getattr(kind, "arc", None) is not None:
+            out[node] = kind.arc
+        elif policy == "stop":
             out[node] = ABSTAIN
         elif policy == "branch" or kind == TWO_FALLACIES:
             out[node] = SPLIT

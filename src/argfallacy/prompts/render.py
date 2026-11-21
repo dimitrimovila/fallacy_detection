@@ -205,12 +205,16 @@ def listed_options(
     A question with its own entry under ``per_cq`` lists its options in the order
     written there, which is the order the question names them; the set must be
     the one the diagram admits.  Every other question gets ``default``, in the
-    order of its ``answer_space``.
+    order of its ``answer_space``; an answer ``default`` does not name takes
+    ``default_other`` with the answer in place of ``{option}``, where the
+    definitions have one.
     """
     real = scheme.answer_space(cq_id)
     own = (meanings.get("per_cq") or {}).get(scheme.scheme_id, {}).get(cq_id)
     if own is None:
-        default = meanings.get("default") or {}
+        default = dict(meanings.get("default") or {})
+        if other := meanings.get("default_other"):
+            default.update({o: other.format(option=o) for o in real if o not in default})
         missing = [o for o in real if o not in default]
         if missing:
             raise SchemeError(f"{scheme.scheme_id} {cq_id}: no definition for {missing}")
