@@ -44,8 +44,7 @@ RULES = {
 }
 ASKED = {"analogy": ["CQ2", "CQ4"], "cause_to_effect": ["CQ3", "CQ4"],
          "example": ["CQ2", "CQ3", "CQ4", "CQ5"], "expert_opinion": ["CQ2", "CQ6"],
-         "popular_opinion": ["CQ1", "CQ2", "CQ3", "CQ4", "CQ5", "CQ6"],
-         "slippery_slope": ["CQ3"]}
+         "popular_opinion": ["CQ1", "CQ2", "CQ3", "CQ4", "CQ5", "CQ6"]}
 
 
 @pytest.mark.parametrize("folder", ["v3", "v3b"])
@@ -140,7 +139,7 @@ def test_the_runs_ask_exactly_the_questions_without_an_identical_earlier_one():
     assert same["ad_hominem"]["CQ1"] == "CQ4"
     assert same["expert_opinion"]["CQ5"] == "CQ4.1"
     assert "CQ6" not in same["expert_opinion"]   # 2.0 CQ5.1 with definitions added
-    assert "CQ3" not in same["slippery_slope"]   # 2.0 CQ3 without its definitions
+    assert same["slippery_slope"]["CQ3"] == "CQ3"  # same text and definitions as 2.0
 
 
 def _items():
@@ -196,10 +195,11 @@ def test_new_and_reused_answers_assemble_into_the_two_variants(tmp_path):
     assert len(table) == 2 * 5 + 3
     assert main["answers_by_cq"]["example CQ1"] == {"old": "CQ1"}
     assert main["answers_by_cq"]["example CQ4"] == {"new": "CQ4"}
-    assert main["answers_by_cq"]["slippery_slope CQ3"] == {"new": "CQ3"}
+    assert main["answers_by_cq"]["slippery_slope CQ3"] == {"old": "CQ3"}
     reused = table[table["source_run_id"] == "old"]
     assert set(zip(reused["scheme"], reused["cq_id"], strict=True)) == {
-        ("example", "CQ1"), ("slippery_slope", "CQ1"), ("slippery_slope", "CQ2")}
+        ("example", "CQ1"), ("slippery_slope", "CQ1"), ("slippery_slope", "CQ2"),
+        ("slippery_slope", "CQ3")}
     assert set(table.loc[table["source_run_id"] == "new", "source_prompt_version"]) == {
         "stage2_v4"}
     assert set(reused["source_prompt_version"]) == {"stage2_v3"}

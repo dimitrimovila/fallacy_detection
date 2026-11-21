@@ -168,3 +168,13 @@ per_cq:
       "no": >-
         the number of people is adequate for the conclusion, or the conclusion does not
         depend on how many people were consulted.
+
+  slippery_slope:
+    CQ3:
+      "yes": >-
+        there is a realistic point in the chain where it could and plausibly would be
+        stopped or reversed, and the text gives no good reason why it would not be
+      "no": >-
+        the text makes it plausible that, once started, the chain would not realistically be
+        stopped or reversed before Cn; the mere possibility of stopping it in principle is
+        not enough for yes

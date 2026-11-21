@@ -25,4 +25,3 @@ cqs:
   example: [CQ2, CQ3, CQ4, CQ5]
   expert_opinion: [CQ2, CQ6]
   popular_opinion: [CQ1, CQ2, CQ3, CQ4, CQ5, CQ6]
-  slippery_slope: [CQ3]
