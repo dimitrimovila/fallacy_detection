@@ -1,0 +1,20 @@
+# The second wording of the transfer question of example (CQ5b), which takes the place of
+# CQ5 in schemes/v3b/ (version 2.1b). Same items, entries and settings as full_v4.yaml;
+# every other answer of version 2.1b comes from full_v4 and full run v3.
+
+name: full_v4_transfer2
+
+items:
+  exclude_none_scheme: false
+
+stages: [stage2]
+scheme_condition: gold
+schemes: v3b
+models: [qwen3_8_27b, gemma4_31b, gpt_oss_20b, gpt_oss_120b, k2_horizon_32b_high]
+prompt_version: v4
+
+generation:
+  max_tokens: 512
+
+cqs:
+  example: [CQ5b]

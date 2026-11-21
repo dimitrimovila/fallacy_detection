@@ -32,3 +32,13 @@ def test_v2_declares_one_version():
 
     assert schemes_tag(SCHEMES_ROOT / "v2") == "2.0"
     assert schemes_tag() == "1.1"
+
+
+def test_v3_and_v3b_snapshots_unchanged(vocab):
+    from argfallacy.client.run import schemes_tag
+
+    for folder, tag in (("v3", "2.1"), ("v3b", "2.1b")):
+        assert validate_schemes.check(
+            load_all(SCHEMES_ROOT / folder), vocab, validate_schemes.SNAPSHOT_V3
+        ) == []
+        assert schemes_tag(SCHEMES_ROOT / folder) == tag

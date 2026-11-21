@@ -38,8 +38,10 @@ data/             the data: items.csv and annotations.csv
 docs/             specifications per component, data log
 labels/           label dictionaries: fallacies and schemes
 prompts/          versioned prompt templates, JSON Schemas of the answers, answer definitions
-schemes/          the eight scheme diagrams as YAML, one folder per version: v1/ (1.1, the default), v2/ (2.0);
-                  burden/, the burden of proof of each critical question, one table per version
+schemes/          the eight scheme diagrams as YAML, one folder per version: v1/ (1.1, the default), v2/ (2.0),
+                  v3/ (2.1) and v3b/ (2.1b, example with the second wording of its transfer question);
+                  burden/, the burden of proof of each critical question, one table per version;
+                  ids/v3.csv, the ids of the 2.1 questions on the diagram page and in version 2.0
 serving/          the models, how to serve them with vLLM, a smoke test, the cluster jobs
 src/argfallacy/   the Python package: schemes, labels, annotations, prompts, client, parse, aggregate, eval, CLI
 tests/            pytest suite, with a fake model backend (no network calls)
@@ -187,6 +189,20 @@ no stated confidence; the verdict row has `p_label` and the stated confidence.
 argfallacy run plan configs/dq_full_v3.yaml --model qwen3_8_27b
 argfallacy report format <run_id> --model qwen3_8_27b
 sbatch serving/slurm/runs.sbatch qwen3_8_27b <config> <run_id> [<config> <run_id> ...]
+```
+
+Version 2.1 (`schemes/v3/`, prompt `stage2_v4`) asks again only the questions whose
+prompt differs from every 2.0 prompt apart from the question id: `configs/full_v4.yaml`
+lists them under `cqs`, and `configs/full_v4_transfer2.yaml` asks CQ5b of
+`schemes/v3b/`. A question may admit answers other than yes and no (CQ4 of example: `a`
+or `b`); the parser adds their `p_logprob_` and `p_sample_` columns. The answer table of a
+version is then put together from the new runs and the earlier ones, first run first,
+into a new folder of `runs/`; every row keeps `source_run_id`, `source_cq_id` and
+`source_prompt_version`:
+
+```bash
+argfallacy run assemble <name> --schemes v3 --runs <full_v4 run> 20261019T151336Z_full_v3
+argfallacy run assemble <name> --schemes v3b --runs <transfer2 run> <full_v4 run> 20261019T151336Z_full_v3
 ```
 
 The format report reads a parsed `dq` or `zeroshot` run, without gold labels or
