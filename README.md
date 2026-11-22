@@ -39,9 +39,11 @@ docs/             specifications per component, data log
 labels/           label dictionaries: fallacies and schemes
 prompts/          versioned prompt templates, JSON Schemas of the answers, answer definitions
 schemes/          the eight scheme diagrams as YAML, one folder per version: v1/ (1.1, the default), v2/ (2.0),
-                  v3/ (2.1) and v3b/ (2.1b, example with the second wording of its transfer question);
+                  v4/ (2.1); v3b/, the first 2.1, the one of the run (its files carry the tag 2.1b), and
+                  v3/, the same with the discarded wording of the transfer question of example (CQ5 in
+                  place of CQ5b);
                   burden/, the burden of proof of each critical question, one table per version;
-                  ids/v3.csv, the ids of the 2.1 questions on the diagram page and in version 2.0
+                  ids/, the ids of the questions of v3/ and v4/ on the diagram page and in version 2.0
 serving/          the models, how to serve them with vLLM, a smoke test, the cluster jobs
 src/argfallacy/   the Python package: schemes, labels, annotations, prompts, client, parse, aggregate, eval, CLI
 tests/            pytest suite, with a fake model backend (no network calls)
@@ -191,10 +193,10 @@ argfallacy report format <run_id> --model qwen3_8_27b
 sbatch serving/slurm/runs.sbatch qwen3_8_27b <config> <run_id> [<config> <run_id> ...]
 ```
 
-Version 2.1 (`schemes/v3/`, prompt `stage2_v4`) asks again only the questions whose
+The run of the first 2.1 (`schemes/v3/`, prompt `stage2_v4`) asks again only the questions whose
 prompt differs from every 2.0 prompt apart from the question id: `configs/full_v4.yaml`
 lists them under `cqs`, and `configs/full_v4_transfer2.yaml` asks CQ5b of
-`schemes/v3b/`. A question may admit answers other than yes and no (CQ4 of example: `a`
+`schemes/v3b/`, the wording chosen. A question may admit answers other than yes and no (CQ4 of example: `a`
 or `b`); the parser adds their `p_logprob_` and `p_sample_` columns. The answer table of a
 version is then put together from the new runs and the earlier ones, first run first,
 into a new folder of `runs/`; every row keeps `source_run_id`, `source_cq_id` and
@@ -203,7 +205,12 @@ into a new folder of `runs/`; every row keeps `source_run_id`, `source_cq_id` an
 ```bash
 argfallacy run assemble <name> --schemes v3 --runs <full_v4 run> 20261019T151336Z_full_v3
 argfallacy run assemble <name> --schemes v3b --runs <transfer2 run> <full_v4 run> 20261019T151336Z_full_v3
+argfallacy run assemble <name> --schemes v4 --runs <full_v4 run> <transfer2 run> 20261019T151336Z_full_v3 20261005T193017Z_full_v2
 ```
+
+Version 2.1 (`schemes/v4/`, prompt `stage2_v5`) was redesigned after that run and needs no
+call: every question is one already asked in 1.1, 2.0 or the first 2.1. A question that
+appears twice in a diagram says so with `same_as`; it is never asked twice.
 
 The format report reads a parsed `dq` or `zeroshot` run, without gold labels or
 accuracy. It fails on absent or failed calls, invalid or truncated answers,

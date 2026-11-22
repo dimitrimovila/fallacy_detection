@@ -59,14 +59,16 @@ MANIFEST_NAME = "manifest.json"
 
 RETRYABLE = ("429", "500", "502", "503", "504", "timeout", "connection")
 
-SCHEMES_FOLDERS = ("v1", "v2", "v3", "v3b")
-"""The folders of ``schemes/`` a run can load: versions 1.1, 2.0, 2.1 and its variant 2.1b,
-which has the second wording of the example transfer question in place of the first."""
+SCHEMES_FOLDERS = ("v1", "v2", "v3", "v3b", "v4")
+"""The folders of ``schemes/`` a run can load: versions 1.1 and 2.0, the first 2.1 (``v3b``,
+whose files carry the tag 2.1b; ``v3`` has the discarded wording of the example transfer
+question, CQ5 in place of CQ5b) and the redesigned 2.1 (``v4``)."""
 V2_SCHEMES, V3_PROMPTS = "v2", "v3"
-STAGE2_PROMPTS = {"v2": "v3", "v3": "v4", "v3b": "v4"}
+STAGE2_PROMPTS = {"v2": "v3", "v3": "v4", "v3b": "v4", "v4": "v5"}
 """The stage-two definitions are written on the CQ ids of one version of the diagrams:
-``stage2_v3_answers.yaml`` on 2.0, ``stage2_v4_answers.yaml`` on 2.1 and 2.1b. Each goes
-with those folders and with nothing else; schemes/v1/ takes the earlier prompts."""
+``stage2_v3_answers.yaml`` on 2.0, ``stage2_v4_answers.yaml`` on the two wordings of the
+first 2.1 and ``stage2_v5_answers.yaml`` on the redesigned 2.1. Each goes with those
+folders and with nothing else; schemes/v1/ takes the earlier prompts."""
 JUDGE_KEYS = ("answers_from", "answers_model", "justifications")
 
 
@@ -415,16 +417,24 @@ def plan(
 def questions_asked(config: RunConfig, schemes: Mapping[str, Any]) -> dict[str, list[str]]:
     """The stage-two CQs of every scheme the configuration asks, in the order of the diagram.
 
+    A CQ that repeats another one (``same_as``) is never asked: the answers are the first
+    question's, and :func:`argfallacy.client.reuse.assemble` writes them under both ids.
+
     Every CQ without ``cqs``; with it, the CQs listed, which must be CQs of the diagrams
     the run loads, under schemes it has.
     """
     if config.cqs is None:
-        return {scheme_id: list(scheme.cq_order) for scheme_id, scheme in schemes.items()}
+        return {scheme_id: [cq for cq in scheme.cq_order if scheme.cqs[cq].same_as is None]
+                for scheme_id, scheme in schemes.items()}
     problems = [f"{scheme_id}: not a scheme of schemes/{config.schemes}/"
                 for scheme_id in sorted(set(config.cqs) - set(schemes))]
     problems += [f"{scheme_id} {cq}: not a CQ of schemes/{config.schemes}/"
                  for scheme_id, listed in config.cqs.items() if scheme_id in schemes
                  for cq in listed if cq not in schemes[scheme_id].cqs]
+    problems += [f"{scheme_id} {cq}: repeats {schemes[scheme_id].cqs[cq].same_as}"
+                 for scheme_id, listed in config.cqs.items() if scheme_id in schemes
+                 for cq in listed if cq in schemes[scheme_id].cqs
+                 and schemes[scheme_id].cqs[cq].same_as is not None]
     if problems:
         raise SchemeError(f"{config.name}: cqs: " + "; ".join(problems))
     return {scheme_id: [cq for cq in scheme.cq_order if cq in (config.cqs.get(scheme_id) or ())]

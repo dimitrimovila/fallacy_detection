@@ -42,3 +42,12 @@ def test_v3_and_v3b_snapshots_unchanged(vocab):
             load_all(SCHEMES_ROOT / folder), vocab, validate_schemes.SNAPSHOT_V3
         ) == []
         assert schemes_tag(SCHEMES_ROOT / folder) == tag
+
+
+def test_v4_snapshot_unchanged(vocab):
+    from argfallacy.client.run import schemes_tag
+
+    assert validate_schemes.check(
+        load_all(SCHEMES_ROOT / "v4"), vocab, validate_schemes.SNAPSHOT_V4
+    ) == []
+    assert schemes_tag(SCHEMES_ROOT / "v4") == "2.1"

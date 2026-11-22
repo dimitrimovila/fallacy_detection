@@ -1,0 +1,57 @@
+# Redesigned version 2.1, chosen on the 601 test items from saved answers; the first 2.1
+# is in schemes/v3b/.
+scheme_id: cause_to_effect
+name: Argument from cause to effect
+version: "2.1"
+
+schema: |
+  Generally, if A occurs, then B will (might) occur.
+  In this case, A occurs (might occur).
+  Therefore in this case, B will (might) occur.
+
+identification_question: >-
+  Does this text use a known causal relationship as a basis for predicting or
+  explaining a future or past event?
+
+variables:
+  A: the putative cause
+  B: the putative effect
+
+default_answer_space: ["yes", "no"]
+
+critical_questions:
+  - id: CQ1
+    text: Does the argument claim that A causes B solely because B occurred after A?
+  - id: CQ2
+    text: >-
+      Does the text present A as the only cause of B, while B clearly also depends on other
+      causes?
+  - id: CQ3
+    text: Is it plausible that A leads to B?
+  - id: CQ4
+    text: >-
+      Does the text present a biased selection of evidence or cases that makes the causal
+      generalization appear more strongly supported than it actually is?
+  - id: CQ5
+    text: >-
+      Does the text report observed cases for the causal generalization that are too few to
+      support it?
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "yes": {terminal: post_hoc}
+      "no":  {node: CQ2}
+    CQ2:
+      "yes": {terminal: causal_reductionism}
+      "no":  {node: CQ3}
+    CQ3:
+      "yes": {node: CQ4}
+      "no":  {terminal: false_premise}
+    CQ4:
+      "yes": {terminal: cherry_picking}
+      "no":  {node: CQ5}
+    CQ5:
+      "yes": {terminal: hasty_generalization}
+      "no":  {terminal: good_argumentation}

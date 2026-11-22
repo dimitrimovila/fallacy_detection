@@ -61,19 +61,24 @@ def _without_id(folder: str, scheme: Any, cq_id: str) -> tuple[str, str]:
 @cache
 def _prompts(folder: str) -> dict[tuple[str, str], tuple[str, str]]:
     schemes = load_all(SCHEMES_ROOT / folder)
-    return {(scheme_id, cq): _without_id(folder, scheme, cq)
+    return {(scheme_id, cq): _without_id(folder, scheme, scheme.cqs[cq].same_as or cq)
             for scheme_id, scheme in schemes.items() for cq in scheme.cq_order}
 
 
 def identical_questions(new: str, old: str) -> dict[str, dict[str, str]]:
     """scheme -> CQ of ``schemes/<new>/`` -> the CQ of ``schemes/<old>/`` with its prompt.
 
-    Only the questions with such a match appear.  Two matches for one question would
-    mean two identical questions in one diagram, and stop here.
+    Only the questions with such a match appear; a question that repeats another one of
+    its diagram (``same_as``) is never a match itself, and is matched as its first
+    question.  Two matches for one question would mean two identical questions in one
+    diagram that do not say so, and stop here.
     """
     by_prompt: dict[tuple[str, tuple[str, str]], list[str]] = {}
+    repeats = {(scheme_id, cq) for scheme_id, scheme in load_all(SCHEMES_ROOT / old).items()
+               for cq in scheme.cq_order if scheme.cqs[cq].same_as is not None}
     for (scheme_id, cq), prompt in _prompts(old).items():
-        by_prompt.setdefault((scheme_id, prompt), []).append(cq)
+        if (scheme_id, cq) not in repeats:
+            by_prompt.setdefault((scheme_id, prompt), []).append(cq)
     out: dict[str, dict[str, str]] = {}
     for (scheme_id, cq), prompt in _prompts(new).items():
         matches = by_prompt.get((scheme_id, prompt), [])
@@ -88,7 +93,8 @@ def identical_questions(new: str, old: str) -> dict[str, dict[str, str]]:
 def questions_to_ask(new: str, old: str) -> dict[str, list[str]]:
     """The CQs of ``schemes/<new>/`` without an identical question in ``schemes/<old>/``."""
     same = identical_questions(new, old)
-    return {scheme_id: [cq for cq in scheme.cq_order if cq not in same.get(scheme_id, {})]
+    return {scheme_id: [cq for cq in scheme.cq_order if cq not in same.get(scheme_id, {})
+                        and scheme.cqs[cq].same_as is None]
             for scheme_id, scheme in sorted(load_all(SCHEMES_ROOT / new).items())}
 
 

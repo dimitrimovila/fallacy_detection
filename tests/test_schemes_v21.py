@@ -1,4 +1,4 @@
-"""The diagrams of version 2.1 (schemes/v3/) and of their variant 2.1b (schemes/v3b/).
+"""The diagrams of version 2.1 (schemes/v3b/) and its discarded wording (schemes/v3/).
 
 What is checked: the diagrams are complete; the rule for an undetermined answer of each
 CQ is the one written with the diagrams; the question with the answers ``a`` and ``b``
@@ -23,6 +23,7 @@ from argfallacy.parse import parse_answers, parse_run, summarise
 from argfallacy.paths import REPO_ROOT, SCHEMES_ROOT
 from argfallacy.prompts import render_stage2
 from argfallacy.schemes import SchemeError, load_all, traverse
+from argfallacy.schemes.loader import load_scheme
 from fakes.llm import FakeBackend
 
 FAKE_MODELS = load_models(Path(__file__).parent / "fakes" / "models.yaml")
@@ -220,3 +221,73 @@ def test_a_parse_without_letters_keeps_the_earlier_columns(schemes):
     frame = parse_answers([], schemes)
     assert not [c for c in frame.columns if c in ("p_logprob_a", "p_logprob_b")]
     assert not [c for c in summarise(frame, schemes).columns if c.endswith("_a")]
+
+
+# ------------------------------------------------------- the redesigned 2.1 (schemes/v4/)
+V4 = load_all(SCHEMES_ROOT / "v4")
+RULES_V4 = {
+    **{s: r for s, r in RULES.items() if s not in ("cause_to_effect", "popular_opinion")},
+    "cause_to_effect": {"CQ1": "no", "CQ2": "no", "CQ3": ABSTAIN, "CQ4": "no", "CQ5": "no"},
+    "popular_opinion": {"CQ1": "yes", **{f"CQ{i}": "no" for i in range(2, 10)}},
+}
+
+
+def test_the_redesigned_diagrams_are_complete_and_keep_the_verdict_menu(vocab):
+    v20 = load_all(SCHEMES_ROOT / "v2")
+    for scheme_id, scheme in V4.items():
+        assert scheme.terminals <= set(vocab["terminals"])
+        assert scheme.terminals <= v20[scheme_id].terminals, scheme_id
+        assert scheme.cq_order == [f"CQ{i}" for i in range(1, len(scheme.cq_order) + 1)]
+    popular = V4["popular_opinion"]
+    assert {q: c.same_as for q, c in popular.cqs.items() if c.same_as} == {
+        "CQ7": "CQ2", "CQ8": "CQ4", "CQ9": "CQ6"}
+    assert popular.nodes["CQ1"]["yes"].target == "CQ2"
+    assert popular.nodes["CQ5"]["no"].target == "CQ7"
+    assert {a: e.target for a, e in popular.nodes["CQ6"].items()} == {
+        "yes": "hasty_generalization", "no": "good_argumentation"}
+    assert {a: e.target for a, e in popular.nodes["CQ9"].items()} == {
+        "yes": "hasty_generalization", "no": "ad_populum"}
+
+
+def test_the_rules_for_undetermined_answers_of_the_redesigned_diagrams():
+    table = load_burden("v4", V4)
+    for scheme_id, scheme in V4.items():
+        assert routes(scheme, table[scheme_id]) == RULES_V4[scheme_id], scheme_id
+
+
+def test_a_repeated_question_must_be_the_same_question(tmp_path):
+    source = (SCHEMES_ROOT / "v4" / "popular_opinion.yaml").read_text(encoding="utf-8")
+    broken = source.replace("same_as: CQ2", "same_as: CQ1")
+    (tmp_path / "popular_opinion.yaml").write_text(broken, encoding="utf-8")
+    with pytest.raises(SchemeError, match="repeats CQ1 with another text"):
+        load_scheme(tmp_path / "popular_opinion.yaml")
+
+
+def test_every_question_of_the_redesign_has_saved_answers():
+    found = {(s, q): folder for folder in ("v1", "v2", "v3b", "v3")
+             for s, cqs in identical_questions("v4", folder).items() for q in cqs}
+    missing = [(s, q) for s, scheme in V4.items() for q in scheme.cq_order
+               if (s, q) not in found]
+    assert missing == []
+    assert identical_questions("v4", "v1")["popular_opinion"]["CQ8"] == "CQ1"
+    assert identical_questions("v4", "v1")["example"]["CQ2"] == "CQ2.2"
+
+
+def test_a_repeated_question_is_never_asked_and_takes_the_answers_of_the_first(tmp_path):
+    items = pd.DataFrame([{"item_id": "p1", "gold_scheme": "popular_opinion",
+                           "text": "Everybody thinks so."}])
+    config = _config("redesign", "v4", "v5")
+    asked = {c.cq_id for c in plan(config, items.to_dict("records"), FAKE_MODELS)}
+    assert asked == {f"CQ{i}" for i in range(1, 7)}
+    with pytest.raises(SchemeError, match="repeats CQ2"):
+        plan(_config("redesign", "v4", "v5", {"popular_opinion": ["CQ7"]}),
+             items.to_dict("records"), FAKE_MODELS)
+    execute(config, items.to_dict("records"), run_id="r", runs_dir=tmp_path,
+            backend=FakeBackend(), models=FAKE_MODELS, sleep=lambda _: None)
+    parse_run(tmp_path / "r")
+    done = assemble("table", "v4", ["r"], items, tmp_path)
+    assert done["answers_by_cq"]["popular_opinion CQ7"] == {"r": "CQ2"}
+    table = pd.read_csv(tmp_path / "table" / "summary.csv", dtype=str).set_index("cq_id")
+    assert list(table.index) == sorted(table.index) and len(table) == 9
+    for twin, first in {"CQ7": "CQ2", "CQ8": "CQ4", "CQ9": "CQ6"}.items():
+        assert table.loc[twin, "answer"] == table.loc[first, "answer"]

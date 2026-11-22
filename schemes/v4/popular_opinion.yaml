@@ -1,0 +1,88 @@
+# Redesigned version 2.1, chosen on the 601 test items from saved answers; the first 2.1
+# is in schemes/v3b/.
+scheme_id: popular_opinion
+name: Argument from popular opinion
+version: "2.1"
+
+schema: |
+  If a large majority of some reference group accept A as true, then there is a
+  presumption in favour of A.
+  A large majority of the reference group accept A as true.
+  Therefore there is a presumption in favour of A.
+
+identification_question: >-
+  Does this text use the fact that the conclusion is supported by a relatively
+  large number of people as its main argument in favour of that conclusion?
+
+variables:
+  A: the proposition held to be true by the group
+
+default_answer_space: ["yes", "no"]
+
+critical_questions:
+  - id: CQ1
+    text: >-
+      Is the wide acceptance of A offered as a presumption that remains open to other
+      evidence, rather than as proof that A is true?
+  - id: CQ2
+    text: >-
+      Does the argument rely on the views of particular people that the text identifies,
+      rather than only on the claim that people in general accept A?
+  - id: CQ3
+    text: Does the majority of the reference group rely on the concept of tradition to assert A?
+  - id: CQ4
+    text: >-
+      Are there any indications that the group of people who maintain that A is true (or
+      false) was clearly chosen because they were already biased?
+  - id: CQ5
+    text: Does the argument claim something is better or truer solely because it is natural?
+  - id: CQ6
+    text: >-
+      Are the people whose views are cited too few to support the conclusion drawn from
+      them?
+  - id: CQ7
+    text: >-
+      Does the argument rely on the views of particular people that the text identifies,
+      rather than only on the claim that people in general accept A?
+    same_as: CQ2
+  - id: CQ8
+    text: >-
+      Are there any indications that the group of people who maintain that A is true (or
+      false) was clearly chosen because they were already biased?
+    same_as: CQ4
+  - id: CQ9
+    text: >-
+      Are the people whose views are cited too few to support the conclusion drawn from
+      them?
+    same_as: CQ6
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "yes": {node: CQ2}
+      "no":  {node: CQ3}
+    CQ2:
+      "yes": {node: CQ4}
+      "no":  {terminal: good_argumentation}
+    CQ3:
+      "yes": {terminal: appeal_to_tradition}
+      "no":  {node: CQ5}
+    CQ4:
+      "yes": {terminal: cherry_picking}
+      "no":  {node: CQ6}
+    CQ5:
+      "yes": {terminal: appeal_to_nature}
+      "no":  {node: CQ7}
+    CQ6:
+      "yes": {terminal: hasty_generalization}
+      "no":  {terminal: good_argumentation}
+    CQ7:
+      "yes": {node: CQ8}
+      "no":  {terminal: ad_populum}
+    CQ8:
+      "yes": {terminal: cherry_picking}
+      "no":  {node: CQ9}
+    CQ9:
+      "yes": {terminal: hasty_generalization}
+      "no":  {terminal: ad_populum}

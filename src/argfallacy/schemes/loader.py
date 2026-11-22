@@ -34,6 +34,9 @@ class CriticalQuestion:
     answer_space: tuple[str, ...]
     flags: tuple[str, ...] = ()
     note: str | None = None
+    same_as: str | None = None
+    """The question this one repeats in another point of the diagram: same text, same
+    answers, asked once; its answer is that question's."""
 
 
 @dataclass(frozen=True)
@@ -135,6 +138,7 @@ def load_scheme(path: str | Path) -> Scheme:
             answer_space=tuple(entry.get("answer_space", default_space)),
             flags=_as_tuple(entry.get("flags")),
             note=entry.get("note"),
+            same_as=entry.get("same_as"),
         )
         cqs[cq.id] = cq
         order.append(cq.id)
@@ -186,6 +190,15 @@ def _check_integrity(scheme: Scheme, filename: str) -> None:
 
     if scheme.start not in scheme.nodes:
         problems.append(f"start node {scheme.start!r} is not defined")
+
+    for cq in scheme.cqs.values():
+        if cq.same_as is None:
+            continue
+        first = scheme.cqs.get(cq.same_as)
+        if first is None or first.same_as is not None:
+            problems.append(f"CQ {cq.id}: same_as {cq.same_as!r} is not a first question")
+        elif first.text != cq.text or first.answer_space != cq.answer_space:
+            problems.append(f"CQ {cq.id}: repeats {cq.same_as} with another text or answers")
 
     for node_id, edges in scheme.nodes.items():
         if node_id not in scheme.cqs:
