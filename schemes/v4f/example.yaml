@@ -1,0 +1,118 @@
+# Candidate wordings of the filter question of argument from example (CQ2 of
+# schemes/v4/), for collecting their answers only. The chain of the candidates is not a
+# diagram to traverse: each one is compared in the place of CQ2 in the diagram of
+# schemes/v4/.
+scheme_id: example
+name: Argument from example
+version: "2.1-filter"
+
+schema: |
+  In this particular case, the individual a has property F and also property G.
+  a is typical of things that have F and may or may not also have G.
+  Therefore, generally, if x has property F then x also has property G.
+
+identification_question: >-
+  Does the text use an example that is considered appropriate to draw a
+  conclusion on the main topic?
+
+variables:
+  a: the individual case cited as example
+  F: the property shared with the domain of the generalization
+  G: the property transferred to the conclusion
+  x: any individual the generalization ranges over
+
+default_answer_space: ["yes", "no"]
+
+critical_questions:
+  - id: CQ1
+    text: Is the case reported as the example clearly false or unrealistic?
+  - id: CQ2a
+    text: >-
+      Is the example given statistically unrepresentative, so that it cannot be used to
+      support the generalization?
+  - id: CQ2b
+    text: >-
+      Is the example given so specific, or chosen in such a biased way, that it is
+      unrepresentative and therefore cannot be used to support the generalization?
+  - id: CQ2c
+    text: >-
+      Is the example atypical of the kinds of cases that the generalization ranges over?
+  - id: CQ2d
+    text: >-
+      Is the example so atypical of the kinds of cases that the generalization ranges over
+      that it cannot be used to support the generalization?
+  - id: CQ2f
+    text: >-
+      Is the generalization stated more strongly than the cited cases allow?
+  - id: CQ2g
+    text: >-
+      Are the cases cited so few, or so one-sided, that they are unrepresentative and
+      therefore cannot be used to support the generalization?
+  - id: CQ2i
+    text: >-
+      Is the example given so specific that it is statistically unrepresentative and
+      therefore cannot be used to support the generalization?
+  - id: CQ2j
+    text: >-
+      Are the cases cited so few, or so one-sided, that they are unrepresentative and
+      therefore cannot be used to support the generalization?
+  - id: CQ2k
+    text: >-
+      Does the text leave out so many relevant cases, or such contrary ones, that the cases
+      it cites cannot support the generalization?
+  - id: CQ3
+    text: >-
+      Does the argument reach its conclusion by pushing a reasonable position to an extreme,
+      so that it looks absurd, when that extreme version does not follow from it?
+  - id: CQ4
+    text: |-
+      What is the main reason why the cited examples fail to support the generalization:
+      a) The argument selectively cites favourable examples while leaving out identifiable cases that would weaken the generalization.
+      b) The cited examples are too few or too limited in range to support the generalization as stated.
+      If both apply, choose a).
+    answer_space: ["a", "b"]
+  - id: CQ5
+    text: Is the property from the example generalized to a target case that is too different?
+
+graph:
+  start: CQ1
+  nodes:
+    CQ1:
+      "yes": {terminal: false_premise}
+      "no":  {node: CQ2a}
+    CQ2a:
+      "yes": {node: CQ2b}
+      "no":  {node: CQ2b, reconvergence: true}
+    CQ2b:
+      "yes": {node: CQ2c}
+      "no":  {node: CQ2c, reconvergence: true}
+    CQ2c:
+      "yes": {node: CQ2d}
+      "no":  {node: CQ2d, reconvergence: true}
+    CQ2d:
+      "yes": {node: CQ2f}
+      "no":  {node: CQ2f, reconvergence: true}
+    CQ2f:
+      "yes": {node: CQ2g}
+      "no":  {node: CQ2g, reconvergence: true}
+    CQ2g:
+      "yes": {node: CQ2i}
+      "no":  {node: CQ2i, reconvergence: true}
+    CQ2i:
+      "yes": {node: CQ2j}
+      "no":  {node: CQ2j, reconvergence: true}
+    CQ2j:
+      "yes": {node: CQ2k}
+      "no":  {node: CQ2k, reconvergence: true}
+    CQ2k:
+      "yes": {node: CQ4}
+      "no":  {node: CQ3}
+    CQ3:
+      "yes": {terminal: appeal_to_extremes}
+      "no":  {node: CQ5}
+    CQ4:
+      "a":   {terminal: cherry_picking}
+      "b":   {terminal: hasty_generalization}
+    CQ5:
+      "yes": {terminal: weak_analogy}
+      "no":  {terminal: good_argumentation}

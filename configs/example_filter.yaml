@@ -1,0 +1,22 @@
+# Candidate wordings of the filter question of argument from example (schemes/v4f/), asked
+# in the place of CQ2 of schemes/v4/: stage two only, under the gold scheme, on the 86
+# example items of the test set, with the entries and regimes of full_v4.yaml. The prompt
+# v6 has the template of v5, so the answers of the wording chosen are those version 2.1
+# takes. `argfallacy run plan configs/example_filter.yaml` counts the calls.
+
+name: example_filter
+
+items:
+  exclude_none_scheme: false
+
+stages: [stage2]
+scheme_condition: gold
+schemes: v4f
+models: [qwen3_8_27b, gemma4_31b, gpt_oss_20b, gpt_oss_120b, k2_horizon_32b_high]
+prompt_version: v6
+
+generation:
+  max_tokens: 512
+
+cqs:
+  example: [CQ2a, CQ2b, CQ2c, CQ2d, CQ2f, CQ2g, CQ2i, CQ2j, CQ2k]

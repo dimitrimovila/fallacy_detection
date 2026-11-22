@@ -291,3 +291,23 @@ def test_a_repeated_question_is_never_asked_and_takes_the_answers_of_the_first(t
     assert list(table.index) == sorted(table.index) and len(table) == 9
     for twin, first in {"CQ7": "CQ2", "CQ8": "CQ4", "CQ9": "CQ6"}.items():
         assert table.loc[twin, "answer"] == table.loc[first, "answer"]
+
+
+# ------------------------------------------------- candidates of the example filter (v4f)
+def test_the_filter_candidates_are_new_questions_with_the_prompt_of_version_21():
+    config = RunConfig.load(REPO_ROOT / "configs/example_filter.yaml")
+    candidates = load_all(SCHEMES_ROOT / "v4f")
+    assert list(candidates) == ["example"]
+    scheme, v4 = candidates["example"], V4["example"]
+    asked = config.cqs["example"]
+    assert [q for q in scheme.cq_order if q not in v4.cqs] == asked
+    assert (scheme.schema, scheme.variables) == (v4.schema, v4.variables)
+    calls = plan(RunConfig(raw={}, **{**config.raw, "models": ["fake"]}),
+                 _items().to_dict("records"), FAKE_MODELS)
+    assert {c.item_id for c in calls} == {"e1", "e2"} and {c.cq_id for c in calls} == set(asked)
+    # every other question of the folder is the one of schemes/v4/, and no candidate has
+    # the prompt of an earlier question
+    assert identical_questions("v4f", "v4")["example"] == {q: q for q in ("CQ1", "CQ3", "CQ4",
+                                                                        "CQ5")}
+    for folder in ("v1", "v2", "v3", "v3b", "v4"):
+        assert not set(asked) & set(identical_questions("v4f", folder).get("example", {}))

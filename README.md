@@ -41,7 +41,8 @@ prompts/          versioned prompt templates, JSON Schemas of the answers, answe
 schemes/          the eight scheme diagrams as YAML, one folder per version: v1/ (1.1, the default), v2/ (2.0),
                   v4/ (2.1); v3b/, the first 2.1, the one of the run (its files carry the tag 2.1b), and
                   v3/, the same with the discarded wording of the transfer question of example (CQ5 in
-                  place of CQ5b);
+                  place of CQ5b); v4f/, candidate wordings of the filter question of example, to
+                  collect answers only (`configs/example_filter.yaml`);
                   burden/, the burden of proof of each critical question, one table per version;
                   ids/, the ids of the questions of v3/ and v4/ on the diagram page and in version 2.0
 serving/          the models, how to serve them with vLLM, a smoke test, the cluster jobs
