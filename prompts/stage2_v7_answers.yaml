@@ -1,0 +1,47 @@
+# What each admitted answer means, in the stage two prompt. Version v7, for the candidate
+# questions of schemes/v4g/; the template stage2_v7.md is the same text as stage2_v3.md, and
+# every text outside `per_cq` is that of stage2_v3_answers.yaml.
+# The keys yes and no must be quoted: in YAML 1.1 they are booleans.
+
+prompt_version: stage2_v7
+
+# Meaning of yes and no for every CQ that has no entry under `per_cq`. The
+# instructions of the template apply to every CQ.
+default:
+  "yes": for the argument in this text, the answer to the question is yes
+  "no": for the argument in this text, the answer to the question is no
+
+# Meaning of any other admitted answer of a CQ without an entry under `per_cq`, such as
+# the letters of a question that spells out its alternatives in its own text. {option}
+# becomes the answer; no other braces here.
+default_other: for the argument in this text, the answer to the question is {option}
+
+# The third option, a choice of this project. {options} becomes the real alternatives
+# of the question, in the order in which the prompt lists them. No other braces here:
+# the text goes through str.format.
+cannot_be_determined: >-
+  use this only if you have no basis at all for answering {options}, even after
+  using everything listed in the section "What to do". The text not
+  stating the answer explicitly is not, by itself, a reason to use it.
+  If you lean towards one answer, however slightly, give it and lower your confidence.
+
+# The fourth option, added by the code exactly like cannot_be_determined: never in
+# the answer_space of a scheme. It marks something the question takes for granted
+# that the argument does not contain, not a missing mention of what the question asks about.
+na: >-
+  use this answer only if the question takes for granted something that this argument
+  does not contain, not even implicitly, so that none of the other answers makes sense.
+  If the question itself asks whether something exists, answer it normally.
+  If what the question takes for granted is present, answer the question, even if you are unsure how it stands.
+
+# The definitions of CQ3 are those of schemes/v4/; every other
+# CQ uses `default` (or `default_other`).
+per_cq:
+  example:
+    CQ3:
+      "yes": >-
+        the text starts from a reasonable position and reasons from an exaggerated version
+        of it that the position does not imply.
+      "no": >-
+        the argument reasons from the position as it is actually stated, or it does not
+        start from any position.

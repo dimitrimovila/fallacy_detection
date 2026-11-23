@@ -294,9 +294,12 @@ def test_a_repeated_question_is_never_asked_and_takes_the_answers_of_the_first(t
 
 
 # ------------------------------------------------- candidates of the example filter (v4f)
-def test_the_filter_candidates_are_new_questions_with_the_prompt_of_version_21():
-    config = RunConfig.load(REPO_ROOT / "configs/example_filter.yaml")
-    candidates = load_all(SCHEMES_ROOT / "v4f")
+@pytest.mark.parametrize("folder, config_file", [("v4f", "example_filter"),
+                                                 ("v4g", "example_filter2")])
+def test_the_filter_candidates_are_new_questions_with_the_prompt_of_version_21(folder,
+                                                                             config_file):
+    config = RunConfig.load(REPO_ROOT / f"configs/{config_file}.yaml")
+    candidates = load_all(SCHEMES_ROOT / folder)
     assert list(candidates) == ["example"]
     scheme, v4 = candidates["example"], V4["example"]
     asked = config.cqs["example"]
@@ -307,7 +310,8 @@ def test_the_filter_candidates_are_new_questions_with_the_prompt_of_version_21()
     assert {c.item_id for c in calls} == {"e1", "e2"} and {c.cq_id for c in calls} == set(asked)
     # every other question of the folder is the one of schemes/v4/, and no candidate has
     # the prompt of an earlier question
-    assert identical_questions("v4f", "v4")["example"] == {q: q for q in ("CQ1", "CQ3", "CQ4",
+    assert identical_questions(folder, "v4")["example"] == {q: q for q in ("CQ1", "CQ3", "CQ4",
                                                                         "CQ5")}
-    for folder in ("v1", "v2", "v3", "v3b", "v4"):
-        assert not set(asked) & set(identical_questions("v4f", folder).get("example", {}))
+    for old in ("v1", "v2", "v3", "v3b", "v4", "v4f"):
+        if old != folder:
+            assert not set(asked) & set(identical_questions(folder, old).get("example", {}))

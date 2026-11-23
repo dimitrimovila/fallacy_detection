@@ -59,18 +59,19 @@ MANIFEST_NAME = "manifest.json"
 
 RETRYABLE = ("429", "500", "502", "503", "504", "timeout", "connection")
 
-SCHEMES_FOLDERS = ("v1", "v2", "v3", "v3b", "v4", "v4f")
+SCHEMES_FOLDERS = ("v1", "v2", "v3", "v3b", "v4", "v4f", "v4g")
 """The folders of ``schemes/`` a run can load: versions 1.1 and 2.0, the first 2.1 (``v3b``,
 whose files carry the tag 2.1b; ``v3`` has the discarded wording of the example transfer
 question, CQ5 in place of CQ5b), the redesigned 2.1 (``v4``) and the candidate wordings of
-its example filter (``v4f``: example only, to collect answers, not to traverse)."""
+its example filter (``v4f`` and ``v4g``: example only, to collect answers, not to
+traverse)."""
 V2_SCHEMES, V3_PROMPTS = "v2", "v3"
-STAGE2_PROMPTS = {"v2": "v3", "v3": "v4", "v3b": "v4", "v4": "v5", "v4f": "v6"}
+STAGE2_PROMPTS = {"v2": "v3", "v3": "v4", "v3b": "v4", "v4": "v5", "v4f": "v6", "v4g": "v7"}
 """The stage-two definitions are written on the CQ ids of one version of the diagrams:
 ``stage2_v3_answers.yaml`` on 2.0, ``stage2_v4_answers.yaml`` on the two wordings of the
 first 2.1, ``stage2_v5_answers.yaml`` on the redesigned 2.1 and ``stage2_v6_answers.yaml``
-on the candidates of its example filter. Each goes with those folders and with nothing
-else; schemes/v1/ takes the earlier prompts."""
+and ``stage2_v7_answers.yaml`` on the candidates of its example filter. Each goes with
+those folders and with nothing else; schemes/v1/ takes the earlier prompts."""
 JUDGE_KEYS = ("answers_from", "answers_model", "justifications")
 
 
