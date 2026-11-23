@@ -39,12 +39,8 @@ docs/             specifications per component, data log
 labels/           label dictionaries: fallacies and schemes
 prompts/          versioned prompt templates, JSON Schemas of the answers, answer definitions
 schemes/          the eight scheme diagrams as YAML, one folder per version: v1/ (1.1, the default), v2/ (2.0),
-                  v4/ (2.1); v3b/, the first 2.1, the one of the run (its files carry the tag 2.1b), and
-                  v3/, the same with the discarded wording of the transfer question of example (CQ5 in
-                  place of CQ5b); v4f/ and v4g/, candidate wordings of the filter question of example,
-                  to collect answers only (`configs/example_filter.yaml`, `configs/example_filter2.yaml`);
-                  burden/, the burden of proof of each critical question, one table per version;
-                  ids/, the ids of the questions of v3/ and v4/ on the diagram page and in version 2.0
+                  v4/ (2.1); burden/, the burden of proof of each critical question, one table per version;
+                  ids/, the ids of the questions of v4/ on the diagram page and in version 2.0
 serving/          the models, how to serve them with vLLM, a smoke test, the cluster jobs
 src/argfallacy/   the Python package: schemes, labels, annotations, prompts, client, parse, aggregate, eval, CLI
 tests/            pytest suite, with a fake model backend (no network calls)
@@ -194,25 +190,23 @@ argfallacy report format <run_id> --model qwen3_8_27b
 sbatch serving/slurm/runs.sbatch qwen3_8_27b <config> <run_id> [<config> <run_id> ...]
 ```
 
-The run of the first 2.1 (`schemes/v3/`, prompt `stage2_v4`) asks again only the questions whose
-prompt differs from every 2.0 prompt apart from the question id: `configs/full_v4.yaml`
-lists them under `cqs`, and `configs/full_v4_transfer2.yaml` asks CQ5b of
-`schemes/v3b/`, the wording chosen. A question may admit answers other than yes and no (CQ4 of example: `a`
-or `b`); the parser adds their `p_logprob_` and `p_sample_` columns. The answer table of a
-version is then put together from the new runs and the earlier ones, first run first,
-into a new folder of `runs/`; every row keeps `source_run_id`, `source_cq_id` and
-`source_prompt_version`:
+Version 2.1 (`schemes/v4/`, prompt `stage2_v5`) asks only the questions whose prompt differs
+from every 1.1 and 2.0 prompt apart from the question id (a config lists them under `cqs`);
+the others take the answers of full runs v2 and v3. A question may admit answers other than
+yes and no (CQ4 of example: `a` or `b`); the parser adds their `p_logprob_` and `p_sample_`
+columns. A question that appears twice in a diagram says so with `same_as`; it is never asked
+twice. The answer table of a version is put together from the new runs and the earlier ones,
+first run first, into a new folder of `runs/`; every row keeps `source_run_id`, `source_cq_id`
+and `source_prompt_version`:
 
 ```bash
-argfallacy run assemble <name> --schemes v3 --runs <full_v4 run> 20261019T151336Z_full_v3
-argfallacy run assemble <name> --schemes v3b --runs <transfer2 run> <full_v4 run> 20261019T151336Z_full_v3
-argfallacy run assemble <name> --schemes v4 --runs <full_v4 run> <transfer2 run> 20261019T151336Z_full_v3 20261005T193017Z_full_v2 <example_filter2 run> --items <the 601 test items>
+argfallacy run assemble <name> --schemes v4 --runs <new run> 20261019T151336Z_full_v3 20261005T193017Z_full_v2 --items <items>
 ```
 
-Version 2.1 (`schemes/v4/`, prompt `stage2_v5`) was redesigned after that run: every question
-is one already asked in 1.1, 2.0 or the first 2.1, except the Example filter (CQ2), asked with
-`configs/example_filter2.yaml` on the 86 Example test items. A question that
-appears twice in a diagram says so with `same_as`; it is never asked twice.
+The table of 2.1 on the 601 test items is `runs/20261123T161440Z_cq21_assembled`. Its 12 new
+questions were asked in three runs that also asked other wordings; `raw_sources.jsonl`, in the
+same folder, holds only their calls behind the table, copied unchanged, and `raw_sources.json`
+the SHA-256 of the original runs, which are kept outside the repository.
 
 The format report reads a parsed `dq` or `zeroshot` run, without gold labels or
 accuracy. It fails on absent or failed calls, invalid or truncated answers,

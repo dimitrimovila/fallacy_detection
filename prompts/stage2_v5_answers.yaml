@@ -1,5 +1,5 @@
-# What each admitted answer means, in the stage two prompt. Version v5, for the diagrams of the
-# redesigned version 2.1 in schemes/v4/; the template stage2_v5.md is the same text as
+# What each admitted answer means, in the stage two prompt. Version v5, for the diagrams of
+# version 2.1 in schemes/v4/; the template stage2_v5.md is the same text as
 # stage2_v3.md, and every text outside `per_cq` is that of stage2_v3_answers.yaml.
 #
 # It is part of the prompt as much as stage2_v3.md, and shares its version: after the
@@ -43,7 +43,7 @@ na: >-
   If what the question takes for granted is present, answer the question, even if you are unsure how it stands.
 
 # The entries below are the definitions written with the 2.1 diagrams, word for word, under the
-# redesigned ids;
+# ids of schemes/v4/;
 # every other CQ uses `default` (or `default_other`). The options are listed in the order
 # written here, and the set must match the answer_space of the diagram, otherwise
 # rendering fails.

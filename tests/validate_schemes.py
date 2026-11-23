@@ -43,20 +43,7 @@ SNAPSHOT_V2 = {
     "slippery_slope":       (3, 3,  4, True),
 }
 
-# the same facts for the diagrams of ``schemes/v3/`` (version 2.1); ``schemes/v3b/``
-# (tag 2.1b) has the same structure, with CQ5b of example in the place of CQ5
-SNAPSHOT_V3 = {
-    "ad_hominem":           (5, 5,  6, False),
-    "analogy":              (4, 4,  6, True),
-    "cause_to_effect":      (5, 5,  6, True),
-    "correlation_to_cause": (6, 6,  7, True),
-    "example":              (5, 4,  6, True),
-    "expert_opinion":       (6, 5,  7, True),
-    "popular_opinion":      (6, 6, 10, True),
-    "slippery_slope":       (3, 3,  4, True),
-}
-
-# the same facts for the redesigned 2.1 of ``schemes/v4/``; three questions of popular
+# the same facts for version 2.1, ``schemes/v4/``; three questions of popular
 # opinion repeat an earlier one
 SNAPSHOT_V4 = {
     "ad_hominem":           (5, 5,  6, False),

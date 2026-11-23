@@ -1,5 +1,4 @@
-# Redesigned version 2.1, chosen on the 601 test items from saved answers; the first 2.1
-# is in schemes/v3b/.
+# Version 2.1, chosen on the 601 test items.
 scheme_id: ad_hominem
 name: Argument ad hominem
 version: "2.1"
