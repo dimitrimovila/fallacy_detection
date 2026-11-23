@@ -26,7 +26,7 @@ critical_questions:
     text: Is the case reported as the example clearly false or unrealistic?
   - id: CQ2
     text: >-
-      Is the example given so specific that it is statistically unrepresentative and
+      Is the example (or examples) given so specific that it is unrepresentative and
       therefore cannot be used to support the generalization?
   - id: CQ3
     text: >-

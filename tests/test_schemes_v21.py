@@ -264,13 +264,13 @@ def test_a_repeated_question_must_be_the_same_question(tmp_path):
 
 
 def test_every_question_of_the_redesign_has_saved_answers():
-    found = {(s, q): folder for folder in ("v1", "v2", "v3b", "v3")
+    found = {(s, q): folder for folder in ("v1", "v2", "v3b", "v3", "v4g")
              for s, cqs in identical_questions("v4", folder).items() for q in cqs}
     missing = [(s, q) for s, scheme in V4.items() for q in scheme.cq_order
                if (s, q) not in found]
     assert missing == []
     assert identical_questions("v4", "v1")["popular_opinion"]["CQ8"] == "CQ1"
-    assert identical_questions("v4", "v1")["example"]["CQ2"] == "CQ2.2"
+    assert identical_questions("v4", "v4g")["example"]["CQ2"] == "CQ2l"
 
 
 def test_a_repeated_question_is_never_asked_and_takes_the_answers_of_the_first(tmp_path):
@@ -294,10 +294,11 @@ def test_a_repeated_question_is_never_asked_and_takes_the_answers_of_the_first(t
 
 
 # ------------------------------------------------- candidates of the example filter (v4f)
-@pytest.mark.parametrize("folder, config_file", [("v4f", "example_filter"),
-                                                 ("v4g", "example_filter2")])
+@pytest.mark.parametrize("folder, config_file, adopted", [("v4f", "example_filter", None),
+                                                          ("v4g", "example_filter2", "CQ2l")])
 def test_the_filter_candidates_are_new_questions_with_the_prompt_of_version_21(folder,
-                                                                             config_file):
+                                                                             config_file,
+                                                                             adopted):
     config = RunConfig.load(REPO_ROOT / f"configs/{config_file}.yaml")
     candidates = load_all(SCHEMES_ROOT / folder)
     assert list(candidates) == ["example"]
@@ -308,10 +309,10 @@ def test_the_filter_candidates_are_new_questions_with_the_prompt_of_version_21(f
     calls = plan(RunConfig(raw={}, **{**config.raw, "models": ["fake"]}),
                  _items().to_dict("records"), FAKE_MODELS)
     assert {c.item_id for c in calls} == {"e1", "e2"} and {c.cq_id for c in calls} == set(asked)
-    # every other question of the folder is the one of schemes/v4/, and no candidate has
-    # the prompt of an earlier question
-    assert identical_questions(folder, "v4")["example"] == {q: q for q in ("CQ1", "CQ3", "CQ4",
-                                                                        "CQ5")}
-    for old in ("v1", "v2", "v3", "v3b", "v4", "v4f"):
+    # every other question of the folder is the one of schemes/v4/, the adopted candidate is
+    # its filter, and no other candidate has the prompt of an earlier question
+    same = {q: q for q in ("CQ1", "CQ3", "CQ4", "CQ5")} | ({adopted: "CQ2"} if adopted else {})
+    assert identical_questions(folder, "v4")["example"] == same
+    for old in ("v1", "v2", "v3", "v3b", "v4f"):
         if old != folder:
             assert not set(asked) & set(identical_questions(folder, old).get("example", {}))

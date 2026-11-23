@@ -206,11 +206,12 @@ into a new folder of `runs/`; every row keeps `source_run_id`, `source_cq_id` an
 ```bash
 argfallacy run assemble <name> --schemes v3 --runs <full_v4 run> 20261019T151336Z_full_v3
 argfallacy run assemble <name> --schemes v3b --runs <transfer2 run> <full_v4 run> 20261019T151336Z_full_v3
-argfallacy run assemble <name> --schemes v4 --runs <full_v4 run> <transfer2 run> 20261019T151336Z_full_v3 20261005T193017Z_full_v2
+argfallacy run assemble <name> --schemes v4 --runs <full_v4 run> <transfer2 run> 20261019T151336Z_full_v3 20261005T193017Z_full_v2 <example_filter2 run> --items <the 601 test items>
 ```
 
-Version 2.1 (`schemes/v4/`, prompt `stage2_v5`) was redesigned after that run and needs no
-call: every question is one already asked in 1.1, 2.0 or the first 2.1. A question that
+Version 2.1 (`schemes/v4/`, prompt `stage2_v5`) was redesigned after that run: every question
+is one already asked in 1.1, 2.0 or the first 2.1, except the Example filter (CQ2), asked with
+`configs/example_filter2.yaml` on the 86 Example test items. A question that
 appears twice in a diagram says so with `same_as`; it is never asked twice.
 
 The format report reads a parsed `dq` or `zeroshot` run, without gold labels or
