@@ -5,7 +5,7 @@ outside the folder of the diagrams, so the hash of the schemes in the manifests
 does not change.  It gives one type per CQ: P (premise), E (exception), G (gate),
 D (two fallacies); the arcs follow from the diagram.  An entry ``{type: T, arc: A}``
 also names the arc that takes the mass under the burden policy, for a node whose
-rule is not the one its type implies (two fallacies, one of them the default).
+rule is not the one its type implies.
 """
 
 from __future__ import annotations

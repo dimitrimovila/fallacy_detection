@@ -74,13 +74,23 @@ def test_the_rule_for_undetermined_answers_is_the_one_of_the_diagrams():
             assert rule in (ABSTAIN, SPLIT) or rule in scheme.nodes[cq]
 
 
-def test_an_entry_that_names_its_arc_keeps_its_type_under_the_other_policies():
+def test_the_question_with_answers_a_and_b_is_an_exception_that_falls_back_to_b():
     table = load_burden("v4", V4)
     example = V4["example"]
-    assert table["example"]["CQ4"] == "D"
+    assert table["example"]["CQ4"] == "E"
+    assert routes(example, table["example"])["CQ4"] == "b"
+    assert routes(example, table["example"], "charitable")["CQ4"] == "b"
     assert routes(example, table["example"], "branch")["CQ4"] == SPLIT
-    assert routes(example, table["example"], "charitable")["CQ4"] == SPLIT
-    assert routes(example, table["example"], "stop")["CQ4"] == ABSTAIN
+
+
+def test_an_entry_that_names_its_arc_keeps_its_type_under_the_other_policies():
+    table = load_burden("v4", V4)
+    popular = V4["popular_opinion"]
+    assert table["popular_opinion"]["CQ7"] == "E"
+    assert routes(popular, table["popular_opinion"])["CQ7"] == "no"
+    assert routes(popular, table["popular_opinion"], "charitable")["CQ7"] == "yes"
+    assert routes(popular, table["popular_opinion"], "branch")["CQ7"] == SPLIT
+    assert routes(popular, table["popular_opinion"], "stop")["CQ7"] == ABSTAIN
 
 
 def test_the_question_with_answers_a_and_b_is_rendered_with_its_letters():

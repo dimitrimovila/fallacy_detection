@@ -18,7 +18,7 @@ example:
   CQ1: E
   CQ2: E
   CQ3: E
-  CQ4: {type: D, arc: b}
+  CQ4: E
   CQ5: E
 
 analogy:

@@ -56,7 +56,8 @@ def pass_arc(scheme: Scheme, node: str) -> str:
 
     The arc with the shortest path to ``good_argumentation``, ties to the arc written
     first.  Where no arc reaches it, the only arc that leads to a node; where both
-    arcs end on terminals, the arc ``no``.
+    arcs end on terminals, the arc ``no`` (``b`` for a question with the answers ``a``
+    and ``b``), which the diagrams use for the generic fallacy of the scheme.
     """
     distances = distances_to_good(scheme)
     edges = scheme.nodes[node]
@@ -67,10 +68,10 @@ def pass_arc(scheme: Scheme, node: str) -> str:
     to_nodes = [answer for answer, edge in edges.items() if not edge.is_terminal]
     if len(to_nodes) == 1:
         return to_nodes[0]
-    if not to_nodes and "no" in edges:
-        return "no"
+    if not to_nodes and (fallback := [a for a in ("no", "b") if a in edges]):
+        return fallback[0]
     raise SchemeError(f"{scheme.scheme_id} {node}: no arc reaches good_argumentation and "
-                      f"none is the only arc to a node or the arc no: {list(edges)}")
+                      f"none is the only arc to a node or the arc no or b: {list(edges)}")
 
 
 def a0(scheme: Scheme, rows: Mapping[str, Mapping[str, Any]]) -> Aggregation:
