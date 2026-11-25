@@ -1,0 +1,22 @@
+# Stage one without `none` (prompt stage1_v3): for every item of the test set, the text and the
+# catalogue of the eight schemes, and one of the eight to choose. Qwen only, in the regime of
+# phase 2 in serving/models.yaml. Its answers are the predicted schemes of
+# configs/zeroshot_pred_v2.yaml. Prompt version v3 goes with the 2.0 folder, whose catalogue
+# (name, formal schema, identifying question) is word for word the one stage1_v2 shows.
+# `argfallacy run plan configs/stage1_v3.yaml` counts the calls.
+
+name: stage1_v3
+schemes: v2
+
+items:
+  # the 601 items of the test set: every item with a gold scheme, no sample
+  exclude_none_scheme: true
+
+stages: [stage1]
+scheme_condition: gold
+models: [qwen3_8_27b]
+prompt_version: v3
+
+generation:
+  # for the entries without a max_tokens of their own
+  max_tokens: 512

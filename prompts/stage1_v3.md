@@ -1,0 +1,36 @@
+You are an argumentation analyst. Your task is to recognise which argumentation
+scheme the following text instantiates.
+
+## Text
+
+{{text}}
+
+## The schemes
+
+Exactly one of the following applies. Each is given with the form of the
+argument and the question that identifies it.
+
+{{scheme_catalogue}}
+
+## What to do
+
+Choose exactly one option: one of the eight scheme identifiers.
+
+If the text fits more than one scheme, choose the one that carries its main argument.
+
+A scheme is present when the text argues in that form, whether it does so well
+or badly. You are not judging the quality of the argument here, only its shape.
+
+## Your answer
+
+Reply with a single JSON object and nothing else:
+
+```json
+{"scheme": "<one identifier>", "confidence": <integer 0-100>, "justification": "<at most two sentences>"}
+```
+
+`scheme` must be the first key. `confidence` is how likely you think it is that
+your choice is right, from 0 to 100. `justification` is at most two sentences
+saying what in the text made you choose it.
+
+

@@ -1,0 +1,22 @@
+# configs/zeroshot_pred_v2.yaml with the schemes of Qwen's stage one in full run v2 (prompt
+# stage1_v2, which admits `none`): an item whose prediction is `none` or invalid gets no call
+# and no verdict.
+# `argfallacy run plan configs/zeroshot_pred_none_v2.yaml` counts the calls.
+
+name: zeroshot_pred_none_v2
+schemes: v2
+
+items:
+  # the 601 items of the test set: every item with a gold scheme, no sample
+  exclude_none_scheme: true
+
+stages: [zeroshot]
+scheme_condition: predicted
+predictions_from: 20261005T193017Z_full_v2
+gold_from: 20261026T101601Z_zeroshot_schemes_v2
+models: [qwen3_8_27b]
+prompt_version: v1
+
+generation:
+  # for the entries without a max_tokens of their own
+  max_tokens: 512

@@ -1,4 +1,5 @@
-"""The zero-shot prompt without a scheme, and the zero-shot prompt on the predicted scheme.
+"""The zero-shot prompt without a scheme, the zero-shot prompt on the predicted scheme, and
+the stage one without `none` that predicts it.
 
 Without a scheme the model sees one menu with every terminal of the diagrams, and the
 probability of the label it chose must still be read correctly where many labels share a
@@ -17,13 +18,16 @@ import pytest
 
 from argfallacy.client import ResponseCache, RunConfig, execute, load_models, plan, read_raw
 from argfallacy.client.run import load_scheme_predictions
+from argfallacy.labels import scheme_ids
 from argfallacy.parse import parse_answers, parse_run, summarise
 from argfallacy.parse.tables import label_probability
 from argfallacy.paths import REPO_ROOT, SCHEMES_ROOT
 from argfallacy.prompts import (
+    STAGE1,
     ZEROSHOT,
     all_verdicts,
     load_template,
+    render_stage1,
     render_zeroshot,
     render_zeroshot_all,
     verdicts,
@@ -63,7 +67,11 @@ def test_the_single_menu_lists_every_terminal_once(vocab):
 
 def test_the_prompt_without_a_scheme_keeps_the_rest_of_the_prompt_word_for_word():
     scheme_template, all_template = load_template(ZEROSHOT, "v1"), load_template(ZEROSHOT, "all_v1")
-    assert all_template.split("## Text", 1)[1] == scheme_template.split("## Text", 1)[1]
+    # with one sentence that no longer points at a scheme
+    old, new = ("the argument that follows the\nscheme.", "the main argument the text\nmakes.")
+    assert all_template.split("## Text", 1)[1] == \
+        scheme_template.split("## Text", 1)[1].replace(old, new)
+    assert old not in all_template
     assert "{{scheme_name}}" not in all_template and "{{variables}}" not in all_template
 
     rendered = render_zeroshot_all(ITEM, V2)
@@ -347,3 +355,60 @@ def test_the_configurations_of_the_two_conditions(tmp_path):
     gold = RunConfig.load(REPO_ROOT / "configs" / "zeroshot_schemes_v2.yaml")
     assert (gold.schemes, gold.prompt_version, gold.generation) == (
         pred.schemes, pred.prompt_version, pred.generation)
+    none = RunConfig.load(REPO_ROOT / "configs" / "zeroshot_pred_none_v2.yaml")
+    assert {k: v for k, v in none.raw.items() if k not in ("name", "predictions_from")} == {
+        k: v for k, v in pred.raw.items() if k not in ("name", "predictions_from")}
+    stage1 = RunConfig.load(REPO_ROOT / "configs" / "stage1_v3.yaml")
+    assert pred.predictions_from.endswith(f"_{stage1.name}")
+    assert none.predictions_from == "20261005T193017Z_full_v2"
+    calls = plan(stage1, select_items(stage1, frame), load_models())
+    assert len(calls) == 601 and {c.prompt_version for c in calls} == {"stage1_v3"}
+
+
+# ------------------------------------------------------------ stage one without none
+def stage1_line(scheme: str) -> dict:
+    rendered = render_stage1(ITEM, version="v3")
+    content = json.dumps({"scheme": scheme, "confidence": 70, "justification": "x"})
+    return {"run_id": "r", "item_id": "i1", "stage": STAGE1, "scheme_condition": "gold",
+            "scheme": None, "cq_id": "", "sample_index": 0, "model": "fake",
+            "model_id": "fake-model", "prompt_version": rendered.prompt_version, "params": {},
+            "json_schema": rendered.json_schema, "cache_key": "k", "from_cache": False,
+            "latency_s": 0.1, "error": None,
+            "raw_response": {"content": content, "finish_reason": "stop", "logprobs": None}}
+
+
+def test_stage_one_v3_is_stage_one_v2_without_none():
+    v2, v3 = load_template(STAGE1, "v2"), load_template(STAGE1, "v3")
+    for old, new in [("scheme, if any, the following", "scheme the following"),
+                     ("### none\n\nNone of the eight schemes above is present in the text.\n\n",
+                      ""),
+                     ("scheme identifiers, or `none`.", "scheme identifiers.")]:
+        assert v2.count(old) == 1
+        v2 = v2.replace(old, new)
+    assert v2 == v3
+    rendered = render_stage1(ITEM, version="v3")
+    assert rendered.prompt_version == "stage1_v3" and "`none`" not in rendered.text
+    assert rendered.json_schema["properties"]["scheme"]["enum"] == [
+        s for s in scheme_ids() if s != "none"]
+    # the same catalogue of the eight schemes as stage1_v2, on the 2.0 folder it goes with
+    assert render_stage1(ITEM, V2, version="v3").text == rendered.text
+    assert rendered.text.split("## The schemes")[1].split("## What to do")[0] in \
+        render_stage1(ITEM, version="v2").text
+
+
+def test_stage_one_v3_reads_none_as_invalid_and_its_masses_over_eight(tmp_path):
+    answers = parse_answers([stage1_line("analogy"), stage1_line("none")])
+    assert list(answers["answer"]) == ["analogy", "invalid"]
+    cfg = config(name="s1v3", stages=[STAGE1], prompt_version="v3", schemes="v2")
+    items = [{"item_id": f"item{n}", "text": f"Argument {n}.", "gold_scheme": "analogy"}
+             for n in range(6)]
+    with ResponseCache(tmp_path / "cache.sqlite") as cache:
+        execute(cfg, items, run_id="s1v3", runs_dir=tmp_path, backend=FakeBackend(),
+                cache=cache, models=FAKE_MODELS, sleep=lambda _: None)
+    written = parse_run(tmp_path / "s1v3")
+    answers = pd.read_csv(written["answers.csv"])
+    eight = [f"p_logprob_{s}" for s in scheme_ids() if s != "none"]
+    with_masses = answers[answers[eight].notna().all(axis=1)]
+    assert len(with_masses) and answers["p_logprob_none"].isna().all()
+    assert (with_masses[eight].sum(axis=1) - 1).abs().max() < 1e-9
+    assert answers["answer"].isin([s for s in scheme_ids() if s != "none"]).all()

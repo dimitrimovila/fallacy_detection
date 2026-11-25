@@ -21,8 +21,8 @@ people. Do not use anything you may know
 about where this text comes from or how it has been classified. Where a verdict
 calls for an assessment, give your own, by the standards of everyday argument, rather than of proof.
 Evaluate the argument as the text makes it; if the text also contains other
-speakers or a question to the reader, evaluate the argument that follows the
-scheme. Do not let your own view on whether the conclusion is true decide the answer.
+speakers or a question to the reader, evaluate the main argument the text
+makes. Do not let your own view on whether the conclusion is true decide the answer.
 
 Choose the single verdict, among those listed, that best describes the argument.
 

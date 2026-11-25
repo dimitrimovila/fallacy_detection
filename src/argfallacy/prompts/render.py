@@ -253,7 +253,7 @@ def render_stage1(
     schemes: Mapping[str, Scheme] | None = None,
     version: str = DEFAULT_VERSION,
 ) -> RenderedPrompt:
-    """The stage-one prompt for one item: which scheme, or none."""
+    """The stage-one prompt for one item: which scheme, or none (stage1_v3: which of the eight)."""
     from ..schemes import load_all
 
     schemes = schemes if schemes is not None else load_all()

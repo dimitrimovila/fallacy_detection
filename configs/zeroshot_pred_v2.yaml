@@ -1,9 +1,9 @@
 # The zero-shot condition with the predicted scheme: for every item of the test set, the text,
-# the scheme that Qwen's stage one of full run v2 predicted (prompt stage1_v2) and the verdicts
-# of that scheme's 2.0 diagram, the same prompt as configs/zeroshot_schemes_v2.yaml. An item
-# whose predicted scheme is the gold one gets no call: its verdict is that of the gold run
-# (gold_from), and the plan checks that its call would be that run's call, key for key. An
-# item whose prediction is `none` or invalid gets no call and no verdict.
+# the scheme that Qwen's stage one without `none` predicted (configs/stage1_v3.yaml) and the
+# verdicts of that scheme's 2.0 diagram, the same prompt as configs/zeroshot_schemes_v2.yaml.
+# An item whose predicted scheme is the gold one gets no call: its verdict is that of the gold
+# run (gold_from), and the plan checks that its call would be that run's call, key for key. An
+# item whose prediction is invalid gets no call and no verdict.
 # `argfallacy run plan configs/zeroshot_pred_v2.yaml` counts the calls.
 
 name: zeroshot_pred_v2
@@ -15,7 +15,7 @@ items:
 
 stages: [zeroshot]
 scheme_condition: predicted
-predictions_from: 20261005T193017Z_full_v2
+predictions_from: 20261125T161917Z_stage1_v3
 gold_from: 20261026T101601Z_zeroshot_schemes_v2
 models: [qwen3_8_27b]
 prompt_version: v1

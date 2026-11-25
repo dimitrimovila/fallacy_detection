@@ -173,16 +173,18 @@ the label chosen in `p_label`.
 with `schemes: v2`. For the 601 test items, rendering gives 409 identical prompts
 and cache keys across the two folders, and 192 different prompts.
 
-Two zero-shot conditions of `qwen3_8_27b` take the gold scheme away. `configs/zeroshot_all_v2.yaml`
+Three zero-shot conditions of `qwen3_8_27b` take the gold scheme away. `configs/zeroshot_all_v2.yaml`
 (`scheme_condition: none`, prompt `zeroshot_all_v1`) gives the text and one menu with every
 terminal of the 2.0 diagrams, each under its full label, ad hominem variants included, with
 the definitions of the per-scheme menus. `configs/zeroshot_pred_v2.yaml` (`scheme_condition:
 predicted`) gives the scheme of the entry's own stage one, read from the `summary.csv` of the
-run `predictions_from`, with the same prompt as `configs/zeroshot_schemes_v2.yaml`. Calls are
-planned only where the predicted scheme is a scheme other than the gold one; where it is the
-gold one the verdict is that of the run `gold_from`, and the plan stops if the call such an
-item would get is not, cache key for cache key, a call of that run. Both runs must be parsed
-in `runs/`, and the manifest records the stage-one row read for every item.
+run `predictions_from`, with the same prompt as `configs/zeroshot_schemes_v2.yaml`; its stage
+one is `configs/stage1_v3.yaml` (prompt `stage1_v3`, stage1 v2 without `none`), while
+`configs/zeroshot_pred_none_v2.yaml` reads the stage one of full run v2. Calls are planned
+only where the predicted scheme is a scheme other than the gold one; where it is the gold one
+the verdict is that of the run `gold_from`, and the plan stops if the call such an item would
+get is not, cache key for cache key, a call of that run. Both runs must be parsed in `runs/`,
+and the manifest records the stage-one row read for every item.
 
 The `dq` stage answers every critical question and then declares a verdict in one
 generation. `configs/dq_full_v3.yaml` uses schemes 2.0; `configs/dq_full_v2.yaml`

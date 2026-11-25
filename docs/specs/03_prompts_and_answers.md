@@ -27,6 +27,8 @@ The templates use double-brace placeholders (`{{text}}`, `{{scheme_name}}`, `{{s
 
 Content, in English: role (argumentation analyst), the text, the list of the eight schemes with `name`, `schema` (the form of the argument) and `identification_question` taken from the YAML files, plus the option `none` defined as "none of these eight schemes is present". Instruction: choose only one, and if the text fits more than one scheme, the one that carries its main argument; a scheme is present when the text argues in that form, well or badly. Since v2 the template no longer says to judge from the text alone without outside knowledge. Answer in the format of section 5, with `scheme` among the nine canonical ids of `labels/schemes.yaml`.
 
+`stage1_v3.md` and `schemas/stage1_v3.json` are v2 without the option `none`: the same text and catalogue, one of the eight schemes to choose. The parser admits, and spreads the first-token masses over, the scheme ids the schema of the call lists, so under v3 a `none` is invalid.
+
 ## 4. Stage two, `stage2_v2.md`
 
 Content, in English:

@@ -134,11 +134,14 @@ def options_for(
 ) -> tuple[str, ...]:
     """What this call was allowed to answer.
 
-    Stage one answers with a scheme id, a verdict stage with the names its
-    prompt showed for the verdicts (:func:`verdict_names`).
+    Stage one answers with a scheme id, among those the schema of its call lists
+    (stage1_v3 leaves out ``none``), a verdict stage with the names its prompt
+    showed for the verdicts (:func:`verdict_names`).
     """
     if row.get("stage") == STAGE1:
-        return SCHEME_IDS
+        listed = (((row.get("json_schema") or {}).get("properties") or {})
+                  .get("scheme") or {}).get("enum")
+        return SCHEME_IDS if not listed else tuple(s for s in SCHEME_IDS if s in listed)
     schemes = schemes if schemes is not None else load_all()
     if _verdict_row(row):
         return tuple(verdict_names(row, schemes))
@@ -574,8 +577,8 @@ def _label_probabilities(
     stated = [_number(c) for c in chosen["confidence"]]
     out["p_verbal"] = _mean([None if c is None else c / 100.0 for c in stated] + others)
     if stage == STAGE1:
-        masses = [f"p_logprob_{scheme_id}" for scheme_id in SCHEME_IDS]
-        with_masses = valid[valid[masses].notna().all(axis=1)]
+        # a sample with logprobs has a mass for every scheme its call admitted
+        with_masses = valid[valid[f"p_logprob_{hard}"].notna()]
         out["p_logprob"] = _mean(_number(v) for v in with_masses[f"p_logprob_{hard}"])
     if verdict:
         used = chosen[chosen["p_label"].notna()]
