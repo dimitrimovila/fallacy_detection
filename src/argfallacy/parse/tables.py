@@ -44,6 +44,7 @@ from ..prompts import (
     SSOFT,
     STAGE1,
     ZEROSHOT,
+    all_verdicts,
     answer_options,
     verdicts,
 )
@@ -102,6 +103,26 @@ def shown_verdicts(scheme: Any) -> dict[str, str]:
     return {v.shown: v.terminal for v in verdicts(scheme, _vocabulary())}
 
 
+def _no_scheme(value: Any) -> bool:
+    return value is None or value == "" or (isinstance(value, float) and math.isnan(value))
+
+
+def verdict_names(row: Mapping[str, Any], schemes: Mapping[str, Any]) -> dict[str, str]:
+    """Name shown -> terminal id, for the verdicts the call of this row was shown.
+
+    A zero-shot row without a scheme was shown the single menu of every terminal of the
+    diagrams (:func:`argfallacy.prompts.all_verdicts`); any other verdict row, the menu of
+    its scheme.
+    """
+    if row.get("stage") == ZEROSHOT and _no_scheme(row.get("scheme")):
+        return {v.shown: v.terminal for v in all_verdicts(schemes, _vocabulary())}
+    scheme = schemes.get(row.get("scheme"))
+    if scheme is None:
+        raise SchemeError(f"{row.get('stage')} row of item {row.get('item_id')!r} has no "
+                          f"known scheme: {row.get('scheme')!r}")
+    return shown_verdicts(scheme)
+
+
 def _verdict_row(row: Mapping[str, Any]) -> bool:
     return row.get("stage") in VERDICT_STAGES or (
         row.get("stage") == DQ and not row.get("cq_id")
@@ -114,17 +135,14 @@ def options_for(
     """What this call was allowed to answer.
 
     Stage one answers with a scheme id, a verdict stage with the names its
-    prompt showed for the verdicts of the scheme.
+    prompt showed for the verdicts (:func:`verdict_names`).
     """
     if row.get("stage") == STAGE1:
         return SCHEME_IDS
     schemes = schemes if schemes is not None else load_all()
-    scheme = schemes.get(row.get("scheme"))
     if _verdict_row(row):
-        if scheme is None:
-            raise SchemeError(f"{row.get('stage')} row of item {row.get('item_id')!r} has no "
-                              f"known scheme: {row.get('scheme')!r}")
-        return tuple(shown_verdicts(scheme))
+        return tuple(verdict_names(row, schemes))
+    scheme = schemes.get(row.get("scheme"))
     if scheme is None or not row.get("cq_id"):
         return ("yes", "no", CANNOT_BE_DETERMINED, NOT_APPLICABLE)
     return answer_options(scheme, row["cq_id"])
@@ -332,7 +350,7 @@ def parse_row(
         # since a name may take several tokens
         p_label, p_label_bound = label_probability(raw.get("logprobs"), options, answer, key)
         if parse_ok:
-            answer = shown_verdicts((schemes or load_all())[row["scheme"]])[answer]
+            answer = verdict_names(row, schemes or load_all())[answer]
         masses, partial = {}, False
     else:
         masses, partial = logprob_masses(raw.get("logprobs"), options, key)

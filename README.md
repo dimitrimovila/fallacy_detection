@@ -173,6 +173,17 @@ the label chosen in `p_label`.
 with `schemes: v2`. For the 601 test items, rendering gives 409 identical prompts
 and cache keys across the two folders, and 192 different prompts.
 
+Two zero-shot conditions of `qwen3_8_27b` take the gold scheme away. `configs/zeroshot_all_v2.yaml`
+(`scheme_condition: none`, prompt `zeroshot_all_v1`) gives the text and one menu with every
+terminal of the 2.0 diagrams, each under its full label, ad hominem variants included, with
+the definitions of the per-scheme menus. `configs/zeroshot_pred_v2.yaml` (`scheme_condition:
+predicted`) gives the scheme of the entry's own stage one, read from the `summary.csv` of the
+run `predictions_from`, with the same prompt as `configs/zeroshot_schemes_v2.yaml`. Calls are
+planned only where the predicted scheme is a scheme other than the gold one; where it is the
+gold one the verdict is that of the run `gold_from`, and the plan stops if the call such an
+item would get is not, cache key for cache key, a call of that run. Both runs must be parsed
+in `runs/`, and the manifest records the stage-one row read for every item.
+
 The `dq` stage answers every critical question and then declares a verdict in one
 generation. `configs/dq_full_v3.yaml` uses schemes 2.0; `configs/dq_full_v2.yaml`
 uses schemes 1.1. Both contain the five zero-shot entries and plan 601 calls for
@@ -346,7 +357,8 @@ by CQ number. Identical duplicate annotation rows count once; conflicting CQ rat
 stop the report. Conflicting or coarse human verdicts are excluded and counted.
 Unavailable second-annotator CQ ratings and blind repeats are named in the report.
 
-Not implemented yet: the predicted scheme condition, the collapsed space, and the breakdowns
+Not implemented yet: the predicted scheme condition in the evaluation (the client plans it,
+see the zero-shot conditions above), the collapsed space, and the breakdowns
 by scheme and corpus and the abstention curves of the first stage (round two has its own, see
 below).
 

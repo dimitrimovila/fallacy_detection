@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "zeroshot_all_v1",
+  "description": "Zero-shot without a scheme: the verdict chosen directly from one menu. The enum of `answer` is rewritten with the names of every terminal of the diagrams the run loads (labels/fallacies.yaml); the value here is a placeholder.",
+  "type": "object",
+  "properties": {
+    "answer": {
+      "type": "string",
+      "enum": [
+        "Good Argumentation"
+      ]
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "justification": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "answer",
+    "confidence",
+    "justification"
+  ],
+  "additionalProperties": false
+}

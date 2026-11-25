@@ -37,6 +37,7 @@ from ..prompts import (
     STAGE1,
     STAGE2,
     ZEROSHOT,
+    ZEROSHOT_ALL_VERSION,
     load_answer_meanings,
     prompt_version,
     render_dq,
@@ -44,6 +45,7 @@ from ..prompts import (
     render_stage1,
     render_stage2,
     render_zeroshot,
+    render_zeroshot_all,
 )
 from ..schemes import load_all
 from ..schemes.loader import SchemeError, load_vocabulary
@@ -53,7 +55,11 @@ from .call import RawResponse, Request, ask, dumps
 SERVING_DIR = REPO_ROOT / "serving"
 MODELS_FILE = SERVING_DIR / "models.yaml"
 
-GOLD, PREDICTED = "gold", "predicted"
+GOLD, PREDICTED, NO_SCHEME = "gold", "predicted", "none"
+SCHEME_CONDITIONS = (GOLD, PREDICTED, NO_SCHEME)
+"""The scheme a call is given: the gold one, the one stage one predicted, or none at all.
+``none`` is the zero-shot prompt with one menu of every terminal (``zeroshot_all``)."""
+INVALID_ANSWER = "invalid"
 RAW_NAME = "raw.jsonl"
 MANIFEST_NAME = "manifest.json"
 
@@ -111,6 +117,12 @@ class RunConfig:
     items: dict[str, Any] = field(default_factory=dict)
     generation: dict[str, Any] = field(default_factory=dict)
     predictions_from: str | None = None
+    """For the ``predicted`` condition: the run whose ``summary.csv`` holds the stage-one
+    answers; each entry is given the scheme its own stage one predicted."""
+    gold_from: str | None = None
+    """For the ``predicted`` condition: the run of the ``gold`` condition whose calls answer
+    the items where the predicted scheme is the gold one. Those items get no call, and the
+    plan checks that the calls it would make for them are the calls of that run."""
     schemes: str = SCHEMES_DIR.name
     judge: dict[str, Any] = field(default_factory=dict)
     """For the stage ``judge``: ``answers_from``, the run whose ``summary.csv`` gives the
@@ -124,6 +136,18 @@ class RunConfig:
     raw: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        if self.scheme_condition not in SCHEME_CONDITIONS:
+            raise SchemeError(f"{self.name}: scheme_condition must be one of "
+                              f"{list(SCHEME_CONDITIONS)}, not {self.scheme_condition!r}")
+        no_scheme = self.stages == [ZEROSHOT] and self.prompt_version == ZEROSHOT_ALL_VERSION
+        if (self.scheme_condition == NO_SCHEME) != no_scheme:
+            raise SchemeError(f"{self.name}: scheme_condition {NO_SCHEME!r} goes with stages "
+                              f"[{ZEROSHOT}] and prompt_version {ZEROSHOT_ALL_VERSION!r}, and "
+                              f"they go only with it")
+        given = [bool(self.predictions_from), bool(self.gold_from)]
+        if given != [self.scheme_condition == PREDICTED] * 2:
+            raise SchemeError(f"{self.name}: scheme_condition {PREDICTED!r} needs "
+                              f"predictions_from and gold_from, and they go only with it")
         if DQ in self.stages and (
             self.stages != [DQ] or self.scheme_condition != GOLD or self.prompt_version != "v1"
         ):
@@ -280,7 +304,6 @@ def plan(
     items: Iterable[Mapping[str, Any]],
     models: Mapping[str, Any] | None = None,
     schemes: Mapping[str, Any] | None = None,
-    predictions: Mapping[str, str] | None = None,
     only: Sequence[str] | None = None,
     runs_dir: str | Path | None = None,
 ) -> list[PlannedCall]:
@@ -289,32 +312,38 @@ def plan(
     ``only`` keeps the named entries of the configuration (see
     :func:`select_models`).
 
-    In the ``predicted`` condition, stage two is planned only for the items whose
-    predicted scheme differs from the gold one: where the two agree, the calls
-    made in the ``gold`` condition answer this condition too, and the parser
-    knows it.
+    In the ``predicted`` condition each entry is given the scheme its own stage one
+    predicted, read from ``predictions_from`` (:func:`load_scheme_predictions`), and
+    calls are planned only for the items whose predicted scheme is a scheme and differs
+    from the gold one. A predicted ``none`` or ``invalid`` gets no call. Where the two
+    agree, the calls of ``gold_from`` answer this condition too: they are planned
+    aside and must be, key for key, calls of that run (:func:`check_gold_calls`).
 
     The zero-shot stage is one prompt per item under the scheme stage two would
-    use, asking for the verdict directly.  The judge stage is the same prompt with
-    the answers of ``judge.answers_model`` in the run ``judge.answers_from``, read
-    from its ``summary.csv`` under ``runs_dir``.
+    use, asking for the verdict directly; in the ``none`` condition, one prompt per
+    item with no scheme and the menu of every terminal.  The judge stage is the same
+    prompt with the answers of ``judge.answers_model`` in the run ``judge.answers_from``,
+    read from its ``summary.csv`` under ``runs_dir``.
     """
     if config.stages == [SSOFT]:
         from .ssoft import plan_ssoft
 
         return plan_ssoft(config, items, models, schemes, only)
     entries = select_models(config, only)
+    runs_dir = Path(runs_dir) if runs_dir is not None else default_runs_dir()
     models = models if models is not None else load_models()
     schemes = schemes if schemes is not None else load_all(config.schemes_dir)
     asked = questions_asked(config, schemes)
     items = list(items)
     calls: list[PlannedCall] = []
-    judged = (judge_answers(config, runs_dir if runs_dir is not None else default_runs_dir())
-              if JUDGE in config.stages else {})
+    reused: list[PlannedCall] = []
+    judged = judge_answers(config, runs_dir) if JUDGE in config.stages else {}
     definitions = (load_answer_meanings(dq_definitions_path(config).stem.split("_")[1])
                    if DQ in config.stages else None)
     vocabulary = (load_vocabulary(check_schemes=False)
                   if {DQ, ZEROSHOT} & set(config.stages) else None)
+    predicted = (load_scheme_predictions(config, items, entries, runs_dir)
+                 if config.scheme_condition == PREDICTED else None)
 
     for model_name in entries:
         spec = model_spec(model_name, models)
@@ -334,48 +363,52 @@ def plan(
         }
         logprobs = bool(spec.get("supports_logprobs", True))
         max_tokens = max_tokens_for(spec, config)
+
+        def add(target: list[PlannedCall], item_id: str, stage: str, scheme_id: str | None,
+                cq_id: str | None, rendered: Any, model_name: str = model_name,
+                spec: Mapping[str, Any] = spec, samples: int = samples,
+                identity: Mapping[str, Any] = identity, logprobs: bool = logprobs,
+                max_tokens: int = max_tokens) -> None:
+            for sample in range(samples):
+                target.append(PlannedCall(
+                    model=model_name, model_id=spec["model_id"], item_id=item_id,
+                    stage=stage, scheme=scheme_id, cq_id=cq_id, sample_index=sample,
+                    prompt=rendered.text, prompt_version=rendered.prompt_version,
+                    json_schema=rendered.json_schema,
+                    max_tokens=max_tokens, logprobs=logprobs,
+                    **identity,
+                ))
+
         for item in items:
             item_id = str(item["item_id"])
             if STAGE1 in config.stages:
-                rendered = render_stage1(item, schemes, config.prompt_version)
-                for sample in range(samples):
-                    calls.append(PlannedCall(
-                        model=model_name, model_id=spec["model_id"], item_id=item_id,
-                        stage=STAGE1, scheme=None, cq_id=None, sample_index=sample,
-                        prompt=rendered.text, prompt_version=rendered.prompt_version,
-                        json_schema=rendered.json_schema,
-                        max_tokens=max_tokens, logprobs=logprobs,
-                        **identity,
-                    ))
+                add(calls, item_id, STAGE1, None, None,
+                    render_stage1(item, schemes, config.prompt_version))
             if not {STAGE2, ZEROSHOT, JUDGE, DQ} & set(config.stages):
                 continue
+            if config.scheme_condition == NO_SCHEME:
+                add(calls, item_id, ZEROSHOT, None, None,
+                    render_zeroshot_all(item, schemes, config.prompt_version, vocabulary))
+                continue
 
-            scheme_id = _scheme_for(item, config, predictions)
+            target = calls
+            scheme_id = item.get("gold_scheme")
+            if predicted is not None:
+                guess = predicted.scheme(model_name, item_id)
+                if guess is None:
+                    continue
+                if guess == scheme_id:
+                    target = reused
+                scheme_id = guess
             if scheme_id is None or scheme_id not in schemes:
                 continue
             scheme = schemes[scheme_id]
             if DQ in config.stages:
-                rendered = render_dq(item, scheme, definitions, config.prompt_version, vocabulary)
-                for sample in range(samples):
-                    calls.append(PlannedCall(
-                        model=model_name, model_id=spec["model_id"], item_id=item_id,
-                        stage=DQ, scheme=scheme_id, cq_id=None, sample_index=sample,
-                        prompt=rendered.text, prompt_version=rendered.prompt_version,
-                        json_schema=rendered.json_schema,
-                        max_tokens=max_tokens, logprobs=logprobs,
-                        **identity,
-                    ))
+                add(target, item_id, DQ, scheme_id, None,
+                    render_dq(item, scheme, definitions, config.prompt_version, vocabulary))
             if ZEROSHOT in config.stages:
-                rendered = render_zeroshot(item, scheme, config.prompt_version, vocabulary)
-                for sample in range(samples):
-                    calls.append(PlannedCall(
-                        model=model_name, model_id=spec["model_id"], item_id=item_id,
-                        stage=ZEROSHOT, scheme=scheme_id, cq_id=None, sample_index=sample,
-                        prompt=rendered.text, prompt_version=rendered.prompt_version,
-                        json_schema=rendered.json_schema,
-                        max_tokens=max_tokens, logprobs=logprobs,
-                        **identity,
-                    ))
+                add(target, item_id, ZEROSHOT, scheme_id, None,
+                    render_zeroshot(item, scheme, config.prompt_version, vocabulary))
             if JUDGE in config.stages:
                 given = judged.get((item_id, scheme_id), {})
                 if missing := [cq for cq in scheme.cq_order if cq not in given]:
@@ -383,32 +416,170 @@ def plan(
                         f"the summary.csv of {config.judge['answers_from']} has no answer of "
                         f"{config.judge['answers_model']} for item {item_id}, "
                         f"{scheme_id} {missing[0]}")
-                rendered = render_judge(item, scheme, given,
-                                        bool(config.judge["justifications"]),
-                                        config.prompt_version)
-                for sample in range(samples):
-                    calls.append(PlannedCall(
-                        model=model_name, model_id=spec["model_id"], item_id=item_id,
-                        stage=JUDGE, scheme=scheme_id, cq_id=None, sample_index=sample,
-                        prompt=rendered.text, prompt_version=rendered.prompt_version,
-                        json_schema=rendered.json_schema,
-                        max_tokens=max_tokens, logprobs=logprobs,
-                        **identity,
-                    ))
+                add(target, item_id, JUDGE, scheme_id, None,
+                    render_judge(item, scheme, given, bool(config.judge["justifications"]),
+                                 config.prompt_version))
             if STAGE2 not in config.stages:
                 continue
             for cq_id in asked[scheme_id]:
-                rendered = render_stage2(item, scheme, cq_id, config.prompt_version)
-                for sample in range(samples):
-                    calls.append(PlannedCall(
-                        model=model_name, model_id=spec["model_id"], item_id=item_id,
-                        stage=STAGE2, scheme=scheme_id, cq_id=cq_id, sample_index=sample,
-                        prompt=rendered.text, prompt_version=rendered.prompt_version,
-                        json_schema=rendered.json_schema,
-                        max_tokens=max_tokens, logprobs=logprobs,
-                        **identity,
-                    ))
+                add(target, item_id, STAGE2, scheme_id, cq_id,
+                    render_stage2(item, scheme, cq_id, config.prompt_version))
+    if predicted is not None:
+        check_gold_calls(config, reused, runs_dir)
     return calls
+
+
+# ------------------------------------------------------------ predicted scheme
+@dataclass(frozen=True)
+class SchemePredictions:
+    """The stage-one answers a ``predicted`` run gives its calls, and where they come from.
+
+    ``rows`` maps entry -> item -> (0-based data row of the source ``summary.csv``, the
+    answer written there): a scheme id, ``none`` or ``invalid``.
+    """
+
+    run_id: str
+    manifest_sha256: str
+    summary_sha256: str
+    rows: dict[str, dict[str, tuple[int, str]]]
+    gold: dict[str, str | None]
+
+    def scheme(self, model: str, item_id: str) -> str | None:
+        """The scheme the entry is given for the item; None for ``none`` and ``invalid``."""
+        answer = self.rows[model][item_id][1]
+        return None if answer in (INVALID_ANSWER, "none") else answer
+
+    def outcome(self, model: str, item_id: str) -> str:
+        """``same_as_gold``, ``different`` or ``none_or_invalid``."""
+        guess = self.scheme(model, item_id)
+        if guess is None:
+            return "none_or_invalid"
+        return "same_as_gold" if guess == self.gold[item_id] else "different"
+
+    def record(self) -> dict[str, Any]:
+        """What the manifest of the run keeps: the source, and every row it read."""
+        from collections import Counter
+
+        return {
+            "run_id": self.run_id,
+            "manifest_sha256": self.manifest_sha256,
+            "summary_sha256": self.summary_sha256,
+            "outcomes": {model: dict(sorted(Counter(
+                self.outcome(model, item) for item in rows).items()))
+                for model, rows in self.rows.items()},
+            "rows": {model: {item: {"summary_row": row, "answer": answer}
+                             for item, (row, answer) in rows.items()}
+                     for model, rows in self.rows.items()},
+        }
+
+
+def _sha256(path: Path) -> str:
+    with path.open("rb") as handle:
+        return hashlib.file_digest(handle, "sha256").hexdigest()
+
+
+def _complete_entry(manifest: Mapping[str, Any] | None, model: str, run_id: str) -> None:
+    """A source run must have every planned call of the entry answered, none failed."""
+    counts = ((manifest or {}).get("calls_per_model") or {}).get(model)
+    if not counts or not counts.get("planned") or counts.get("failed") or (
+            counts["planned"] != counts.get("executed", 0) + counts.get("from_cache", 0)):
+        raise SchemeError(f"{run_id}: the calls of {model} are not all answered: {counts}")
+
+
+def load_scheme_predictions(
+    config: RunConfig, items: Iterable[Mapping[str, Any]], entries: Sequence[str],
+    runs_dir: str | Path,
+) -> SchemePredictions:
+    """Each entry's own stage-one answer for every item, from ``predictions_from``.
+
+    Read from the ``summary.csv`` of that run, never recomputed. The run must have every
+    call of the entry answered, and one stage-one row of the entry for every item; an
+    answer that is no scheme id, ``none`` or ``invalid`` stops here.
+    """
+    import pandas as pd
+
+    from ..labels import scheme_ids
+
+    run = Path(runs_dir) / str(config.predictions_from)
+    summary = run / "summary.csv"
+    manifest = read_manifest(run)
+    if manifest is None or not summary.is_file():
+        raise SchemeError(f"the predicted condition reads {run}: it needs manifest.json and "
+                          f"summary.csv (argfallacy parse {config.predictions_from})")
+    if STAGE1 not in (manifest.get("config") or {}).get("stages", []):
+        raise SchemeError(f"{config.predictions_from} has no stage one")
+    frame = pd.read_csv(summary, dtype=str, keep_default_na=False)
+    admitted = {*scheme_ids(), INVALID_ANSWER}
+    gold = {str(item["item_id"]): item.get("gold_scheme") for item in items}
+    rows: dict[str, dict[str, tuple[int, str]]] = {}
+    for model in entries:
+        _complete_entry(manifest, model, str(config.predictions_from))
+        own = frame[(frame["stage"] == STAGE1) & (frame["model"] == model)
+                    & frame["item_id"].isin(set(gold))]
+        if own["item_id"].duplicated().any() or len(own) != len(gold):
+            missing = sorted(set(gold) - set(own["item_id"]))[:5]
+            raise SchemeError(f"{config.predictions_from}: not one stage-one row of {model} "
+                              f"per item (missing, first five: {missing})")
+        unknown = sorted(set(own["answer"]) - admitted)
+        if unknown:
+            raise SchemeError(f"{config.predictions_from}: stage-one answers {unknown} of "
+                              f"{model} are not scheme ids")
+        rows[model] = {item: (int(index), answer)
+                       for index, item, answer in zip(own.index, own["item_id"], own["answer"],
+                                                      strict=True)}
+    return SchemePredictions(str(config.predictions_from), _sha256(run / MANIFEST_NAME),
+                             _sha256(summary), rows, gold)
+
+
+def gold_calls(config: RunConfig, runs_dir: str | Path) -> dict[tuple, set[str]]:
+    """(model, item, stage, scheme, cq, sample) -> the cache keys ``gold_from`` holds for it.
+
+    From its ``answers.csv``, ``gold`` condition. The run must be on the folder of
+    ``schemes/`` the configuration loads, with the same content.
+    """
+    import pandas as pd
+
+    run = Path(runs_dir) / str(config.gold_from)
+    manifest = read_manifest(run)
+    path = run / "answers.csv"
+    if manifest is None or not path.is_file():
+        raise SchemeError(f"the predicted condition reads {run}: it needs manifest.json and "
+                          f"answers.csv (argfallacy parse {config.gold_from})")
+    if (manifest.get("scheme_condition") != GOLD
+            or schemes_dir_of(manifest).name != config.schemes
+            or (manifest.get("schemes_version") or {}).get("content_sha256")
+            != schemes_hash(config.schemes_dir)):
+        raise SchemeError(f"{config.gold_from}: not a gold-condition run on the schemes of "
+                          f"{config.schemes}")
+    frame = pd.read_csv(path, dtype=str, keep_default_na=False)
+    frame = frame[frame["scheme_condition"] == GOLD]
+    out: dict[tuple, set[str]] = {}
+    for row in frame.itertuples(index=False):
+        key = (row.model, row.item_id, row.stage, row.scheme, row.cq_id, int(row.sample_index))
+        out.setdefault(key, set()).add(row.cache_key)
+    return out
+
+
+def check_gold_calls(config: RunConfig, reused: Sequence[PlannedCall],
+                     runs_dir: str | Path) -> None:
+    """Every call an item with the predicted scheme equal to the gold would get is a call of
+    ``gold_from``: same item, stage, scheme, CQ and sample, and the same cache key.
+
+    The key is a sha256 over the rendered prompt and every other field of the call, so an
+    equal key is the same prompt byte for byte. A single difference stops the plan.
+    """
+    held = gold_calls(config, runs_dir)
+    differ = [call for call in reused
+              if call.key() not in held.get((call.model, call.item_id, call.stage,
+                                             call.scheme, call.cq_id or "",
+                                             call.sample_index), set())]
+    if differ:
+        first = differ[0]
+        raise SchemeError(
+            f"{len(differ)} of the {len(reused)} calls of the items whose predicted scheme is "
+            f"the gold one are not calls of {config.gold_from}; first: {first.model} item "
+            f"{first.item_id} {first.stage} {first.scheme} {first.cq_id or ''} sample "
+            f"{first.sample_index}")
 
 
 def questions_asked(config: RunConfig, schemes: Mapping[str, Any]) -> dict[str, list[str]]:
@@ -475,31 +646,6 @@ def judge_answers(
         out.setdefault((str(row.item_id), str(row.scheme)), {})[str(row.cq_id)] = (
             str(row.answer), justification)
     return out
-
-
-def _scheme_for(
-    item: Mapping[str, Any],
-    config: RunConfig,
-    predictions: Mapping[str, str] | None,
-) -> str | None:
-    gold = item.get("gold_scheme")
-    if config.scheme_condition == GOLD:
-        return gold
-    if config.scheme_condition != PREDICTED:
-        raise SchemeError(
-            f"scheme_condition must be {GOLD!r} or {PREDICTED!r}, "
-            f"not {config.scheme_condition!r}"
-        )
-    if predictions is None:
-        raise SchemeError(
-            "the predicted condition needs stage-one predictions; pass them to plan() "
-            "or set predictions_from in the configuration"
-        )
-    predicted = predictions.get(str(item["item_id"]))
-    if predicted is None or predicted == gold:
-        # the gold-condition calls already answer this item
-        return None
-    return predicted
 
 
 def summarise_plan(
@@ -744,7 +890,6 @@ def execute(
     cache: ResponseCache | None = None,
     models: Mapping[str, Any] | None = None,
     schemes: Mapping[str, Any] | None = None,
-    predictions: Mapping[str, str] | None = None,
     max_attempts: int = 3,
     sleep: Any = None,
     only: Sequence[str] | None = None,
@@ -774,7 +919,8 @@ def execute(
     models = models if models is not None else load_models()
     schemes = schemes if schemes is not None else load_all(config.schemes_dir)
 
-    calls = plan(config, items, models, schemes, predictions, runs_dir=runs_dir)
+    items = list(items)
+    calls = plan(config, items, models, schemes, runs_dir=runs_dir)
     run_id = run_id or make_run_id(config.name)
     run_dir = Path(runs_dir) / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -782,6 +928,12 @@ def execute(
     manifest_path = run_dir / MANIFEST_NAME
 
     manifest = build_manifest(run_id, config, calls, models)
+    if config.scheme_condition == PREDICTED:
+        manifest["predictions"] = load_scheme_predictions(
+            config, items, config.models, runs_dir).record()
+        manifest["gold_from"] = {"run_id": config.gold_from,
+                                 **{name: _sha256(Path(runs_dir) / config.gold_from / name)
+                                    for name in (MANIFEST_NAME, "answers.csv")}}
     manifest["started_at"] = _first_start(manifest_path) or datetime.now(UTC).isoformat()
     _count_calls(manifest, raw_path)
     _write_manifest(manifest_path, manifest)

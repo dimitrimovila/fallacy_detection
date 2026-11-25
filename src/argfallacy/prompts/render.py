@@ -38,6 +38,8 @@ JUDGE = "judge"
 """The zero-shot prompt plus the answers of a run to the CQs of the scheme: an LLM judge."""
 DEFAULT_VERSION = "v2"
 ZEROSHOT_VERSION = "v1"
+ZEROSHOT_ALL_VERSION = "all_v1"
+"""The zero-shot prompt with no scheme: the text and one menu with every terminal."""
 JUDGE_VERSION = "v1"
 SSOFT = "ssoft"
 SSOFT_VERSION = "v1"
@@ -453,6 +455,65 @@ def render_zeroshot(
 
 def _verdicts_block(listed: tuple[Verdict, ...]) -> str:
     return "\n".join(f"* `{v.shown}`: {v.definition}" for v in listed)
+
+
+def all_verdicts(
+    schemes: Mapping[str, Scheme], vocabulary: Mapping[str, Any] | None = None
+) -> tuple[Verdict, ...]:
+    """Every terminal of the diagrams, once, as the zero-shot prompt without a scheme lists them.
+
+    The definitions are those of the per-scheme menus, from ``labels/fallacies.yaml``. The
+    name shown is the ``label``, never the ``display_label``: with no scheme in the prompt
+    the ad hominem variants keep their prefix. Alphabetical by the name shown, case aside,
+    with the good verdict last. Two terminals shown with one name stop here.
+    """
+    vocab = vocabulary or load_vocabulary(check_schemes=False)
+    terminals = vocab["terminals"]
+    found = sorted(set().union(*(scheme.terminals for scheme in schemes.values())))
+    unknown = [terminal for terminal in found if terminal not in terminals]
+    if unknown:
+        raise SchemeError(f"terminals {unknown} are not in the vocabulary")
+    listed = [Verdict(terminal, terminals[terminal]["label"],
+                      " ".join(str(terminals[terminal]["definition"]).split()))
+              for terminal in found]
+    names = [v.shown.casefold() for v in listed]
+    if len(set(names)) != len(names):
+        raise SchemeError(f"two terminals share a name: {sorted(names)}")
+    return tuple(sorted(
+        listed,
+        key=lambda v: (terminals[v.terminal].get("type") == "good", v.shown.casefold()),
+    ))
+
+
+def render_zeroshot_all(
+    item: Mapping[str, Any],
+    schemes: Mapping[str, Scheme],
+    version: str = ZEROSHOT_ALL_VERSION,
+    vocabulary: Mapping[str, Any] | None = None,
+) -> RenderedPrompt:
+    """The zero-shot prompt without a scheme: one item and the menu of :func:`all_verdicts`."""
+    text = str(item.get("text") or "").strip()
+    if not text:
+        raise SchemeError(f"item {item.get('item_id')!r} has no text")
+
+    listed = all_verdicts(schemes, vocabulary)
+    filled = _fill_versioned(
+        load_template(ZEROSHOT, version),
+        {"text": text, "verdicts": _verdicts_block(listed)},
+        prompt_version(ZEROSHOT, version),
+        where=f"{ZEROSHOT}_{version}.md",
+    )
+    schema = json.loads(json.dumps(load_json_schema(ZEROSHOT, version)))
+    schema["properties"]["answer"]["enum"] = [v.shown for v in listed]
+    return RenderedPrompt(
+        text=filled,
+        stage=ZEROSHOT,
+        prompt_version=prompt_version(ZEROSHOT, version),
+        scheme_id=None,
+        cq_id=None,
+        answer_options=tuple(v.shown for v in listed),
+        json_schema=schema,
+    )
 
 
 def render_dq(

@@ -1,0 +1,21 @@
+# The zero-shot condition without a scheme: for every item of the test set, the text and one
+# menu with every terminal of the 2.0 diagrams, each with its definition, and the verdict
+# asked directly (prompt zeroshot_all_v1). The same prompt as configs/zeroshot_schemes_v2.yaml
+# with the scheme taken out. Qwen only, in the regime of phase 2 in serving/models.yaml.
+# `argfallacy run plan configs/zeroshot_all_v2.yaml` counts the calls.
+
+name: zeroshot_all_v2
+schemes: v2
+
+items:
+  # the 601 items of the test set: every item with a gold scheme, no sample
+  exclude_none_scheme: true
+
+stages: [zeroshot]
+scheme_condition: none
+models: [qwen3_8_27b]
+prompt_version: all_v1
+
+generation:
+  # for the entries without a max_tokens of their own
+  max_tokens: 512
