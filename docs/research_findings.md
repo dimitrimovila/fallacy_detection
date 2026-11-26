@@ -1,6 +1,6 @@
 # Research findings and confirmed decisions
 
-Updated 15 November 2026. This is the public, readable record of the evidence accumulated in this project. It consolidates saved evaluations, diagnostic reports and case discussions, including the completed GOSDT/CART experiment, the audit of the aggregator code (F21), the check of the original LOGIC labels (F22), the cross-cutting diagnosis of saved outputs (F23), the exploratory abstention analysis on schemes 2.0 (F24), the A2 early-depth diagnostic (F25), the reference sensitivity analysis (F26) and the external T1 direct-verdict evaluation (F27). Conservative NLAS candidate curation is recorded in F29. Updating this register does not itself run experiments. It is intended to make the scientific reasoning recoverable without inspecting all result tables or conversation histories.
+Updated 26 November 2026. This is the public, readable record of the evidence accumulated in this project. It consolidates saved evaluations, diagnostic reports and case discussions, including the completed GOSDT/CART experiment, the audit of the aggregator code (F21), the check of the original LOGIC labels (F22), the cross-cutting diagnosis of saved outputs (F23), the exploratory abstention analysis on schemes 2.0 (F24), the A2 early-depth diagnostic (F25), the verdict scores under the two references, R_B and R_M (F26), the pooled neural aggregator (F28) and the external evaluation set T1 (F27). Conservative NLAS candidate curation is recorded in F29. Updating this register does not itself run experiments. It is intended to make the scientific reasoning recoverable without inspecting all result tables or conversation histories.
 
 ## How to read and maintain this record
 
@@ -27,8 +27,12 @@ The organization is thematic, following the research progression rather than the
 | F22 | Do the fine LOGIC labels in the gold come from the original source annotation? |
 | F23 | What does a diagnosis of all saved outputs show about where errors arise? |
 | F24 | Do saved confidences support abstention on schemes 2.0 without discarding hard classes? |
-| F26 | How do fixed verdict scores and rankings change under the integrated reference? |
+| F25 | How much probability mass does A2 leave at early depth, and how does it support the verdicts? |
+| F26 | How do fixed verdict scores and rankings compare under the two references, R_B and R_M? |
+| F27 | What is the external evaluation set T1, and how do the systems score on it? |
+| F28 | How does a pooled neural aggregator of the five models' CQ answers perform? |
 | F29 | What survives conservative Good-candidate review and overlap checks in NLAS? |
+| F30 | How does version 2.1 score on the 601 test items, against 2.0 and the direct verdicts? |
 
 These identifiers are stable so later corrections can cite them. Evidence lists deliberately point to detailed local records rather than copy every secondary table. Recovered observations with an unresolved denominator or source convention remain explicitly qualified; they must not be silently promoted to frozen-benchmark results.
 
@@ -304,7 +308,7 @@ Recovered schema-NO inventory (historical worksheet rows; source dataset and sta
 
 **Recovered static output inspection.** Among the 78 Expert Opinion arguments, the numbers reaching 2.0 CQ3 with yes were one each for Qwen/Gemma, two for GPT-OSS 20B, zero for K2 and one for GPT-OSS 120B; the latter also had one unresolved response at that node. These are at most potentially affected cases per model if CQ3 were bypassed in the fixed diagram. Continuing to later questions could still yield the same verdict. This was not an evaluated deletion, a measured metric gain, or a claim about soft/learned aggregators. For D+Q/judges/S-soft, removing a question changes context and would require a separate condition; isolated-CQ outputs have different reuse properties.
 
-**Decision status:** removing CQ3 or making a 2.1 diagram was a proposal only. No such change was approved or executed in the audited work. The negative 1.1 Expert CQ3 ablation in F10 concerns a different question/version and is not contradictory evidence.
+**Decision status:** removing CQ3 or making a 2.1 diagram was a proposal only. No such change was approved or executed in the audited work. The negative 1.1 Expert CQ3 ablation in F10 concerns a different question/version and is not contradictory evidence. **Superseded on 17 November 2026:** the removal of Expert 2.0 CQ3 was agreed with the supervisor and Eleni as part of version 2.1 (decision table below); the 2.1 run has not been executed.
 
 Evidence: recovered worksheet review and saved-output inspection; local audit `scratch/findings_audit_20261030/` preserves the source history and turn identifiers. These recovered observations were not rechecked by rerunning analyses during consolidation. Raw conversations and corpus excerpts are not part of the public documentation.
 
@@ -538,31 +542,60 @@ Mean A2 terminal mass through depth 1/2 is 24.95%/47.95% on 1.1 and 19.53%/40.29
 
 **Interpretation and limits.** Overall terminal mass does not show a large increase in shallow exits under A2, while a modest increase in early support for the winning label is present. This descriptive comparison measures different hard/soft quantities explicitly and does not establish the semantic validity of early decisions or a causal effect of path length on errors. No model was called or fitted, and no independent evaluation or hypothesis test was performed. Source fingerprints, per-item/per-scheme results, definitions and figures are in `workspace:research_notes/A2_early_exit/`.
 
-## F26 — Verdict score sensitivity to the integrated reference
+## F26: Verdict scores under the two references
 
-**Measured on 10 November 2026, recomputed on 15 November.** The recomputation follows the revision of seven expert-opinion verdicts of the integrated reference, made by applying the operational definition of appeal to authority (an appeal to authority when the conclusion rests only on the source's word) to all 28 expert-opinion items labelled Good or appeal to authority in the annotation app (thesis_plan.md, section 6.7). Saved predictions are unchanged; only the reference labels of those seven items differ. Offline scoring of 129 saved system conditions against the historical gold and the *riferimento integrato di Dumitru*. The populations are all 601 test IDs and the 405 cases selected by the original-label audit. The audit cohort contains all 155 label differences between the two references. The two references agree on the other 196 test items. The primary fine-space ranking includes 86 full-denominator systems with the reference scheme supplied on 1.1 or 2.0. Restricted cohorts, prior conditions and oracles are reported separately. The canonical historical scores reproduce the saved tables at their recorded precision.
+**Measured on 19 November 2026.** Two references cover all 601 test items. R_B is the reference verdict of Bergamasco (2026), assigned with the diagrams (`gold_fallacy`). R_M is Dumitru's direct verdict (`verdict_dumitru`), assigned from the argument, its scheme and the verdict menu with its definitions, with no reference label and no model output; the operational definition of appeal to authority (15 November) applies to it. The two references agree on 412 items (68.55%; Cohen's κ 0.648, 95% interval 0.608 to 0.687) and differ on 189. R_M supports 24 classes and R_B 23: false attribution occurs only in R_M, on one item. Offline scoring of the 129 saved system conditions under both references; the fine-space ranking contains the 86 full-denominator systems with the reference scheme supplied on 1.1 or 2.0.
 
-On 601 items 73 of 86 ranked systems gain Macro-F1, with a median gain of 3.42 percentage points. The judge with justifications on 1.1 moves from fourth to first, from 48.11% to 54.90%. Its Accuracy remains first and increases from 62.90% to 70.38%. On the 405 audit items, 64 of 86 systems gain Macro-F1, with a median gain of 3.17 points. The judge with justifications on 1.1 moves from third to first on Macro-F1, from 43.85% to 51.01%, 0.96 points ahead of the same judge on 2.0 (paired difference +0.96, 95% interval −4.93 to +6.49), and its Accuracy increases from 55.31% to 66.42%. The changes in the paired Macro-F1 gap against each population's previous leader are +6.31 points on 601 items (95% interval −1.49 to +12.55, against B2.dq on 2.0) and +7.50 points on 405 items (−0.05 to +13.90, against the answers-only judge on 2.0). The integrated reference contains one false attribution, a class absent from the historical gold, so its Macro-F1 averages one class more; systems that never predict that label lose about 1.4 points on it, and without that class all 86 systems would gain on 601 items (median 4.79 points).
+| System | Schemes | Macro-F1 R_B | Accuracy R_B | Macro-F1 R_M | Accuracy R_M |
+| --- | :---: | ---: | ---: | ---: | ---: |
+| A0 | 1.1 | 0.350 | 0.504 | 0.385 | 0.529 |
+| A2 | 1.1 | 0.365 | 0.521 | 0.391 | 0.534 |
+| A5 | 1.1 | 0.481 | 0.629 | 0.552 | 0.709 |
+| Direct verdict | 1.1 | 0.478 | 0.626 | 0.486 | 0.656 |
+| B1 | 1.1 | 0.298 | 0.501 | 0.359 | 0.524 |
+| B2 | 1.1 | 0.475 | 0.614 | 0.496 | 0.649 |
+| B3 | 1.1 | 0.255 | 0.439 | 0.251 | 0.464 |
+| A0 | 2.0 | 0.403 | 0.546 | 0.443 | 0.592 |
+| S-soft (B4) | 2.0 | 0.342 | 0.526 | 0.407 | 0.587 |
+| Direct verdict | 2.0 | 0.471 | 0.609 | 0.509 | 0.649 |
+| D+Q | 2.0 | 0.446 | 0.587 | 0.529 | 0.671 |
 
-**Interpretation and limits.** Rank changes describe the fixed predictions under different label assignments and class supports. The audit subset follows original-label provenance and covers a selected part of the test set. The learned methods retain their historical training and tuning, and the paired intervals condition on those predictions and fits. The GOSDT/CART rows use the verdicts of the original run; the tie-corrected verdicts of F21 have not been scored against the integrated reference. The evidence, including per-item transitions, per-class supports and source fingerprints, is in `evaluations/dumitru_integrated_verdict_20261110_audit405/`.
+80 of the 86 ranked systems have a higher Macro-F1 under R_M (median +3.92 points, range −2.92 to +11.55). The judge with justifications on 1.1 is first under R_M, with Macro-F1 55.19% and Accuracy 70.88%, and fourth under R_B, with 48.11% and 62.90%. B2.dq on 2.0, first under R_B with 49.60%, is fifth under R_M with 51.29%. Direct classification has a higher Macro-F1 than the fixed diagram under both references, on both scheme versions.
 
-## F27 — Direct verdicts on the external T1 cohort
+**Reading.** The two references operationalise the same task in two ways: R_B through the diagram procedure, R_M through the verdict definitions that the prompts also use. The gains under R_M are not uniform across families of systems: among the main systems the largest are those of D+Q (+0.082), A5 (+0.071) and S-soft (+0.066), the smallest those of the direct verdict on 1.1 (+0.008) and of B3 (−0.004), so the scores do not show a simple alignment of each reference with one family, nor which reference is right. A conclusion is stated as established when it holds under both references; where they differ, both results are reported. The judge against the direct verdict on 1.1 is the main case: under R_M its Macro-F1 advantage is +0.066 (95% interval 0.002 to 0.140), under R_B +0.003 (−0.032 to 0.064), so the advantage is not established. The learned methods keep the fits and tuning obtained with R_B, and the paired intervals condition on those fits. The GOSDT/CART rows use the verdicts of the original run. Evidence, including per-item transitions, per-class supports and source fingerprints, is in `evaluations/dumitru_integrated_verdict_20261119_full601/`; `evaluations/dumitru_integrated_verdict_20261110_audit405/` is superseded.
 
-**Measured, 11 November 2026.** The five configured models completed 6,136 generations on 472 external T1 arguments, with the annotated scheme supplied, scheme menus 2.0 and the existing zero-shot v1 prompt. The gold retains mapped source fallacy labels. The cohort contains 19 supported fallacy classes, of which 13 meet the frozen threshold of at least 20 items for the primary T1 Macro-F1. Every argument remains in the accuracy and per-class counting denominators. Thread titles are included where available, and extended context only where admitted by the annotation protocol.
+## F27 — External evaluation set T1
 
-| Model | Correct / 472 | Accuracy | T1 Macro-F1, 13 classes | Macro-F1, all 19 supported classes |
-| --- | ---: | ---: | ---: | ---: |
-| Gemma 4 31B | 273 | 0.5784 | 0.6312 | 0.5607 |
-| gpt-oss-120b | 296 | 0.6271 | 0.6545 | 0.5617 |
-| gpt-oss-20b | 291 | 0.6165 | 0.6260 | 0.5536 |
-| K2 Horizon 32B, high | 291 | 0.6165 | 0.6385 | 0.5908 |
-| Qwen 3.8 27B | 290 | 0.6144 | 0.6452 | 0.5718 |
+**Set.** T1 contains 534 arguments kept apart from the 773 local texts (texts equal or nearly equal to them are excluded): 461 fallacious texts from eight annotated fallacy corpora (LOGIC 166, ElecDeb60to20 93, Sahai Reddit 73, MAFALDA 36, Macagno v4 36, CLIMATE 30, Argotario 18, FLICC 9), 17 False Premise texts from SmartyPat-Bench and 56 Good Argumentation texts (NLAS-multi 20, CoCoLoFa 5, ValNov 5, MAFALDA 2, and 24 written for the set by an LLM). The reference verdict of a fallacious text is its source label mapped to the project taxonomy. A text enters only when one of the eight schemes is visible in it, an implicit conclusion that is easy to reconstruct included, and the diagram of that scheme can reach the source label; the annotated scheme is supplied to the systems. The Good texts were admitted after two independent judgments with the 2.0 questions. Schemes: Expert Opinion 120, Ad Hominem 119, Cause to Effect 81, Popular Opinion 80, Analogy 49, Example 36, Slippery Slope 32, Correlation to Cause 17. The set has 21 verdict classes. The primary Macro-F1 averages the 17 classes with at least 10 items (16 fallacies and Good Argumentation); accuracy and the Macro-F1 over all 21 classes count every item. Fallacies and Good are also reported separately.
 
-**Class-set sensitivity, descriptive check on 11 November.** Restricting the T1 Macro-F1 average to its 13 frequent classes raises the reported value by 4.78 to 9.28 percentage points across models compared with averaging all 19 supported classes. For the matched Qwen 2.0 condition, the updated integrated historical reference of F26 (recomputed on 15 November) gives Accuracy 0.6489 and Macro-F1 0.5111 across 23 supported classes on 601 items, against T1 Accuracy 0.6144 and Macro-F1 0.5718 across 19 classes on 472 items. Averaging the saved historical per-class F1 values over the same 13 classes selected for the T1 primary metric gives 0.6271, against T1 0.6452. This post-results diagnostic retains every item in each cohort's precision/recall counting, and changes only the class average. Its 1.81-point difference remains a cross-population point estimate. Historical source: `evaluations/dumitru_integrated_verdict_20261110_audit405/per_class.csv`, Qwen zero-shot 2.0, `test_601`, fine space, integrated reference. The other four saved historical zero-shot models used menus 1.1, whereas T1 uses 2.0.
+**Job, 23 to 26 November 2026.** One job on this file (sha256 `9c7c5f91…a1b6d0`, recorded in every run configuration and manifest), five entries, the reference scheme supplied: the direct verdict (prompt zeroshot v1, menus of 2.0), stage 1 (stage1 v2), every question of 2.1 (stage2_v5) and the 16 questions of 2.0 that 2.1 does not repeat with the same text and answer definitions (stage2_v3); the 2.0 table takes the other answers from the 2.1 run. 64,584 calls, none served from a cache or an earlier run (the job had its own cache, empty at the start); two calls of K2 timed out and were answered on the second pass; no answer to a question and no direct verdict is invalid. Five reference verdicts are not terminals of 2.1 (one Analogy cherry picking, four Ad Hominem appeal to authority), so every 2.1 system gets them wrong; all are terminals of 2.0 and appear in the 2.0 menu.
 
-**Execution and scoring checks.** Job 2997010 completed all but one K2 call. Job 3013337 supplied the remaining response, and the final manifest records 6,136 completed generations and zero outstanding failures. The local scorer now counts the parser's invalid-output marker as an error. A parser defect had selected the first timeout rather than the completed retry of sample zero. Correcting this selection changes one summary verdict, from invalid to Post Hoc, which agrees with its T1 reference. The raw attempts remain preserved. Independent accuracy and Macro-F1 calculations were checked against the canonical evaluation outputs.
+**Result.** Scored as F30, with the source labels as the only reference; 95% paired percentile intervals over 10,000 resamples of the 534 items (seed 20261019), no multiplicity correction. The comparisons below were fixed before the results.
 
-**Interpretation and limits.** These are descriptive point estimates. The highest observed accuracy is 62.71%, with 176 errors, and the largest observed primary T1 Macro-F1 is 0.6545. No pairwise significance claim is made. T1 contains only source-labelled fallacies, and supplies a selected annotated scheme. Its source mappings, support distribution, context and exclusion of Good Argumentation differ from the historical 601-item test. Differences across those datasets do not by themselves establish improved model performance or reference validity. Evidence is in `evaluations/t1_zeroshot/t1_472/`, the frozen input audit in `scratch/t1_zero_shot_20261110/preflight.json`, and run `20261110T105606Z_t1_zeroshot_v2`.
+| System | Correct (534) | Accuracy | Macro-F1, 17 classes | Macro-F1, 21 classes | Fallacies correct (478) | Good recognised (56) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Direct verdict, Qwen | 344 | 0.644 | 0.627 | 0.584 | 304 | 40 |
+| Direct verdict, Gemma | 338 | 0.633 | 0.628 | 0.576 | 288 | 50 |
+| Direct verdict, gpt-oss 20b | 320 | 0.599 | 0.597 | 0.543 | 304 | 16 |
+| Direct verdict, gpt-oss 120b | 332 | 0.622 | 0.627 | 0.557 | 309 | 23 |
+| Direct verdict, K2 | 319 | 0.597 | 0.589 | 0.545 | 282 | 37 |
+| Direct verdict, majority of the five | 333 | 0.624 | 0.630 | 0.589 | 299 | 34 |
+| Majority at each question, 2.0 | 245 | 0.459 | 0.430 | 0.368 | 206 | 39 |
+| Majority at each question, 2.1 | 275 | 0.515 | 0.493 | 0.418 | 228 | 47 |
+| A4, 2.0 | 250 | 0.468 | 0.430 | 0.364 | 214 | 36 |
+| A4, 2.1 | 268 | 0.502 | 0.464 | 0.394 | 223 | 45 |
+| A3 (Qwen), 2.0 | 215 | 0.403 | 0.361 | 0.319 | 168 | 47 |
+| A3 (Qwen), 2.1 | 238 | 0.446 | 0.395 | 0.349 | 185 | 53 |
+
+A0 on 2.1 has 214 (gpt-oss 20b) to 280 (Qwen) correct, Macro-F1 0.379 to 0.476; A2 221 to 286, 0.376 to 0.472. Against the direct verdict, every pre-specified comparison has an interval below zero: majority at each question on 2.1 minus the majority of the direct verdicts, Macro-F1 −0.138 (−0.182 to −0.093), accuracy −0.109 (−0.154 to −0.064); A4 on 2.1, −0.167 (−0.213 to −0.118); A0 on 2.1 of each entry minus its own direct verdict, from −0.138 (K2) to −0.248 (gpt-oss 120b). Version 2.1 against 2.0: the majority at each question gains +0.062 (+0.028 to +0.096; 245 to 275 correct); A0 and A2 have intervals above zero for Gemma (A0 +0.111, A2 +0.073), gpt-oss 120b (+0.043, +0.046) and K2 (+0.062, +0.058) and containing zero for Qwen (+0.032, +0.010) and gpt-oss 20b (+0.020, +0.015); A4 +0.033 (−0.001 to +0.066). Descriptively, as in F30, the A0 Macro-F1 averaged over the five entries goes from 0.379 to 0.433 (+0.054, +0.030 to +0.075) and that of A2 from 0.395 to 0.435.
+
+The CQ systems recognise more Good texts than the direct verdict (majority at each question on 2.1: 47 of 56 against 34) and fewer specific fallacies (228 of 478 against 299). Stage 1 recognises the scheme in 54.1% (gpt-oss 20b) to 67.6% (K2) of the texts, Macro-F1 over the eight schemes 0.607 to 0.726; between 60 (K2) and 161 (Qwen) answers are `none`, counted as errors. A3 on the 601 items, out of fold with the folds of the saved evaluations, has Macro-F1 0.360 on 2.1 against 0.341 on 2.0 under R_B and 0.409 against 0.427 under R_M; its 2.0 verdicts equal the saved ones.
+
+**Reading.** On T1 the direct verdict is ahead of every system that reaches the verdict through the diagrams, for every entry and for both combinations of the five, by 11 to 22 points of accuracy. The per-question improvement of 2.1 over 2.0 seen on the 601 items, where the questions were chosen, holds on texts not used for the choice: the majority at each question and three entries out of five gain on T1 with intervals above zero, the same three as on the 601 items. The gain is smaller than the gap to the direct verdict.
+
+**Limits.** One reference, the source labels mapped to the project taxonomy, with no second annotation of these texts. The 2.0 answers to the questions 2.1 repeats unchanged come from the 2.1 run, whose prompt shows the 2.1 identifier. A3 is fitted with R_B on the 601 items and scored against the source labels of T1. The intervals condition on the fixed predictions and are not adjusted for the 19 comparisons.
+
+**Evidence.** Gold, annotation workbook, guidelines and build scripts: `workspace:Dataset_candidati_validazione/T1/` (`test_esterno.csv`, `T1_gold.csv`, `T1_annotazione.xlsx`, `LINEE_GUIDA_ANNOTAZIONE.md`, `script/`). Scores, per-item verdicts, per-class scores, paired differences, stage 1 and A3 on the 601 items: `evaluations/t1_534/`. Runs `20261123T222923Z_t1_534_{zeroshot,stage1,cq21,cq20}` and the answer tables `20261123T222923Z_t1_534_cq21_assembled` and `_cq20_assembled`; the raw calls are on the cluster.
 
 ## F28 — First pooled neural aggregator: implementation and CPU evaluation
 
@@ -674,10 +707,67 @@ Canonical local evidence:
 `decisioni_controllo_finale.json`, `selezionati.jsonl`, `validation_finale.json`
 and `manifest_finale.json`). No T2 import or new model evaluation was performed.
 
+## F30: Version 2.1 on the 601 test items
+
+**Question, 22 November 2026.** Score of version 2.1 on the 601 test items, against 2.0 and the
+direct verdicts, five entries, gold scheme, under R_B and R_M; canonical scorer and the resamples
+of the saved evaluations (10,000 item bootstraps, 95% percentile intervals, no multiplicity
+correction). The recomputed 2.0 verdicts equal the saved ones on every item.
+
+**Version** (`schemes/v4/`, prompt `stage2_v5`). 40 distinct questions: 27 of 2.0, 1 of 1.1 and 12
+new or rewritten, asked to the five entries on 21 and 23 November; three Popular Opinion questions appear
+on two branches with the same answer. Against 2.0: Example has one filter for cherry picking and
+hasty generalization (1.1 CQ2.2 without "statistically" and with "(or examples)"), a question that chooses between them, then appeal to extremes and the
+comparison of two cases; Analogy has a new question on the differences that weaken the comparison,
+a stricter definition of the extreme case and no exit to cherry picking; Cause to Effect has the 2.0
+questions in another order; Ad Hominem has the 2.0 questions in another order, without the one on
+the positive or negative opinion; Expert Opinion asks whether the conclusion rests only on the
+source's word and drops the question on the other experts; Popular Opinion starts from the
+consensus, and both branches go through the same check of the people cited. Correlation to Cause
+and Slippery Slope are those of 2.0.
+
+**Result.** A0 Macro-F1 averaged over the five entries, against 2.0: 0.2968 to 0.3604 under R_B
+(+0.0636, interval +0.0336 to +0.0999) and 0.3557 to 0.4163 under R_M (+0.0607, +0.0316 to
++0.0944). For A2 +0.0539 (+0.0247 to +0.0895) and +0.0561 (+0.0280 to +0.0896). By entry, the
+A0 Macro-F1 interval is above zero for Gemma, gpt-oss 120b and K2 and contains zero for Qwen and
+gpt-oss 20b, under both references; Qwen has 350 correct under R_B (328 in 2.0) and 397 under
+R_M (356). A4 has 346 correct against 305 under R_B and 371 against 329 under R_M; its Macro-F1
+differences (+0.0334 and +0.0077) have intervals with zero.
+
+**Majority of the five entries at each question.** Correct verdicts 291 to 352 under R_B and 309
+to 372 under R_M; Macro-F1 +0.095 (+0.049 to +0.142) and +0.065 (+0.025 to +0.109). The majority of
+the direct verdicts has 370 and 389 correct; 2.1 minus direct is -0.030 accuracy (-0.075 to +0.015)
+under R_B and -0.028 (-0.077 to +0.022) under R_M, Macro-F1 -0.079 (-0.144 to +0.040) and -0.037
+(-0.119 to +0.061). The intervals do not separate the two; they do not show equivalence.
+
+**By scheme** (majority, correct verdicts, 2.0 to 2.1, R_B; R_M). Example 24 to 55; 15 to 49 of
+86. Analogy 36 to 47; 32 to 43 of 83. Cause to Effect 31 to 33; 27 to 30 of 45. Ad Hominem 34 to
+44; 57 to 58 of 94. Expert Opinion 22 to 26; 31 to 32 of 78. Popular Opinion 50 to 53; 53 to 66
+of 109. Correlation to Cause and Slippery Slope unchanged. No scheme is below 2.0 in correct
+verdicts or Macro-F1 of the majority, or in the mean of the five entries. Single entries are:
+gpt-oss 20b falls from 55 to 38 and gpt-oss 120b from 53 to 49 on Popular Opinion under R_B, and
+Qwen from 48 to 41 and from 53 to 46 on Analogy.
+
+**Limits.** Questions and order were chosen on these 601 items under both references, comparing
+several variants, so the comparison with 2.0 is optimistic and the intervals do not cover the
+selection. On the external set T1, not used for the choice, 2.1 is also ahead of 2.0 (F27). Direct
+verdicts use the 2.0 menu only for Qwen.
+
+**Evidence.** `evaluations/test601_cq_21` (per-item verdicts, metrics, paired differences, means,
+per-scheme counts, input hashes), answer table `runs/20261123T161440Z_cq21_assembled`, with the raw calls of
+its 12 new questions in `raw_sources.jsonl`. The
+A0 verdicts match an independent walk of the diagrams.
+
 ## Confirmed decisions and their boundaries
 
 | Date / phase | Confirmed choice | Reason and execution status |
 | --- | --- | --- |
+| 23 November | External set T1 of 534 items; primary Macro-F1 over the classes with at least 10 items | All T1 conditions run in one job on this file, from 23 to 26 November, and scored with the comparisons fixed before the results (F27). |
+| 23 November | The Example filter of 2.1 (CQ2) is 1.1 CQ2.2 without "statistically" and with "(or examples)" | Asked on the 86 Example items with three other wordings. It keeps yes or no answers and sends fewer Good Argumentation items to the fallacy branch; majority correct within 1 to 3 items of the earlier filter (F30). Numbers in `Archivio/Versione 2.1 - run e prove/evaluations/example_filter_confronto`. |
+| 21–22 November | Version 2.1 is the one of `schemes/v4/` | It replaces the content listed in the 17 November row. Unchanged questions reuse the answers of 2.0 and 1.1, the others were asked on 21 and 23 November; questions and order chosen on the 601 items. Scores in F30 and, on T1, in F27. |
+| 19 November | Report the verdict scores under two references with equal standing, R_B and R_M | R_M covers all 601 test items; scores and rankings in F26. Primary comparisons and learned fits remain specified with R_B. |
+| 17 November | Version 2.1 of the schemes, based on 2.0: Example CQ2.2 before CQ2.1; Analogy CQ1.1 with a stricter definition of the extreme case and CQ4 with a definition of the known counter-case, with truncation after CQ3 as the fallback for CQ4; Expert Opinion CQ2 reworded and CQ3 removed, CQ1 and the 2.0 order kept; Popular Opinion CQ1 replaced by the question selected with ACT; Ad Hominem CQ6 unchanged | Agreed with the supervisor and Eleni; checked again on the complete R_M on 19 November. Superseded by the final 2.1 of the 21–22 November row. |
+| 14–15 November | Operational definition of appeal to authority for R_M: the conclusion rests only on the source's word; evidence or reasoning given for it excludes the label | Applied to the 28 Expert Opinion items of R_M labelled Good or appeal to authority; eight verdicts revised. R_B unchanged. |
 | 13 November | Conservative NLAS Good-candidate curation for T2, preserving sources and reference labels | Completed the specified review and retained 19 synthetic research candidates; the 1/1 post-exposure control is descriptive, not independent precision validation (F29). |
 | 13 November | Implement a pooled five-entry neural aggregator and try its initial configuration locally | Completed 195 CPU fits; three initialization results and qualified contextual comparisons are recorded in F28. |
 | Pilot/full-run preparation | Preserve chosen model regimes and immutable versioned prompts/schemes per run | Pilot evidence and reproducibility; completed runs retain their original manifests. |
@@ -690,9 +780,8 @@ and `manifest_finale.json`). No T2 import or new model evaluation was performed.
 | 30–31 October | GOSDT versus CART on identical fixed binary B1@2.0 inputs; six configurations and three inner folds | Accepted, implemented and completed on CPU cluster; complete local results and interpretation in F20. No follow-up method selected. |
 | 30 October | Consolidate and publish readable evidence; document future findings and only explicitly agreed decisions | This register and aligned local guidance implement that request; no new scientific method selected by documentation alone. |
 | 5 November | Nested calibration for the conformal thresholds of learned systems; canonical tie-break for GOSDT/CART leaf classes | Audit findings (F21): the first restores P13, the second the canonical order of spec 12; both computed without new LLM calls. |
-| 10–11 November | External T1 zero-shot evaluation using the existing five model regimes and schemes 2.0 | Completed in jobs 2997010 and 3013337; all 472 items per model scored locally, with the frozen T1 class threshold (F27). |
 
-Not confirmed: deleting Expert 2.0 CQ3; a 2.1 graph; a per-scheme post-hoc hybrid; additions or changes to the GOSDT/CART grid/encoding; further annotation collection or external evaluation beyond the completed T1 run. The specified GOSDT/CART experiment completed with the accepted failure policies. No additional submission or retry is authorized by documenting its outcome. Historical recommendations are not authorization.
+Not confirmed: a per-scheme post-hoc hybrid; additions or changes to the GOSDT/CART grid/encoding; further annotation collection beyond the direct verdicts on the 601 items; external evaluation beyond the T1 runs of F27. The specified GOSDT/CART experiment completed with the accepted failure policies. No additional submission or retry is authorized by documenting its outcome. Historical recommendations are not authorization.
 
 ## Practical reading map
 
@@ -708,6 +797,8 @@ For conclusions and choices, start with this file. For exact local outputs, sele
 | `evaluations/b3_schemes2_diagnostic_20261029` | Completed B3@2.0 protocol, trees, sensitivities and review |
 | `evaluations/gosdt_schemes2_diagnostic_20261030` | Completed matched GOSDT/CART diagnostic, paired intervals, full trees and execution checks (F20) |
 | `evaluations/_archive` | Historical audits and preserved alternative snapshots; relocation manifest resolves old paths |
-| `evaluations/t1_zeroshot/t1_472` | External T1 direct-verdict scores and per-item predictions for the five models (F27) |
+| `evaluations/test601_cq_21` | Version 2.1 on the 601 test items, with the 2.0 and direct-verdict comparators (F30) |
+| `evaluations/t1_534` | The external set T1: direct verdicts, stage 1, the 2.1 and 2.0 CQ systems, the comparisons fixed before the results, and A3 on the 601 items (F27) |
+| `evaluations/dumitru_integrated_verdict_20261119_full601` | Scores of the saved systems under R_B and R_M, per-item transitions and per-class supports (F26) |
 
 The two local diagnostic reports and their `workspace:research_notes/` contain the detailed human/graph analyses consolidated in F07–F15. The roadmap organizes alternatives; it is not a substitute for this result/status record. Future updates must keep this map, the local evaluation catalog and strategic overview consistent without rewriting historical measured results.
