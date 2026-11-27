@@ -758,10 +758,37 @@ per-scheme counts, input hashes), answer table `runs/20261123T161440Z_cq21_assem
 its 12 new questions in `raw_sources.jsonl`. The
 A0 verdicts match an independent walk of the diagrams.
 
+## F31: Zero-shot verdicts of Qwen without the gold scheme
+
+**Question, 25 to 27 November 2026.** How much of Qwen's direct verdict depends on being given the scheme. Entry `qwen3_8_27b`, reasoning off, one sample at temperature 0, menus of 2.0, on the 601 test items (R_B and R_M) and on T1 (source labels, primary Macro-F1 over 17 classes). ZS-gold is the saved direct verdict with the gold scheme. ZS-all gives the text and one menu with the 24 terminals of 2.0 (prompt `zeroshot_all_v1`). ZS-pred gives the scheme of Qwen's stage one on `stage1_v3` (one of the eight schemes, no `none`) and that scheme's menu. A predicted scheme equal to the gold one takes the ZS-gold verdict. ZS-pred with `none` uses the saved stage one on `stage1_v2`, where `none` gets no verdict and counts as wrong; it is descriptive. Two jobs with a cache of their own, empty at the start: 2,270 calls in the first and 170 in the second, none invalid. The comparisons were fixed on 25 November, before the runs: 95% paired percentile intervals, 10,000 resamples, seed 20261019, no multiplicity correction. Because R_B and R_M were assigned inside the gold scheme's menu, the main comparison for ZS-all is on T1.
+
+**Stage one.** `stage1_v3` gives the gold scheme on 516 of the 601 items (85.9%) and on 415 of the 534 T1 items (77.7%). `stage1_v2` gives it on 469 (78.0%) and 322 (60.3%), with 72 and 161 answers `none`.
+
+| System | 601 correct R_B | Macro-F1 R_B | 601 correct R_M | Macro-F1 R_M | T1 correct (534) | T1 Macro-F1, 17 | T1 Macro-F1, 21 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| ZS-gold | 366 | 0.471 | 390 | 0.509 | 344 | 0.627 | 0.584 |
+| ZS-all | 337 | 0.399 | 348 | 0.405 | 300 | 0.544 | 0.513 |
+| ZS-pred | 352 | 0.430 | 373 | 0.464 | 283 | 0.488 | 0.461 |
+| ZS-pred with `none` (descriptive) | 318 | 0.379 | 337 | 0.405 | 223 | 0.405 | 0.405 |
+
+**Paired differences** (accuracy; Macro-F1, primary on T1).
+* ZS-gold minus ZS-all. T1: +0.082 (+0.045 to +0.120); +0.083 (+0.043 to +0.124). 601: R_B +0.048 (+0.013 to +0.085); +0.073 (+0.009 to +0.105). R_M +0.070 (+0.033 to +0.106); +0.105 (+0.038 to +0.153).
+* ZS-gold minus ZS-pred. T1: +0.114 (+0.088 to +0.142); +0.139 (+0.107 to +0.171). 601: R_B +0.023 (+0.003 to +0.043); +0.042 (+0.007 to +0.090). R_M +0.028 (+0.008 to +0.048); +0.046 (+0.013 to +0.089).
+* ZS-pred minus ZS-all. T1: −0.032 (−0.069 to +0.006); −0.056 (−0.096 to −0.012), over 21 classes −0.052 (−0.096 to −0.007). 601: R_B +0.025 (−0.012 to +0.062); +0.031 (−0.046 to +0.069). R_M +0.042 (+0.005 to +0.078); +0.059 (−0.016 to +0.108).
+
+**By stage-one outcome** (accuracy, descriptive). When `stage1_v3` is right, ZS-pred equals ZS-gold by construction: 0.636 against 0.609 for ZS-all on 516 items of the 601 (R_B), and 0.658 against 0.619 on 415 T1 items. When it is wrong, ZS-pred, ZS-gold and ZS-all have 0.282, 0.447 and 0.271 on the 85 items of the 601 (R_B), and 0.084, 0.597 and 0.361 on the 119 T1 items. Added after the results: the gold verdict is a terminal of the wrongly predicted scheme on 49 of the 85 items of the 601 and on 24 of the 119 T1 items. ZS-pred's correct verdicts on these items all come from that subset (24 and 10). The most frequent T1 confusion is Expert Opinion read as Ad Hominem (19 items).
+
+**Reading.** On both sets, the gold scheme improves the direct verdict over a single menu of all terminals, with intervals above zero. A predicted scheme keeps part of that gain on the 601 items, where stage one is more accurate and ZS-pred is ahead of ZS-all under R_M. On T1, stage one is wrong on 22% of the texts and the wrong scheme's menu usually lacks the reference verdict. That cancels the gain: ZS-pred is behind ZS-all in Macro-F1, with an interval below zero, and its accuracy interval contains zero. In a realistic system, choosing the scheme first helps only if stage one is accurate enough, and a wrong scheme does more harm than no scheme. A stage one that can answer `none` makes it worse, since those texts get no verdict.
+
+**Limits.** One entry and one regime. The T1 reference is the source labels mapped to the project taxonomy, with the scheme required to be visible and its diagram able to reach the label, which favours the gold-scheme condition. On the 601 items R_B and R_M penalise any verdict outside the gold scheme's menu. ZS-all's menu lists 24 terminals with their definitions, a longer prompt than the per-scheme menus. The reachability count was not pre-specified.
+
+**Evidence.** `evaluations/zs_conditions/` (metrics, paired differences, the by-stage-one table, stage-one accuracy and per-item verdicts on both sets, input hashes); the 601-only scores of 27 November are in `evaluations/zs_conditions_601_only/`. Runs `20261125T161917Z_{zeroshot_all_v2,stage1_v3,zeroshot_pred_v2,zeroshot_pred_none_v2}` and `20261125T161917Z_t1_534_{zeroshot_all,stage1_v3,zeroshot_pred,zeroshot_pred_none}`; the raw calls are on the cluster.
+
 ## Confirmed decisions and their boundaries
 
 | Date / phase | Confirmed choice | Reason and execution status |
 | --- | --- | --- |
+| 25 November | Three zero-shot conditions of Qwen without the gold scheme: ZS-all, ZS-pred on `stage1_v3` and ZS-pred with `none` (descriptive), with three paired comparisons | Fixed before the runs; run on 25 to 27 November on the 601 items and on T1 and scored (F31). |
 | 23 November | External set T1 of 534 items; primary Macro-F1 over the classes with at least 10 items | All T1 conditions run in one job on this file, from 23 to 26 November, and scored with the comparisons fixed before the results (F27). |
 | 23 November | The Example filter of 2.1 (CQ2) is 1.1 CQ2.2 without "statistically" and with "(or examples)" | Asked on the 86 Example items with three other wordings. It keeps yes or no answers and sends fewer Good Argumentation items to the fallacy branch; majority correct within 1 to 3 items of the earlier filter (F30). Numbers in `Archivio/Versione 2.1 - run e prove/evaluations/example_filter_confronto`. |
 | 21–22 November | Version 2.1 is the one of `schemes/v4/` | It replaces the content listed in the 17 November row. Unchanged questions reuse the answers of 2.0 and 1.1, the others were asked on 21 and 23 November; questions and order chosen on the 601 items. Scores in F30 and, on T1, in F27. |
@@ -799,6 +826,7 @@ For conclusions and choices, start with this file. For exact local outputs, sele
 | `evaluations/_archive` | Historical audits and preserved alternative snapshots; relocation manifest resolves old paths |
 | `evaluations/test601_cq_21` | Version 2.1 on the 601 test items, with the 2.0 and direct-verdict comparators (F30) |
 | `evaluations/t1_534` | The external set T1: direct verdicts, stage 1, the 2.1 and 2.0 CQ systems, the comparisons fixed before the results, and A3 on the 601 items (F27) |
+| `evaluations/zs_conditions` | Qwen's direct verdict with the gold scheme, with no scheme and with its own stage one, on the 601 items and on T1 (F31) |
 | `evaluations/dumitru_integrated_verdict_20261119_full601` | Scores of the saved systems under R_B and R_M, per-item transitions and per-class supports (F26) |
 
 The two local diagnostic reports and their `workspace:research_notes/` contain the detailed human/graph analyses consolidated in F07–F15. The roadmap organizes alternatives; it is not a substitute for this result/status record. Future updates must keep this map, the local evaluation catalog and strategic overview consistent without rewriting historical measured results.
